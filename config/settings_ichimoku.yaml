@@ -1,0 +1,118 @@
+# ==============================================================================
+#  gold-3strategies :: instance 2 — ICHIMOKU M15 (walk-forward set)
+#  Run with:  python main_live.py --config config/settings_ichimoku.yaml
+#  Magic 735511 (instance 1 = orb_gold, magic 553311) — coexists safely.
+# ==============================================================================
+
+mt5:
+  login: 0
+  password: ""
+  server: ""
+  terminal_path: ""
+  timeout_ms: 60000
+  portable: false
+
+symbol:
+  name: "XAUUSD"
+  fallback_names: ["GOLD", "XAUUSDm", "XAUUSD.a", "XAUUSD.pro"]
+  magic: 735511
+  deviation_points: 30
+  comment: "ichimoku_m15"
+
+timeframes:
+  trigger: "M5"
+  intermediate: "M15"
+  macro: "H1"
+
+risk:
+  base_balance: 533.0
+  risk_percent: 1.0
+  min_lot: 0.01
+  max_lot: 0.10
+  max_positions_per_symbol: 1
+  atr_period: 14
+  sl_atr_multiplier: 1.6
+  tp_atr_multiplier: 3.0
+  breakeven_trigger_atr: 1.0
+  breakeven_buffer_points: 5
+  trailing_trigger_atr: 1.3
+  trailing_distance_atr: 0.8
+  commission_per_lot: 0.0
+  min_sl_points: 40
+  max_daily_loss_pct: 10.0
+  max_daily_trades: 10
+
+session:
+  start_hour: 0
+  end_hour: 24
+  max_spread_points: 30
+  trade_weekdays: [0, 1, 2, 3, 4]
+
+strategy:
+  active: "ichimoku_m15"
+  available:
+    - "ichimoku_m15"
+
+  params:
+    ichimoku_m15:
+      session_start_hour: 1
+      initial_range_bars: 12
+      confirm_bars: 36
+      atr_period: 14
+      enable_trend_ema: false
+      use_h1_filter: true
+      h1_ema_period: 50
+      enable_kijun: true
+      enable_tenkan: true
+      enable_sp2l: false
+      kijun_near_atr: 0.20
+      kijun_sl_atr: 1.6
+      kijun_tp_sl_multiplier: 3.0
+      tenkan_min_distance_atr: 0.40
+      tenkan_tp_sl_multiplier: 3.0
+      cooldown_bars: 6
+      trade_start_hour: 12
+      trade_end_hour: 20
+      min_atr: 0.40
+      partial_tp_rr: 1.5
+      partial_frac: 0.5
+
+engine:
+  loop_sleep_seconds: 1.0
+  bars_to_load: 1000
+  heartbeat_seconds: 30
+  reconnect_backoff_seconds: [5, 10, 20, 40, 60]
+  max_send_retries: 3
+  telemetry_interval_seconds: 3600
+
+backtest:
+  bars: 25000
+  initial_balance: 533.0
+  spread_points: 26
+  slippage_points: 0
+  commission_per_lot: 0.0
+  bars_per_year: 74880
+  simulate_breakeven: true
+  simulate_trailing: true
+
+telegram:
+  enabled: true
+  token: ""   # از env خوانده می‌شود — توکن بات دوم اینجا نمی‌گذاریم
+  admin_ids: [84078462]
+  vip_channel_ids: []
+  free_channel_ids: []
+  vip_price_usd: 49
+  vip_days_per_purchase: 30
+  send_charts_to_vip: true
+  send_manage_alerts_to_vip: true
+
+database:
+  path: "subscriptions_ichimoku.db"
+
+logging:
+  path: "logs/ichimoku_{time:YYYY-MM-DD}.log"
+  level: "INFO"
+  rotation: "10 MB"
+  retention: "21 days"
+  backtrace: true
+  diagnose: false
