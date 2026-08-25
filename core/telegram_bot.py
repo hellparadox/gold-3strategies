@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+import os
 import threading
 from concurrent.futures import Future
 from dataclasses import dataclass, field
@@ -200,13 +201,18 @@ class TelegramController:
 
         from telegram.request import HTTPXRequest
 
+        # Optional outbound proxy (e.g. http://127.0.0.1:10808 when running
+        # behind v2ray on an Iran-based machine). Leave TELEGRAM_PROXY unset
+        # on a VPS with direct internet access.
+        proxy_url = os.environ.get("TELEGRAM_PROXY", "").strip() or None
+
         request = HTTPXRequest(
             connection_pool_size=50,
             connect_timeout=30.0,
             read_timeout=30.0,
             write_timeout=30.0,
             pool_timeout=30.0,
-            proxy="http://127.0.0.1:10808",
+            proxy=proxy_url,
         )
 
         # حذف concurrent_updates برای جلوگیری از تداخل تسک‌ها
