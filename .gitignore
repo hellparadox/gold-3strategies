@@ -1,0 +1,31 @@
+# --- secrets (NEVER commit) ---
+.env
+*.env
+!*.env.example
+
+# --- runtime state ---
+logs/
+*.log
+subscriptions.db
+subscriptions.db-shm
+subscriptions.db-wal
+*.db-journal
+bot_state.json
+snapshots/
+exports/
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# --- data caches (large) ---
+data/cache/
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
