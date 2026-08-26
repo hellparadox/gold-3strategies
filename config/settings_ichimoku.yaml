@@ -71,8 +71,8 @@ strategy:
       tenkan_min_distance_atr: 0.40
       tenkan_tp_sl_multiplier: 3.0
       cooldown_bars: 6
-      trade_start_hour: 12
-      trade_end_hour: 20
+      trade_start_hour: null     # بدون محدودیت زمانی (تصمیم مالک)
+      trade_end_hour: null
       min_atr: 0.40
       partial_tp_rr: 1.5
       partial_frac: 0.5
@@ -88,7 +88,7 @@ engine:
 backtest:
   bars: 25000
   initial_balance: 533.0
-  spread_points: 26
+  spread_points: 8             # هزینه اجرای واقعی (ترندو)
   slippage_points: 0
   commission_per_lot: 0.0
   bars_per_year: 74880
