@@ -69,6 +69,12 @@ class Settings:
                     continue
             self.set(dotted, value)
 
+        token_env = self.get("telegram.token_env", "")
+        if token_env and not self.get("telegram.token", ""):
+            t = os.environ.get(token_env, "")
+            if t:
+                self.set("telegram.token", t)
+
         admin_env = os.environ.get("ADMIN_IDS", "").strip()
         if admin_env:
             ids: List[int] = []

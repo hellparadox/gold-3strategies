@@ -97,7 +97,8 @@ backtest:
 
 telegram:
   enabled: true
-  token: ""   # از env خوانده می‌شود — توکن بات دوم اینجا نمی‌گذاریم
+  token: ""   # از env خوانده می‌شود — توکن بات دوم
+  token_env: "TELEGRAM_TOKEN_ICHIMOKU"  # نام env var اختصاصی این ربات
   admin_ids: [84078462]
   vip_channel_ids: []
   free_channel_ids: []
