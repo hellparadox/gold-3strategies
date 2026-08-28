@@ -10,7 +10,6 @@ import pandas as pd
 from loguru import logger
 
 from core.indicators import (
-    CLOSED_BAR_OFFSET,
     IndicatorSpec,
     closed_bar,
     crossed_above,

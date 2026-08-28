@@ -12,7 +12,8 @@
 |---|---|---|---|
 | `orb_gold` | M5 | **شکست رنج روزانه** — رنج اولیه ۱ ساعت + تأیید ۳ کندل، شکست = BUY/SELL | ~۱ معامله در روز، PF 1.21 (یکساله) |
 | `ichimoku_m15` | M15 | **آیچیموکو** — Kijun pullback + Tenkan momentum، سشن نیویورک ۱۲-۲۰ | پارامترهای walk-forward، PF 1.30 |
-| `kijun_pullback` | M5 | نسخه M5 آیچیموکو (پشتیبان) | — |
+
+> ℹ️ `kijun_pullback` دیگر به‌عنوان استراتژی مستقل قابل انتخاب نیست؛ کد آن فقط کلاس پایهٔ `ichimoku_m15` است.
 
 سوییچ استراتژی از تلگرام: `/strategy` → دکمه → ذخیره خودکار در کانفیگ + ری‌استارت خودکار ربات.
 
@@ -133,7 +134,7 @@ python main_backtest.py --bars 25000 --spread 20  # با اسپرد دلخواه
 
 | بخش | مهم‌ترین کلیدها |
 |---|---|
-| `strategy.active` | استراتژی فعال (`kijun_pullback` / `orb_gold` / `ichimoku_m15`) |
+| `strategy.active` | استراتژی فعال (`orb_gold` / `ichimoku_m15`) |
 | `strategy.params.*` | پارامترهای هر استراتژی |
 | `risk` | `risk_percent` (پیشنهاد ۰.۷۵-۱٪)، `max_lot`، سقف ضرر روزانه، SL/TP بر اساس ATR |
 | `session` | ساعت معاملاتی، `max_spread_points` |
@@ -149,7 +150,7 @@ python main_backtest.py --bars 25000 --spread 20  # با اسپرد دلخواه
 ├── main_live.py        # موتور اجرای لایو
 ├── main_backtest.py    # اجرای بک‌تست
 ├── core/               # اتصال MT5، ریسک، اخبار، تلگرام، اندیکاتور، دیتابیس
-├── strategies/         # orb_gold، ichimoku_m15، kijun_pullback (+ base)
+├── strategies/         # orb_gold، ichimoku_m15 (+ base و kijun_pullback به‌عنوان پایه)
 ├── backtest/           # موتور بک‌تست (بدون look-ahead)
 ├── config/             # settings.yaml
 ├── tools/              # چک MT5، دانلود اخبار تاریخی

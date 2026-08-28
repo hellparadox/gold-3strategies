@@ -37,7 +37,7 @@ def build_strategy(
 
 def build_from_settings(settings: Any) -> BaseStrategy:
     name = str(
-        settings.get("strategy.active", "kijun_pullback")
+        settings.get("strategy.active", "orb_gold")
     )
 
     params = settings.get(
