@@ -27,7 +27,7 @@ timeframes:
 
 risk:
   base_balance: 533.0          # reference balance (used when MT5 is offline)
-  risk_percent: 3.0            # % of live balance risked per trade
+  risk_percent: 1.0            # % of live balance risked per trade (تصمیم مالک)
   min_lot: 0.01
   max_lot: 0.05
   max_positions_per_symbol: 1
@@ -46,7 +46,7 @@ risk:
 session:
   start_hour: 6
   end_hour: 23
-  max_spread_points: 30
+  max_spread_points: 999       # فیلتر اسپرد عملاً خاموش (تصمیم مالک)
   trade_weekdays: [0, 1, 2, 3, 4]   # دوشنبه تا جمعه
   close_all_before_weekend: false
 
@@ -60,7 +60,7 @@ news_filter:
   network_timeout_seconds: 5.0
 
 strategy:
-  active: "ichimoku_m15"     # orb_gold / ichimoku_m15 هم آماده‌اند
+  active: "orb_gold"           # نمونه ۱؛ ichimoku_m15 در نمونه ۲ (settings_ichimoku.yaml)
   available:
     - "orb_gold"
     - "ichimoku_m15"

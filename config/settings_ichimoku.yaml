@@ -45,7 +45,7 @@ risk:
 session:
   start_hour: 0
   end_hour: 24
-  max_spread_points: 30
+  max_spread_points: 999       # فیلتر اسپرد عملاً خاموش (تصمیم مالک)
   trade_weekdays: [0, 1, 2, 3, 4]
 
 strategy:

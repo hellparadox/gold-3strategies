@@ -69,8 +69,12 @@ class Settings:
                     continue
             self.set(dotted, value)
 
+        # FIX: token_env (نام متغیر اختصاصی هر نمونه) اولویت بالاتری از
+        # TELEGRAM_TOKEN عمومی دارد. قبلاً اگر TELEGRAM_TOKEN در محیط بود،
+        # نمونه ۲ هرگز TELEGRAM_TOKEN_ICHIMOKU را نمی‌گرفت و با توکن ربات
+        # نمونه ۱ بالا می‌آمد؛ حالا یک .env مشترک برای هر دو نمونه کافی است.
         token_env = self.get("telegram.token_env", "")
-        if token_env and not self.get("telegram.token", ""):
+        if token_env:
             t = os.environ.get(token_env, "")
             if t:
                 self.set("telegram.token", t)

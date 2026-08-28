@@ -58,7 +58,8 @@ Set-Content .env "TELEGRAM_TOKEN=توکن-بات-شما-از-BotFather"
 
 | متغیر | کجا لازم است | توضیح |
 |---|---|---|
-| `TELEGRAM_TOKEN` | همه‌جا | از [@BotFather](https://t.me/BotFather) |
+| `TELEGRAM_TOKEN` | نمونه ۱ | از [@BotFather](https://t.me/BotFather) |
+| `TELEGRAM_TOKEN_ICHIMOKU` | فقط نمونه ۲ | توکن ربات دوم — با `token_env` در `settings_ichimoku.yaml` خوانده می‌شود (اولویت بالاتر از `TELEGRAM_TOKEN`) |
 | `TELEGRAM_PROXY` | فقط سیستم ایران | مثال: `http://127.0.0.1:10808` (v2ray) — روی VPS خارج **ننویسید** |
 | `MT5_LOGIN` / `MT5_PASSWORD` / `MT5_SERVER` | اختیاری | اگر ترمینال از قبل لاگین باشد، خالی کافی است |
 
