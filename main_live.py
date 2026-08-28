@@ -572,6 +572,15 @@ class LiveBot:
 
         logger.info("🎯 سیگنال شناسایی شد: {} → {} ({})", signal.ref_time, signal.side, signal.reason)
 
+        # FIX(news): فیلتر خبر روی دقیقاً همان کندلِ سیگنال اعمال شود تا با
+        # بک‌تست یکی باشد؛ `_news_ok` در بک‌تست از timestamp همان bar استفاده
+        # می‌کند، اینجا هم باید از signal.ref_time (نه زمان wall-clock).
+        if self.news_filter is not None:
+            news_blocked, news_reason = self.news_filter.is_news_active(signal.ref_time)
+            if news_blocked:
+                logger.info("📰 بلاک خبری فعال — ورود جدید ممنوع | {}", news_reason)
+                return
+
         # FIX(#4): اول سفارش با سطوح واقعی ریسک‌منیجر ثبت می‌شود و بعد همان
         # سطوحِ اجراشده (entry/sl/tp/lot/ticket واقعی) به تلگرام می‌رود.
         # قبلاً broadcast سطوح متای استراتژی را با rr هاردکد ۲.۰ نشان می‌داد

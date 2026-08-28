@@ -14,10 +14,12 @@ Architecture:
 """
 from __future__ import annotations
 
+import json
 import re
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
@@ -61,6 +63,12 @@ class NewsFilterConfig:
     network_timeout_seconds: float = 5.0
     max_retries: int = 3
     backoff_base_seconds: float = 1.0
+    # FIX(news): وقتی endpoint لایو در دسترس نیست (429/شبکه)، داده‌ها از
+    # فایل محلی تاریخی (مثل بک‌تست) جایگزین می‌شوند — دیگر «بی‌داده» نمی‌مانیم.
+    historical_file: str = "data/historical_news.json"
+    # FIX(news): وقتی هیچ داده‌ای (شبکه و فایل) در دسترس نیست، به‌جای رفتار
+    # «Clear/مجاز»، به‌صورت محافظه‌کارانه ورود مسدود شود (در صورت true).
+    block_on_stale: bool = False
 
 
 class NewsFilter:
@@ -78,6 +86,7 @@ class NewsFilter:
         self._stop_refresh = threading.Event()
         self._started = False
         self._calendar_url = "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
+        self._source: str = "none"   # "network" | "historical" | "none"
 
     def start(self) -> None:
         """Start news filter: synchronous cold-start, then background refresh thread.
@@ -122,47 +131,122 @@ class NewsFilter:
     def update_calendar(self) -> bool:
         """Fetch and parse events from Forex Factory calendar endpoint.
 
+        On failure (network / HTTP error including rate-limit 429/5xx) the method
+        automatically falls back to the local historical calendar
+        (``config.historical_file``) so the live path never runs "blind".
+
         Returns:
-            True if successful, False on network/parse failure (cached data preserved).
+            True if events are available (network OR fallback), False otherwise.
         """
         if not self.config.enabled:
             return True
 
+        # ---------------------------------------------------------- network
         try:
             response = requests.get(
                 self._calendar_url,
                 timeout=self.config.network_timeout_seconds,
+                headers={"User-Agent": "Mozilla/5.0 (XAUUSD gold-m5-bot; contact: owner)"},
             )
             response.raise_for_status()
+            raw_events = response.json()
+
+            parsed = self._parse_events(raw_events)
+            if parsed:
+                with self._lock:
+                    self._events = parsed
+                    self._last_refresh = datetime.now(timezone.utc)
+                    self._source = "network"
+                logger.success(
+                    "calendar refreshed: {} high-impact {} events loaded (network)",
+                    len(parsed), ",".join(self.config.currencies),
+                )
+                return True
+
+            logger.warning("network calendar parsed but empty; falling back to historical file")
         except requests.RequestException as exc:
-            logger.warning("calendar fetch failed: {} | using cached events", exc)
+            logger.warning(
+                "calendar fetch failed ({}); falling back to historical file",
+                exc if not isinstance(exc, requests.HTTPError) or exc.response is None else f"HTTP {exc.response.status_code}",
+            )
+        except (ValueError, KeyError) as exc:
+            logger.warning("calendar parse error ({}); falling back to historical file", exc)
+
+        # ------------------------------------------------------ fallback file
+        if self._load_historical():
+            logger.success(
+                "using local historical calendar {} (fallback after network failure)",
+                self.config.historical_file,
+            )
+            return True
+
+        logger.error("no news data available (network + local fallback both empty)")
+        return False
+
+    def _load_historical(self) -> bool:
+        """Load events from the local historical calendar (same source as backtest).
+
+        Only entries whose ``currency`` and ``impact`` pass the configured
+        filters are kept, matching the network path.  The historical file has
+        no timezone offset (UTC ISO-8601), so no DST pitfalls here.
+        """
+        path = Path(self.config.historical_file)
+        if not path.exists():
+            logger.warning("historical news file not found: {}", path)
             return False
 
         try:
-            raw_events = response.json()
-            parsed = self._parse_events(raw_events)
-
-            with self._lock:
-                self._events = parsed
-                self._last_refresh = datetime.now(timezone.utc)
-
-            filtered_count = len([e for e in parsed if self._matches_filter(e)])
-            logger.success("calendar refreshed: {} high-impact USD events loaded", filtered_count)
-            return True
-
-        except (ValueError, KeyError) as exc:
-            logger.error("calendar parse error: {} | cached data preserved", exc)
+            with path.open("r", encoding="utf-8") as fh:
+                rows = json.load(fh)
+        except Exception as exc:
+            logger.error("failed loading historical news from {}: {}", path, exc)
             return False
 
-    def is_news_active(self) -> Tuple[bool, str]:
-        """Check if current UTC time is in a news blackout window.
+        events: List[EconomicEvent] = []
+        for item in rows if isinstance(rows, list) else []:
+            try:
+                title = str(item.get("title", "")).strip()
+                currency = str(item.get("currency") or item.get("country") or "").strip().upper()
+                impact = str(item.get("impact", "")).lower()
+                date_str = str(item.get("time") or item.get("date") or "").strip()
+                if not title or not currency or not date_str:
+                    continue
+                dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                event = EconomicEvent(
+                    title=title,
+                    currency=currency,
+                    impact=self.IMPACT_LEVELS.get(impact, "Low"),
+                    event_time_utc=dt.astimezone(timezone.utc),
+                )
+                if self._matches_filter(event):
+                    events.append(event)
+            except Exception as exc:
+                logger.debug("error parsing historical event: {}", exc)
+                continue
 
-        Returns:
-            (is_blocked: bool, reason: str)
-            Examples:
-              (True, "⚠️ 12 mins before High-Impact USD: Non-Farm Payrolls")
-              (True, "⚠️ 3 mins after CPI (Volatility Cooldown)")
-              (False, "Clear")
+        if not events:
+            logger.warning("historical file {} has no matching events", path)
+            return False
+
+        with self._lock:
+            self._events = events
+            self._last_refresh = datetime.now(timezone.utc)
+            self._source = "historical"
+        logger.info(
+            "loaded {} matching events from historical calendar {}", len(events), path
+        )
+        return True
+
+    def is_news_active(
+        self,
+        ts: Optional[datetime] = None,
+    ) -> Tuple[bool, str]:
+        """Check if ``ts`` (default: now UTC) is in a news blackout window.
+
+        The caller may pass the *bar time* a signal was evaluated on so the
+        decision is made against the exact bar, matching backtest behaviour.
         """
         if not self.config.enabled:
             return False, "News filter disabled"
@@ -170,10 +254,21 @@ class NewsFilter:
         with self._lock:
             events = self._events.copy()
 
+        # FIX(news): اگر هیچ داده‌ای (شبکه + fallback فایل) در دسترس نیست،
+        # به‌جای «Clear/مجاز»، به‌صورت محافظه‌کارانه رفتار کنیم — بسته به
+        # block_on_stale. پیش‌فرض فعلی false = رفتار قبلی (مجاز). با true:
+        # ربات بدون تقویم خبری وارد معامله نمی‌شود.
         if not events:
+            if self.config.block_on_stale:
+                logger.warning("no news data available → trading blocked (block_on_stale)")
+                return True, "No news calendar available — trading paused (block_on_stale)"
             return False, "Calendar empty (warming up, will update soon)"
 
-        now_utc = datetime.now(timezone.utc)
+        now_utc = ts if ts is not None else datetime.now(timezone.utc)
+        if now_utc.tzinfo is None:
+            now_utc = now_utc.replace(tzinfo=timezone.utc)
+        else:
+            now_utc = now_utc.astimezone(timezone.utc)
         before_buffer = timedelta(minutes=self.config.pause_minutes_before)
         after_buffer = timedelta(minutes=self.config.pause_minutes_after)
 
@@ -235,6 +330,7 @@ class NewsFilter:
         """Return complete filter status for logs and Telegram updates."""
         with self._lock:
             event_count = len([e for e in self._events if self._matches_filter(e)])
+            source = self._source
             last_refresh_str = (
                 self._last_refresh.strftime("%Y-%m-%d %H:%M:%S UTC")
                 if self._last_refresh
@@ -248,6 +344,7 @@ class NewsFilter:
             "enabled": self.config.enabled,
             "status": "ACTIVE" if is_active else "CLEAR",
             "reason": reason,
+            "source": source,
             "cached_high_impact_events": event_count,
             "last_refresh_utc": last_refresh_str,
             "next_event": next_event,
