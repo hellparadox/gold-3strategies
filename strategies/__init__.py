@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from strategies.base import BaseStrategy
-from strategies.kijun_pullback import KijunPullbackStrategy
-from strategies.orb_gold import GoldOrbStrategy
 from strategies.ichimoku_m15 import IchimokuM15Strategy
+from strategies.orb_gold import GoldOrbStrategy
 
 
+# FIX: فقط دو استراتژی فعال ثبت می‌شوند. kijun_pullback دیگر قابل انتخاب
+# نیست (فایلش به‌عنوان کلاس پایهٔ ichimoku_m15 باقی مانده است).
 _STRATEGIES = {
-    KijunPullbackStrategy.name: KijunPullbackStrategy,
     GoldOrbStrategy.name: GoldOrbStrategy,
     IchimokuM15Strategy.name: IchimokuM15Strategy,
 }
@@ -58,7 +58,6 @@ def build_from_settings(settings: Any) -> BaseStrategy:
 
 __all__ = [
     "BaseStrategy",
-    "KijunPullbackStrategy",
     "GoldOrbStrategy",
     "IchimokuM15Strategy",
     "available_strategies",

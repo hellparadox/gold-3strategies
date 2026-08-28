@@ -39,6 +39,7 @@ from core.risk_manager import (
     RiskConfig,
     RiskManager,
     SymbolSpec,
+    TradeLevels,
 )
 from core.telegram_bot import BotBridge, TelegramConfig, TelegramController
 from strategies import available_strategies, build_from_settings, build_strategy
@@ -111,8 +112,10 @@ class LiveBot:
 
         from core.news_filter import NewsFilter, NewsFilterConfig
 
-        cfg_dict = settings if isinstance(settings, dict) else getattr(settings, "raw", {})
-        news_sec = cfg_dict.get("news_filter", {}) if isinstance(cfg_dict, dict) else {}
+        # FIX(#3): settings یک شیء Settings است و attribute «raw» ندارد؛
+        # خط قبلی همیشه dict خالی برمی‌گرداند و بخش news_filter در yaml
+        # بی‌صدا نادیده گرفته می‌شد.
+        news_sec = settings.section("news_filter")
 
         news_config = NewsFilterConfig(
             enabled=bool(news_sec.get("enabled", True)),
@@ -124,11 +127,7 @@ class LiveBot:
             network_timeout_seconds=float(news_sec.get("network_timeout_seconds", 5.0)),
         )
         self.news_filter = NewsFilter(news_config)
-        # ================================================================
-
-        # --- runtime state ------------------------------------------------
-        self.running = True
-        self.last_signal_bar: Optional[pd.Timestamp] = None
+        self.news_filter.start()   # cold-start تقویم اخبار (fail-safe)
 
         # --- runtime state ------------------------------------------------
         self.running = True                      # kill switch (admin toggle)
@@ -165,7 +164,22 @@ class LiveBot:
             run_backtest=self._hook_run_backtest,
             last_backtest=lambda: self.last_backtest,
             equity_chart=self._hook_equity_chart,
+            get_cooldown=self._hook_get_cooldown,
+            set_cooldown=self._hook_set_cooldown,
         )
+
+    # FIX(#5): /cooldown قبلاً هیچ هوکی در bridge نداشت و بی‌آنکه چیزی تغییر
+    # کند «موفق» جواب می‌داد. cooldown_bars در زمان prepare خوانده می‌شود، پس
+    # تغییر زندهٔ پارامتر بدون ری‌استارت اثر می‌گذارد.
+    def _hook_get_cooldown(self) -> int:
+        with self._lock:
+            return int(self.strategy.params.get("cooldown_bars", 0) or 0)
+
+    def _hook_set_cooldown(self, bars: int) -> int:
+        value = max(0, min(int(bars), 500))
+        with self._lock:
+            self.strategy.params["cooldown_bars"] = value
+        return value
 
     def _hook_telemetry(self) -> Dict[str, Any]:
         data = self.client.telemetry()
@@ -540,43 +554,45 @@ class LiveBot:
 
         if not self._session_open(self.client.server_time()) or not self._spread_ok():
             return
+
+        # FIX(#3): فیلتر اخبار واقعاً در مسیر ورود اعمال شود — موتور بک‌تست
+        # اخبار را اعمال می‌کند (backtest.engine._news_ok) ولی لایو قبلاً
+        # کاملاً نادیده‌اش می‌گرفت؛ نتیجه: رفتار لایو و بک‌تست یکی نبود.
+        if self.news_filter is not None:
+            news_blocked, news_reason = self.news_filter.is_news_active()
+            if news_blocked:
+                logger.info("📰 بلاک خبری فعال — ورود جدید ممنوع | {}", news_reason)
+                return
+
         if self.client.open_position_count() >= self.risk_config.max_positions_per_symbol:
             return
         signal = strategy.evaluate(m5, m15, h1)
         if signal is None:
             return
 
-        # 🟢 استخراج مقادیر واقعی قیمت، SL و TP از استراتژی
-        meta = signal.meta or {}
-        entry_price = float(signal.ref_close)
-        sl_price = float(meta.get("invalidation_price") or 0.0)
-        tp_price = float(meta.get("target_price") or 0.0)
-
-        # محاسبه حجم و مقادیر ریسک
-        balance = self.client.balance() or self.risk_config.base_balance
-        levels = self.risk.build_levels(signal.side, entry_price, signal.atr, balance)
-        lot_size = levels.lot if levels else 0.01
-        risk_money = levels.risk_money if levels else 0.0
-
-        # پر کردن شیء signal جهت رسم صحیح سطوح روی چارت
-        signal.entry = entry_price
-        signal.sl = sl_price
-        signal.tp = tp_price
-        signal.lot = lot_size
-
         logger.info("🎯 سیگنال شناسایی شد: {} → {} ({})", signal.ref_time, signal.side, signal.reason)
 
-        # 🟢 ۱. ارسال فوری سیگنال به همراه چارت به تلگرام
+        # FIX(#4): اول سفارش با سطوح واقعی ریسک‌منیجر ثبت می‌شود و بعد همان
+        # سطوحِ اجراشده (entry/sl/tp/lot/ticket واقعی) به تلگرام می‌رود.
+        # قبلاً broadcast سطوح متای استراتژی را با rr هاردکد ۲.۰ نشان می‌داد
+        # که با معامله‌ای که واقعاً ثبت می‌شد یکی نبود؛ سفارش‌های ردشده هم
+        # بی‌جهت به VIP مخابره می‌شدند.
+        levels = self._open_trade(signal)
+        if levels is None:
+            return
+
+        # 🟢 مخابره سیگنال با سطوح واقعی به همراه چارت
         if self.telegram is not None:
             payload = signal.as_dict()
             payload.update(
                 symbol=self.client.symbol,
-                entry=entry_price,
-                sl=sl_price,
-                tp=tp_price,
-                lot=lot_size,
-                risk_money=risk_money,
-                rr=2.0,
+                entry=signal.entry,
+                sl=signal.sl,
+                tp=signal.tp,
+                lot=signal.lot,
+                risk_money=float(levels.risk_money),
+                rr=self._signal_rr(signal),
+                ticket=signal.ticket,
             )
             try:
                 chart = self.charts.render_from_signal(
@@ -588,29 +604,34 @@ class LiveBot:
                     subtitle=signal.reason,
                 )
                 self.telegram.broadcast_signal(payload, chart)
-                logger.success("📱 سیگنال به همراه چارت به تلگرام مخابره شد.")
+                logger.success("📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.")
             except Exception as e:
                 logger.error("خطا در رسم چارت یا ارسال تلگرام: {}", e)
 
-        # 🔵 ۲. ارسال سفارش به متاتریدر (در صورت فعال بودن)
-        if self.client.open_position_count() < self.risk_config.max_positions_per_symbol:
-            self._open_trade(signal, prepared)
+    @staticmethod
+    def _signal_rr(signal: Signal) -> float:
+        """R:R واقعی محاسبه‌شده از روی سطوح اجراشده."""
+        sl_dist = abs(signal.entry - signal.sl)
+        if sl_dist <= 0:
+            return 0.0
+        return abs(signal.tp - signal.entry) / sl_dist
 
-    def _open_trade(self, signal: Signal, prepared: pd.DataFrame) -> None:
+    def _open_trade(self, signal: Signal) -> Optional[TradeLevels]:
+        """سفارش را با سطوح ریسک‌منیجر ثبت می‌کند؛ در موفقیت levels برمی‌گرداند."""
         info = self.client.symbol_info(refresh=True)
         if info is None:
             logger.error("cannot size trade: no symbol info")
-            return
+            return None
         self.risk.update_spec(SymbolSpec.from_mt5(info))
 
         tick = self.client.get_tick()
         if tick is None:
-            return
+            return None
         entry_price = float(tick.ask if signal.is_long else tick.bid)
         balance = self.client.balance() or self.risk_config.base_balance
         levels = self.risk.build_levels(signal.side, entry_price, signal.atr, balance)
         if levels is None:
-            return
+            return None
 
         result = self.client.send_market_order(
             signal.side, levels.lot, sl=levels.sl, tp=levels.tp,
@@ -618,7 +639,7 @@ class LiveBot:
         )
         if not result.ok:
             logger.warning("اردر در MT5 ثبت نشد (حالت فقط سیگنال یا ریجکت بروکر): {}", result.comment)
-            return
+            return None
 
         # در صورت موفقیت‌آمیز بودن معامله لایو
         ticket = result.position or result.order
@@ -649,6 +670,7 @@ class LiveBot:
             strategy=signal.strategy, lot=levels.lot, entry=signal.entry,
             sl=levels.sl, tp=levels.tp, atr=signal.atr, reason=signal.reason,
         )
+        return levels
 
     # ===================================================================== run
     def run(self) -> None:

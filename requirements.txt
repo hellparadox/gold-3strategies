@@ -5,3 +5,7 @@ ta>=0.11.0
 loguru>=0.7.0
 pyyaml>=6.0
 python-telegram-bot>=20.0
+python-dotenv>=1.0.0        # core/__init__.py : load_dotenv
+requests>=2.31.0            # core/news_filter.py + tools/fetch_historical_news.py
+matplotlib>=3.7.0           # core/chart_generator.py
+mplfinance>=0.12.10b0       # core/chart_generator.py

@@ -12,16 +12,14 @@ All Ichimoku values are calculated on the current bar without the traditional
 
 from __future__ import annotations
 
-import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 
 from core.indicators import IndicatorSpec, adx, atr, ema
+from loguru import logger
 from strategies.base import BaseStrategy, Signal
-
-logger = logging.getLogger(__name__)
 
 
 class KijunPullbackStrategy(BaseStrategy):

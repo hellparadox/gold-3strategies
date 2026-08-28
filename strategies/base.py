@@ -213,14 +213,20 @@ class BaseStrategy(ABC):
         m15: Optional[pd.DataFrame] = None,
         h1: Optional[pd.DataFrame] = None,
     ) -> Optional[Signal]:
-        """Live evaluation. Reads ONLY ``iloc[-2]`` (last closed M5 bar)."""
+        """Live evaluation.
+
+        FIX(#6): قرارداد با overrideهای استراتژی‌ها یکسان شد — ``main_live``
+        کندل در حال شکل‌گیری را قبل از فراخوانی حذف می‌کند، پس index ``-1``
+        آخرین کندلِ بسته‌شده است. (خواندن ``iloc[-2]`` قبلی سیگنال را یک کندل
+        دیر ارزیابی می‌کرد.)
+        """
         if m5 is None or len(m5) < self.min_bars():
             logger.debug("{}: not enough bars ({} < {})", self.name, 0 if m5 is None else len(m5), self.min_bars())
             return None
 
         df = self.prepare_and_sign(m5, m15, h1)
         try:
-            row = closed_bar(df, CLOSED_BAR_OFFSET)
+            row = closed_bar(df, 1)   # forming candle already stripped by the caller
         except IndexError as exc:
             logger.warning("{}: {}", self.name, exc)
             return None
@@ -243,7 +249,7 @@ class BaseStrategy(ABC):
             strategy=self.name,
             reason=self.explain(row, side),
             atr=atr_value,
-            ref_time=df.index[-CLOSED_BAR_OFFSET],
+            ref_time=df.index[-1],
             ref_close=float(row["close"]),
             oscillator=self.oscillator,
             meta=self.snapshot(row),
