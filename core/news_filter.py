@@ -354,27 +354,51 @@ class NewsFilter:
 
     # ================================================================ private
     def _background_refresh(self) -> None:
-        """Background daemon thread: refresh calendar on interval with exponential backoff."""
+        """Background daemon thread: refresh calendar with sane pacing.
+
+        FIX(news): نسخه قبلی در صورت موفقیت (شبکه *یا* fallback) فقط
+        ``backoff_base`` (۱ ثانیه) صبر می‌کرد → ربات هر ثانیه به endpoint
+        درخواست می‌زد و خودش باعث 429 می‌شد! الان:
+          * موفقیت شبکه → صبر کامل = cache_refresh_hours (پیش‌فرض ۱ ساعت)
+          * شکست شبکه (حتی اگر fallback جواب داده) → exponential backoff
+            2s, 4s, 8s, ... تا سقف cache_refresh_hours
+        """
         consecutive_failures = 0
 
         while not self._stop_refresh.is_set():
             try:
-                success = self.update_calendar()
-                if success:
+                # FIX(news): اول صبر، بعد fetch — وگرنه ترد بلافاصله بعد از
+                # cold-start یک درخواست دوباره می‌زند (double-tap در استارت).
+                with self._lock:
+                    network_ok = self._source == "network"
+
+                if network_ok:
+                    # داده شبکه تازه است → کامل به اندازه cache_refresh_hours صبر
+                    self._stop_refresh.wait(self.config.cache_refresh_hours * 3600.0)
+                    if self._stop_refresh.is_set():
+                        break
                     consecutive_failures = 0
                 else:
+                    # آخرین تلاش شکست خورده (یا هنوز داده‌ای نیست) → backoff کوتاه
                     consecutive_failures += 1
+                    wait_seconds = min(
+                        self.config.cache_refresh_hours * 3600.0,
+                        self.config.backoff_base_seconds
+                        * (2 ** consecutive_failures),
+                    )
+                    if consecutive_failures <= 6:
+                        logger.info(
+                            "news network refresh failed ({} consecutive); next try in {:.0f}s "
+                            "(historical fallback active in the meantime)",
+                            consecutive_failures, wait_seconds,
+                        )
+                    self._stop_refresh.wait(wait_seconds)
 
-                # Exponential backoff: base * 2^failures, capped at cache_refresh_hours
-                backoff_seconds = min(
-                    self.config.cache_refresh_hours * 3600,
-                    self.config.backoff_base_seconds * (2 ** consecutive_failures),
-                )
-                self._stop_refresh.wait(backoff_seconds)
+                self.update_calendar()
 
             except Exception as exc:
                 logger.exception("unexpected error in news filter refresh loop: {}", exc)
-                self._stop_refresh.wait(10.0)
+                self._stop_refresh.wait(30.0)
 
     def _parse_events(self, raw: Any) -> List[EconomicEvent]:
         """Parse Forex Factory JSON response with native ISO-8601 timezone handling.
