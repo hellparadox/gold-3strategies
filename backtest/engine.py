@@ -129,6 +129,7 @@ class BacktestConfig:
     commission_per_lot: float = 6.0
     simulate_breakeven: bool = True
     simulate_trailing: bool = True
+    simulate_partial: bool = False
     bars_per_year: int = 74_880
     session_start_hour: int = 2
     session_end_hour: int = 24
@@ -161,6 +162,7 @@ class BacktestConfig:
             commission_per_lot=float(settings.get("backtest.commission_per_lot", 6.0)),
             simulate_breakeven=bool(settings.get("backtest.simulate_breakeven", True)),
             simulate_trailing=bool(settings.get("backtest.simulate_trailing", True)),
+            simulate_partial=bool(settings.get("backtest.simulate_partial", False)),
             bars_per_year=int(settings.get("backtest.bars_per_year", 74_880)),
             session_start_hour=int(settings.get("session.start_hour", 2)),
             session_end_hour=int(settings.get("session.end_hour", 24)),
@@ -216,6 +218,12 @@ class BacktestTrade:
     bars_held: int = 0
     breakeven_done: bool = False
     trailing_active: bool = False
+    # staged partial-exit state (leg 1 banked early, remainder keeps running)
+    initial_sl_distance: float = 0.0   # |entry - sl| at entry, the "1R" unit
+    partial_done: bool = False
+    partial_lot: float = 0.0
+    partial_price: float = 0.0
+    partial_gross: float = 0.0
     mfe: float = 0.0     # max favourable excursion, price units
     mae: float = 0.0     # max adverse excursion, price units
 
@@ -233,6 +241,8 @@ class BacktestTrade:
             "commission": round(self.commission, 2), "net": round(self.net_profit, 2),
             "balance_after": round(self.balance_after, 2), "bars_held": self.bars_held,
             "breakeven": self.breakeven_done, "trailing": self.trailing_active,
+            "partial_done": self.partial_done, "partial_lot": self.partial_lot,
+            "partial_price": self.partial_price, "partial_gross": round(self.partial_gross, 2),
         }
 
 
@@ -278,6 +288,8 @@ class BacktestResult:
             f"Commission paid : ${m.get('total_commission', 0.0):,.2f}",
             f"Exits (tp/sl/be/trail): {m.get('exit_tp', 0)}/{m.get('exit_sl', 0)}/"
             f"{m.get('exit_breakeven', 0)}/{m.get('exit_trailing', 0)}",
+            f"Partial exits   : {m.get('partial_closes', 0)} "
+            f"(banked gross ${m.get('partial_gross_total', 0.0):,.2f})",
         ]
 
     def to_text(self) -> str:
@@ -335,6 +347,24 @@ class BacktestEngine:
             enabled=self.cfg.news_filter_enabled,
             server_utc_offset_hours=self.cfg.news_server_utc_offset_hours,
         )
+
+        # Staged partial exit: enabled by backtest.simulate_partial plus the
+        # strategy's own partial_tp_rr / partial_frac parameters (strategies
+        # without those params are simply never split).
+        self.partial_rr = 0.0
+        self.partial_frac = 0.5
+        if self.cfg.simulate_partial:
+            getp = getattr(self.strategy, "pf", None)
+            if callable(getp):
+                self.partial_rr = max(0.0, float(getp("partial_tp_rr", 0.0)))
+                self.partial_frac = min(0.99, max(0.01, float(getp("partial_frac", 0.5))))
+        self.partial_enabled = bool(self.cfg.simulate_partial and self.partial_rr > 0.0)
+        if self.partial_enabled:
+            logger.info(
+                "partial-exit simulation ON: bank {:.0%} of the position at "
+                "+{:.1f}R, remainder runs with SL/TP",
+                self.partial_frac, self.partial_rr,
+            )
 
     # ------------------------------------------------------------------ helpers
     @property
@@ -397,7 +427,6 @@ class BacktestEngine:
 
         spread = self._spread_price
         slip = self._slip_price
-        commission = float(self.cfg.commission_per_lot)
         max_spread_price = self.spec.price_from_points(self.cfg.max_spread_points)
         spread_blocked = spread > max_spread_price
         if spread_blocked:
@@ -429,18 +458,7 @@ class BacktestEngine:
                     slip,
                 )
                 if closed:
-                    price_delta = (
-                        open_trade.exit_price - open_trade.entry_price
-                        if open_trade.side == "BUY"
-                        else open_trade.entry_price - open_trade.exit_price
-                    )
-                    open_trade.gross_profit = self._money(price_delta, open_trade.lot) * (
-                        1.0 if price_delta >= 0 else -1.0
-                    )
-                    open_trade.commission = commission * open_trade.lot
-                    open_trade.net_profit = open_trade.gross_profit - open_trade.commission
-                    balance += open_trade.net_profit
-                    open_trade.balance_after = balance
+                    balance = self._settle_trade(open_trade, balance)
                     trades.append(open_trade)
                     equity_curve.append(balance)
                     open_trade = None
@@ -466,6 +484,7 @@ class BacktestEngine:
                                 sl=levels.sl,
                                 tp=levels.tp,
                                 atr=float(atr_entry),
+                                initial_sl_distance=abs(levels.entry - levels.sl),
                             )
                             ticket_seq += 1
                             # the entry bar itself can still stop us out
@@ -480,20 +499,7 @@ class BacktestEngine:
                                 slip,
                                 entry_bar=True,
                             ):
-                                price_delta = (
-                                    open_trade.exit_price - open_trade.entry_price
-                                    if side == "BUY"
-                                    else open_trade.entry_price - open_trade.exit_price
-                                )
-                                open_trade.gross_profit = self._money(
-                                    price_delta, open_trade.lot
-                                ) * (1.0 if price_delta >= 0 else -1.0)
-                                open_trade.commission = commission * open_trade.lot
-                                open_trade.net_profit = (
-                                    open_trade.gross_profit - open_trade.commission
-                                )
-                                balance += open_trade.net_profit
-                                open_trade.balance_after = balance
+                                balance = self._settle_trade(open_trade, balance)
                                 trades.append(open_trade)
                                 equity_curve.append(balance)
                                 open_trade = None
@@ -506,18 +512,7 @@ class BacktestEngine:
                 last_close if open_trade.side == "BUY" else last_close + spread
             )
             open_trade.exit_reason = "end_of_data"
-            price_delta = (
-                open_trade.exit_price - open_trade.entry_price
-                if open_trade.side == "BUY"
-                else open_trade.entry_price - open_trade.exit_price
-            )
-            open_trade.gross_profit = self._money(price_delta, open_trade.lot) * (
-                1.0 if price_delta >= 0 else -1.0
-            )
-            open_trade.commission = commission * open_trade.lot
-            open_trade.net_profit = open_trade.gross_profit - open_trade.commission
-            balance += open_trade.net_profit
-            open_trade.balance_after = balance
+            balance = self._settle_trade(open_trade, balance)
             trades.append(open_trade)
             equity_curve.append(balance)
 
@@ -546,6 +541,28 @@ class BacktestEngine:
         return result
 
     # ----------------------------------------------------- per-bar management
+    def _settle_trade(self, trade: BacktestTrade, balance: float) -> float:
+        """Finalise P/L for a closed trade (partial leg + remaining leg).
+
+        ``trade.lot`` stays the ORIGINAL volume; the partial leg's volume and
+        realised gross live in ``partial_lot`` / ``partial_gross``.  Commission
+        is charged once on the full original volume, exactly like the broker.
+        """
+        remaining_lot = trade.lot - trade.partial_lot
+        if trade.side == "BUY":
+            delta = trade.exit_price - trade.entry_price
+        else:
+            delta = trade.entry_price - trade.exit_price
+        remaining_gross = self._money(delta, remaining_lot) * (
+            1.0 if delta >= 0 else -1.0
+        )
+        trade.gross_profit = trade.partial_gross + remaining_gross
+        trade.commission = float(self.cfg.commission_per_lot) * trade.lot
+        trade.net_profit = trade.gross_profit - trade.commission
+        balance += trade.net_profit
+        trade.balance_after = balance
+        return balance
+
     def _process_open_bar(
         self,
         trade: BacktestTrade,
@@ -597,6 +614,44 @@ class BacktestEngine:
             trade.exit_price = trade.tp
             trade.exit_reason = "tp"
             return True
+
+        # --------------------------------------------- staged partial exit
+        # Limit-like fill at entry +/- partial_rr * initial R.  Pessimistic
+        # ordering is preserved: if this bar also touched the SL or the full
+        # TP we already closed above, so no partial is banked.
+        if self.partial_enabled and not trade.partial_done and trade.initial_sl_distance > 0:
+            if is_long:
+                level = trade.entry_price + self.partial_rr * trade.initial_sl_distance
+                touched = bar_high >= level
+            else:
+                level = trade.entry_price - self.partial_rr * trade.initial_sl_distance
+                touched = (bar_low + spread) <= level
+            if touched:
+                step = self.spec.volume_step or 0.01
+                min_lot = max(self.spec.volume_min, step)
+                raw = trade.lot * self.partial_frac
+                p_lot = math.floor((raw + step * 1e-6) / step) * step
+                # only split when BOTH legs keep a broker-valid volume
+                if p_lot >= min_lot and (trade.lot - p_lot) >= min_lot:
+                    trade.partial_done = True
+                    trade.partial_price = level
+                    trade.partial_lot = p_lot
+                    sign = 1.0 if is_long else -1.0
+                    trade.partial_gross = self._money(
+                        (level - trade.entry_price) * sign, p_lot
+                    )
+                    # risk-free the remainder: SL to break-even unless a
+                    # better (already trailed) stop is in force
+                    be = self.risk.breakeven_price(trade.side, trade.entry_price)
+                    tick = self.spec.tick_size or 0.01
+                    improves_be = (
+                        be > trade.sl + tick / 2
+                        if is_long
+                        else be < trade.sl - tick / 2
+                    )
+                    if improves_be:
+                        trade.sl = be
+                        trade.breakeven_done = True
 
         # ------------------------------------------ protective stop management
         if not (self.cfg.simulate_breakeven or self.cfg.simulate_trailing):
@@ -658,6 +713,7 @@ class BacktestEngine:
                 "max_consecutive_wins": 0, "max_consecutive_losses": 0,
                 "avg_bars_held": 0.0, "exit_tp": 0, "exit_sl": 0,
                 "exit_breakeven": 0, "exit_trailing": 0, "trades_per_day": 0.0,
+                "partial_closes": 0, "partial_gross_total": 0.0,
             }
 
         nets = np.array([t.net_profit for t in trades], dtype="float64")
@@ -730,6 +786,8 @@ class BacktestEngine:
             "exit_sl": reasons.count("sl"),
             "exit_breakeven": reasons.count("breakeven"),
             "exit_trailing": reasons.count("trailing"),
+            "partial_closes": sum(1 for t in trades if t.partial_done),
+            "partial_gross_total": float(sum(t.partial_gross for t in trades)),
             "trades_per_day": total / days,
             "final_lot_used": trades[-1].lot,
         }

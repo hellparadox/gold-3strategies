@@ -116,6 +116,7 @@ backtest:
   bars_per_year: 74880         # ۲۸۸ کندل در روز * ۲۶۰ روز کاری
   simulate_breakeven: true     # فعال‌سازی مکانیسم بریک‌ایون (Breakeven)
   simulate_trailing: false
+  simulate_partial: false      # خروج پله‌ای (فقط استراتژی‌هایی که partial_tp_rr دارند)
 
 telegram:
   enabled: true

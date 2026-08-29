@@ -94,6 +94,7 @@ backtest:
   bars_per_year: 74880
   simulate_breakeven: true
   simulate_trailing: true
+  simulate_partial: true       # خروج پله‌ای: 50% حجم در +1.5R (پارامترهای استراتژی)
 
 telegram:
   enabled: true

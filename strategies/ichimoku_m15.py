@@ -10,8 +10,10 @@ Differences vs the M5 `kijun_pullback`:
     - NY-session window 12:00-20:00 server time.
     - Cooldown 6 bars (M15 = 90 min).
 
-Note: the backtest engine does not simulate the staged partial exit
-(bank 50% at +1.5R); live behaviour with partials enabled will differ.
+Staged partial exit (bank partial_frac at +partial_tp_rr, then risk-free the
+remainder at break-even) is simulated by the backtest engine when
+``backtest.simulate_partial`` is enabled — enable it to measure the real
+impact on PF before trusting it live.
 """
 
 from __future__ import annotations
@@ -51,8 +53,8 @@ class IchimokuM15Strategy(KijunPullbackStrategy):
                 "trade_start_hour": 12,
                 "trade_end_hour": 20,
                 "min_atr": 0.40,
-                # staged exit metadata (engine does not simulate it; the risk
-                # engine may use it once partial exits are wired in)
+                # staged exit: simulated by the backtest engine when
+                # backtest.simulate_partial is enabled
                 "partial_tp_rr": 1.5,
                 "partial_frac": 0.5,
             }

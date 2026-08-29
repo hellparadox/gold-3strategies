@@ -26,6 +26,14 @@ def main() -> None:
     parser.add_argument("--spread", type=float, default=None, help="override spread points")
     parser.add_argument("--slippage", type=float, default=None, help="override slippage points")
     parser.add_argument("--commission", type=float, default=None, help="override commission $/lot")
+    parser.add_argument(
+        "--partial", dest="partial", action="store_true", default=None,
+        help="simulate the strategy's staged partial exit (bank partial_frac at +partial_tp_rr)",
+    )
+    parser.add_argument(
+        "--no-partial", dest="partial", action="store_false",
+        help="disable partial-exit simulation even if the yaml enables it",
+    )
     args = parser.parse_args()
 
     logger.remove()
@@ -43,6 +51,8 @@ def main() -> None:
         bt_config.slippage_points = args.slippage
     if args.commission is not None:
         bt_config.commission_per_lot = args.commission
+    if args.partial is not None:
+        bt_config.simulate_partial = args.partial
 
     logger.info(
         "strategy={} | risk={}% | spread={}pts slip={}pts comm=${}/lot | session {}-{}",
