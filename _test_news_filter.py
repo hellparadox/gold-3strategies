@@ -15,6 +15,8 @@ import sys
 import time
 from datetime import datetime, timedelta, timezone
 
+import pandas as pd
+
 import core.news_filter as nfmod
 from core.news_filter import EconomicEvent, NewsFilter, NewsFilterConfig
 from loguru import logger
@@ -180,6 +182,38 @@ def _fake_get_bad(url, timeout=None, headers=None):
     _calls_bad["n"] += 1
     raise nfmod.requests.exceptions.ConnectionError("simulated outage")
 
+
+# ---- 9. timezone · server(+3) candle time vs UTC events (the 3-hour bug) ----
+print("\n[9] timezone · server-time bars vs UTC events (offset fix)")
+from backtest.engine import HistoricalNewsChecker
+
+ev_utc = datetime(2026, 8, 28, 12, 30, tzinfo=timezone.utc)   # خبر: 12:30 UTC
+server_bar = datetime(2026, 8, 28, 15, 30)                    # همان لحظه روی بروکر UTC+3 (naive)
+
+# مسیر لایو: is_news_active با زمانِ کندل سرور
+nf_off = make_filter()
+nf_off.config.server_utc_offset_hours = 3.0
+nf_off._events = [EconomicEvent(title="TZ NFP", currency="USD", impact="High", event_time_utc=ev_utc)]
+b_tz, why_tz = nf_off.is_news_active(server_bar)
+check("live: server 15:30 (=12:30 UTC) BLOCKED with offset=3", b_tz, why_tz)
+
+nf_bug = make_filter()          # آفست پیش‌فرض 0.0 = رفتار قدیمی معیوب
+nf_bug._events = list(nf_off._events)
+b_bug, _ = nf_bug.is_news_active(server_bar)
+check("live: offset=0 reproduces the old bug (block missed)", not b_bug)
+
+# مسیر بک‌تست: HistoricalNewsChecker
+h_off = HistoricalNewsChecker(enabled=True, server_utc_offset_hours=3.0)
+h_off.event_timestamps = [ev_utc.timestamp()]
+check("engine: server bar BLOCKED with offset=3", h_off.is_blocked(pd.Timestamp(server_bar)))
+
+h_bug = HistoricalNewsChecker(enabled=True)   # آفست 0.0 = قدیمی
+h_bug.event_timestamps = [ev_utc.timestamp()]
+check("engine: offset=0 misses the block (documents bug)", not h_bug.is_blocked(pd.Timestamp(server_bar)))
+
+# wall-clock نباید تحت تأثیر آفست باشد (ts=None)
+b_wall, _ = nf_off.is_news_active()   # الان خبری نیست → Clear
+check("wall-clock path unaffected by offset", isinstance(b_wall, bool))
 
 nfmod.requests.get = _fake_get_bad
 try:

@@ -58,10 +58,15 @@ class HistoricalNewsChecker:
         before_minutes: int = 5,
         after_minutes: int = 5,
         enabled: bool = True,
+        server_utc_offset_hours: float = 0.0,
     ) -> None:
         self.enabled = enabled
         self.before_sec = before_minutes * 60
         self.after_sec = after_minutes * 60
+        # FIX(tz): کندل‌های MT5 به وقت سرور بروکر هستند (مثلاً UTC+3)؛ برای
+        # مقایسه با رویدادهای UTC باید آفست سرور کم شود، وگرنه پنجره‌های
+        # بلاک چند ساعت جابه‌جا می‌شوند و فیلتر هیچ‌وقت بلاک نمی‌کند.
+        self.offset_sec = server_utc_offset_hours * 3600.0
         self.event_timestamps: List[float] = []
 
         if not self.enabled:
@@ -95,8 +100,10 @@ class HistoricalNewsChecker:
         if not self.enabled or not self.event_timestamps:
             return False
 
-        # Get UTC epoch timestamp
-        ts = bar_time.timestamp()
+        # Get UTC epoch timestamp.
+        # FIX(tz): pandas برای Timestamp خالی (naive) epoch را «انگار UTC»
+        # می‌گیرد؛ چون مقدار واقعاً ساعت سرور است، آفست سرور کم می‌شود.
+        ts = bar_time.timestamp() - self.offset_sec
         idx = bisect.bisect_left(self.event_timestamps, ts)
 
         # Check candidate timestamps around insertion point
@@ -134,6 +141,7 @@ class BacktestConfig:
     news_file_path: str = "data/historical_news.json"
     news_pause_before: int = 5
     news_pause_after: int = 5
+    news_server_utc_offset_hours: float = 0.0
 
     @classmethod
     def from_settings(cls, settings: Any) -> "BacktestConfig":
@@ -177,6 +185,12 @@ class BacktestConfig:
                 news_sec.get(
                     "pause_minutes_after",
                     settings.get("news_filter.pause_minutes_after", 5),
+                )
+            ),
+            news_server_utc_offset_hours=float(
+                news_sec.get(
+                    "server_utc_offset_hours",
+                    settings.get("news_filter.server_utc_offset_hours", 0.0),
                 )
             ),
         )
@@ -319,6 +333,7 @@ class BacktestEngine:
             before_minutes=self.cfg.news_pause_before,
             after_minutes=self.cfg.news_pause_after,
             enabled=self.cfg.news_filter_enabled,
+            server_utc_offset_hours=self.cfg.news_server_utc_offset_hours,
         )
 
     # ------------------------------------------------------------------ helpers

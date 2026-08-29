@@ -69,6 +69,11 @@ class NewsFilterConfig:
     # FIX(news): وقتی هیچ داده‌ای (شبکه و فایل) در دسترس نیست، به‌جای رفتار
     # «Clear/مجاز»، به‌صورت محافظه‌کارانه ورود مسدود شود (در صورت true).
     block_on_stale: bool = False
+    # FIX(tz): زمان کندل‌های MT5 به وقت «سرور بروکر» است (مثلاً UTC+3 برای
+    # MetaQuotes-Demo) ولی زمان رویدادهای تقویم UTC است. این آفست قبل از
+    # مقایسه از زمان سرور کم می‌شود تا پنجره‌های بلاک دقیق باشند.
+    # صفر یعنی «سرور = UTC» (رفتار قدیمی معیوب).
+    server_utc_offset_hours: float = 0.0
 
 
 class NewsFilter:
@@ -264,11 +269,16 @@ class NewsFilter:
                 return True, "No news calendar available — trading paused (block_on_stale)"
             return False, "Calendar empty (warming up, will update soon)"
 
-        now_utc = ts if ts is not None else datetime.now(timezone.utc)
-        if now_utc.tzinfo is None:
-            now_utc = now_utc.replace(tzinfo=timezone.utc)
+        if ts is None:
+            now_utc = datetime.now(timezone.utc)
         else:
-            now_utc = now_utc.astimezone(timezone.utc)
+            # FIX(tz): ts (زمان کندل سیگنال) به وقت «سرور بروکر» است (naive).
+            # ابتدا با آفست پیکربندی‌شده به UTC تبدیل شود، وگرنه پنجره‌های
+            # بلاک به اندازه‌ی اختلاف سرور با UTC جابه‌جا می‌شوند.
+            if ts.tzinfo is None:
+                ts = ts - timedelta(hours=self.config.server_utc_offset_hours)
+                ts = ts.replace(tzinfo=timezone.utc)
+            now_utc = ts.astimezone(timezone.utc)
         before_buffer = timedelta(minutes=self.config.pause_minutes_before)
         after_buffer = timedelta(minutes=self.config.pause_minutes_after)
 

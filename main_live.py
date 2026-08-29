@@ -125,6 +125,7 @@ class LiveBot:
             pause_minutes_after=int(news_sec.get("pause_minutes_after", 5)),
             cache_refresh_hours=float(news_sec.get("cache_refresh_hours", 1.0)),
             network_timeout_seconds=float(news_sec.get("network_timeout_seconds", 5.0)),
+            server_utc_offset_hours=float(news_sec.get("server_utc_offset_hours", 0.0)),
         )
         self.news_filter = NewsFilter(news_config)
         self.news_filter.start()   # cold-start تقویم اخبار (fail-safe)
