@@ -1,4 +1,8 @@
-# main_backtest.py — backtest runner driven by config/settings.yaml
+# main_backtest.py — backtest runner driven by a settings yaml.
+# Usage:
+#   python main_backtest.py                                    # config/settings.yaml (instance 1)
+#   python main_backtest.py --config config/settings_ichimoku.yaml --bars 25000
+#   python main_backtest.py --strategy ichimoku_m15            # override active strategy
 from __future__ import annotations
 
 import argparse
@@ -16,6 +20,8 @@ from strategies import build_from_settings
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="XAUUSD backtest on real MT5 history")
+    parser.add_argument("--config", default=None, help="path to settings yaml (default: config/settings.yaml)")
+    parser.add_argument("--strategy", default=None, help="override strategy.active from the config")
     parser.add_argument("--bars", type=int, default=75000, help="M5 bars to test (~288 per day)")
     parser.add_argument("--spread", type=float, default=None, help="override spread points")
     parser.add_argument("--slippage", type=float, default=None, help="override slippage points")
@@ -25,7 +31,9 @@ def main() -> None:
     logger.remove()
     logger.add(sys.stdout, level="INFO", format="{time:HH:mm:ss} | {level} | {message}")
 
-    settings = Settings.load()
+    settings = Settings.load(args.config)
+    if args.strategy:
+        settings.set("strategy.active", args.strategy)
     strategy = build_from_settings(settings)
     risk_config = RiskConfig.from_settings(settings)
     bt_config = BacktestConfig.from_settings(settings)
