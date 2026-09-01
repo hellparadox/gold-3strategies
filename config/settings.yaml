@@ -38,6 +38,7 @@ risk:
   breakeven_buffer_points: 5   # ۵ پوینت بالاتر از نقطه ورود (پوشش کامل اسپرد)
   trailing_trigger_atr: 99.0   # غیرفعال
   trailing_distance_atr: 1.5
+  trail_min_step_atr: 0.12     # حداقل بهبود SL (×ATR) برای آپدیت بعدی — ضد اسپم پیام‌ها
   commission_per_lot: 0.0      # کارمزد حساب استاندارد
   min_sl_points: 40            # حداقل فاصله استاپ ۴۰ پوینت (۴۰ سنت)
   max_daily_loss_pct: 10.0     # سقف ضرر بسته‌شده روزانه (٪ از بالانس ابتدای روز سرور)
@@ -129,6 +130,24 @@ telegram:
   purchase_contact: "@GoldForgepro_bot"
   send_charts_to_vip: true
   send_manage_alerts_to_vip: true
+  send_daily_to_vip: true        # کارت عملکرد روزانه برای VIP هم ارسال شود
+
+# امتیاز کیفیت سیگنال (0-100) از آمار بک‌تست
+# ساخت فایل آمار:  python tools/precompute_scores.py
+signal_score:
+  file: "data/signal_scores.json"
+
+# گزارش روزانه خودکار (بعد از گردش روز UTC به ادمین/VIP ارسال می‌شود)
+daily_digest:
+  enabled: true
+
+# داشبورد زنده وب — http://SERVER_IP:8080 (روی VPS پورت را در فایروال باز کنید)
+# ⚠️ حتماً token را عوض کنید — این تنها محافظ داشبورد در برابر غریبه‌هاست
+dashboard:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8080
+  token: "CHANGE-ME-9f3k2"
 
 database:
   path: "subscriptions.db"

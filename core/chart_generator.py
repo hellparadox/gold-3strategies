@@ -209,11 +209,13 @@ class ChartGenerator:
         strategy_name: str = "",
         subtitle: str = "",
         bars: Optional[int] = None,
+        score: Optional[int] = None,
     ) -> Optional[io.BytesIO]:
         """Render a 2-panel dark chart and return a rewound PNG buffer.
 
         Panel 0: candles + EMAs (+ Bollinger bands when present) + entry/SL/TP
-                 horizontal lines with right-edge price labels.
+                 horizontal lines with right-edge price labels, tinted profit /
+                 risk zones and an R-multiple ladder.
         Panel 1: MACD histogram + lines, or the RSI oscillator with 70/30 rails.
         Returns ``None`` (never raises) if rendering fails, so a chart problem
         can never block a live signal.
@@ -224,7 +226,7 @@ class ChartGenerator:
                     df, symbol=symbol, timeframe=timeframe, side=side, entry=entry,
                     sl=sl, tp=tp, ema_columns=ema_columns, oscillator=oscillator,
                     strategy_name=strategy_name, subtitle=subtitle,
-                    bars=bars or self.bars,
+                    bars=bars or self.bars, score=score,
                 )
         except Exception as exc:
             logger.exception("chart rendering failed: {}", exc)
@@ -245,6 +247,7 @@ class ChartGenerator:
         strategy_name: str,
         subtitle: str,
         bars: int,
+        score: Optional[int] = None,
     ) -> io.BytesIO:
         window = df.iloc[-int(bars):].copy()
         ohlc = self._ohlc_frame(window)
@@ -275,6 +278,8 @@ class ChartGenerator:
         title = f"  {symbol}  ·  {timeframe}  {arrow} {direction}".rstrip()
         if strategy_name:
             title += f"   [{strategy_name}]"
+        if score is not None:
+            title += f"   ·  SCORE {int(score)}/100"
 
         plot_kwargs: Dict[str, Any] = dict(
             type="candle",
@@ -302,6 +307,54 @@ class ChartGenerator:
         try:
             main_ax = axlist[0]
             main_ax.set_facecolor(t.panel_background)
+
+            # -------------------------------------------- cinematic overlays
+            entry_v = float(entry) if entry else None
+            sl_v = float(sl) if sl else None
+            tp_v = float(tp) if tp else None
+            if entry_v and sl_v and tp_v:
+                risk = abs(entry_v - sl_v)
+                # tinted profit / risk zones
+                main_ax.axhspan(
+                    min(entry_v, tp_v), max(entry_v, tp_v),
+                    color=t.take_profit, alpha=0.07, zorder=0,
+                )
+                main_ax.axhspan(
+                    min(entry_v, sl_v), max(entry_v, sl_v),
+                    color=t.stop_loss, alpha=0.09, zorder=0,
+                )
+                # R-multiple ladder between SL and TP
+                if risk > 0:
+                    lo, hi = min(sl_v, tp_v), max(sl_v, tp_v)
+                    for k in (1, 2, 3):
+                        for sign, lvl in ((1, entry_v + k * risk), (-1, entry_v - k * risk)):
+                            if lo < lvl < hi and abs(lvl - entry_v) > 1e-9:
+                                main_ax.axhline(
+                                    lvl, color=t.grid, linewidth=0.7,
+                                    linestyle=":", alpha=0.65, zorder=1,
+                                )
+                                main_ax.text(
+                                    0.6, lvl, f"+{k}R" if sign > 0 else f"-{k}R",
+                                    color=t.band, fontsize=7.5, va="center", ha="left",
+                                    alpha=0.9, zorder=2,
+                                    fontweight="bold",
+                                )
+                # direction badge on the last candle
+                if direction in ("BUY", "SELL") and len(ohlc):
+                    last_i = len(ohlc) - 1
+                    last_close = float(ohlc["Close"].iloc[-1])
+                    colour = t.up if direction == "BUY" else t.down
+                    offset = risk * 0.35 if risk > 0 else abs(last_close) * 0.001
+                    y_pos = last_close - offset if direction == "BUY" else last_close + offset
+                    main_ax.text(
+                        last_i - 1, y_pos, f"{arrow} {direction}",
+                        color=colour, fontsize=13, fontweight="bold",
+                        ha="right", va="center", alpha=0.95, zorder=3,
+                        bbox=dict(
+                            boxstyle="round,pad=0.25", facecolor="#0B0E14",
+                            edgecolor=colour, alpha=0.55,
+                        ),
+                    )
 
             # right-edge price tags for entry / TP / SL
             x_right = len(ohlc) - 1
@@ -357,6 +410,7 @@ class ChartGenerator:
         subtitle: str = "",
     ) -> Optional[io.BytesIO]:
         """Convenience wrapper taking a :class:`strategies.base.Signal`."""
+        meta = getattr(signal, "meta", None) or {}
         return self.render_signal_chart(
             df,
             symbol=symbol,
@@ -369,6 +423,7 @@ class ChartGenerator:
             oscillator=getattr(signal, "oscillator", "macd"),
             strategy_name=getattr(signal, "strategy", ""),
             subtitle=subtitle or getattr(signal, "reason", ""),
+            score=meta.get("score"),
         )
 
     def render_equity_curve(

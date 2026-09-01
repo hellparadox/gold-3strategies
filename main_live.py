@@ -32,6 +32,8 @@ from backtest.engine import BacktestConfig, BacktestEngine, BacktestResult
 from core import Settings, setup_logging
 from core.chart_generator import ChartGenerator
 from core.database import Database
+from core.dashboard import DashboardServer
+from core.daily_digest import build_daily_stats, render_daily_card
 from core.mt5_client import TIMEFRAME_SECONDS, MT5Client, MT5Config
 from core.risk_manager import (
     ManageAction,
@@ -41,6 +43,7 @@ from core.risk_manager import (
     SymbolSpec,
     TradeLevels,
 )
+from core.signal_score import SignalScorer
 from core.telegram_bot import BotBridge, TelegramConfig, TelegramController
 from strategies import available_strategies, build_from_settings, build_strategy
 from strategies.base import BaseStrategy, Signal
@@ -148,6 +151,27 @@ class LiveBot:
         self.daily_realized_pnl = 0.0
         self.daily_trades = 0
         self.daily_halt_notified = False
+
+        # --- signal quality scorer (degrades to neutral 50 without stats) ----
+        self.scorer = SignalScorer(
+            str(settings.get("signal_score.file", "data/signal_scores.json"))
+        )
+
+        # --- live web dashboard ----------------------------------------------
+        self.dashboard: Optional[DashboardServer] = None
+        if bool(settings.get("dashboard.enabled", False)):
+            self.dashboard = DashboardServer(
+                telemetry_provider=self._hook_telemetry,
+                db=self.db,
+                host=str(settings.get("dashboard.host", "0.0.0.0")),
+                port=int(settings.get("dashboard.port", 8080)),
+                brand="GOLD M5 VIP",
+                token=str(settings.get("dashboard.token", "") or ""),
+            )
+
+        # --- automatic daily digest state -------------------------------------
+        self.digest_enabled = bool(settings.get("daily_digest.enabled", True))
+        self._last_digest_day: Optional[str] = None
 
     # ==================================================================== hooks
     def _build_bridge(self) -> BotBridge:
@@ -507,6 +531,36 @@ class LiveBot:
                 self.daily_halt_notified = False
             logger.info("daily guard reset | new server day {} | balance=${:.2f}", server_now.date(), bal)
 
+    # ============================================================ daily digest
+    def _check_daily_digest(self) -> None:
+        """Broadcast the previous UTC day's digest right after UTC midnight.
+
+        The digest window matches the database (UTC timestamps), and the
+        first loop iteration after startup only primes the date so restarts
+        never duplicate a digest.
+        """
+        if not self.digest_enabled or self.telegram is None:
+            return
+        today = datetime.utcnow().date()
+        if self._last_digest_day == str(today):
+            return
+        first_call = self._last_digest_day is None
+        self._last_digest_day = str(today)
+        if first_call:
+            return
+        previous = today - timedelta(days=1)
+        try:
+            stats = build_daily_stats(self.db, previous)
+        except Exception as exc:
+            logger.warning("daily digest build failed: {}", exc)
+            return
+        if stats.get("trades", 0) == 0 and stats.get("opened", 0) == 0:
+            logger.info("daily digest skipped — nothing traded on {}", previous)
+            return
+        card = render_daily_card(stats)
+        self.telegram.broadcast_daily(stats, card)
+        logger.success("daily digest for {} broadcast", previous)
+
     def _daily_guard(self) -> tuple:
         """Return (halted, reason) for the day's loss/trade caps."""
         with self._lock:
@@ -538,6 +592,7 @@ class LiveBot:
             return
 
         self._sync_daily()
+        self._check_daily_digest()
         halted, halt_reason = self._daily_guard()
         if halted:
             with self._lock:
@@ -593,6 +648,18 @@ class LiveBot:
 
         # 🟢 مخابره سیگنال با سطوح واقعی به همراه چارت
         if self.telegram is not None:
+            ref_time = getattr(signal, "ref_time", None)
+            score = self.scorer.score(
+                strategy=signal.strategy,
+                side=signal.side,
+                hour=int(getattr(ref_time, "hour", 12) or 12),
+                atr=float(signal.atr or 0.0),
+            )
+            signal.meta["score"] = score
+            logger.info("signal score {}/100 | {}", score, self.scorer.describe(
+                strategy=signal.strategy, side=signal.side,
+                hour=int(getattr(ref_time, "hour", 12) or 12), atr=float(signal.atr or 0.0),
+            )["bucket"])
             payload = signal.as_dict()
             payload.update(
                 symbol=self.client.symbol,
@@ -603,6 +670,7 @@ class LiveBot:
                 risk_money=float(levels.risk_money),
                 rr=self._signal_rr(signal),
                 ticket=signal.ticket,
+                score=score,
             )
             try:
                 chart = self.charts.render_from_signal(
@@ -702,6 +770,9 @@ class LiveBot:
                     time.sleep(5.0)
         self.client.start_heartbeat()
 
+        if self.dashboard is not None:
+            self.dashboard.start()
+
         if self.telegram is not None:
             self.telegram.start()
             self.telegram.notify_admins(
@@ -754,6 +825,8 @@ class LiveBot:
 
     def shutdown(self) -> None:
         logger.info("shutting down…")
+        if self.dashboard is not None:
+            self.dashboard.stop()
         if self.telegram is not None:
             self.telegram.notify_admins("\U0001F6D1 <b>GOLD M5 BOT stopped</b>")
             time.sleep(1.0)

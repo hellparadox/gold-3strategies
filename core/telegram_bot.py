@@ -78,6 +78,7 @@ class TelegramConfig:
     purchase_contact: str = "@YourAdminUsername"
     send_charts_to_vip: bool = True
     send_manage_alerts_to_vip: bool = True
+    send_daily_to_vip: bool = True
 
     @classmethod
     def from_settings(cls, settings: Any) -> "TelegramConfig":
@@ -92,6 +93,7 @@ class TelegramConfig:
             purchase_contact=str(settings.get("telegram.purchase_contact", "@admin")),
             send_charts_to_vip=bool(settings.get("telegram.send_charts_to_vip", True)),
             send_manage_alerts_to_vip=bool(settings.get("telegram.send_manage_alerts_to_vip", True)),
+            send_daily_to_vip=bool(settings.get("telegram.send_daily_to_vip", True)),
         )
 
 
@@ -345,6 +347,7 @@ class TelegramController:
         app.add_handler(CommandHandler("removevip", self._cmd_removevip))
         app.add_handler(CommandHandler("users", self._cmd_users))
         app.add_handler(CommandHandler("backtest", self._cmd_backtest))
+        app.add_handler(CommandHandler("daily", self._cmd_daily))
         app.add_handler(CommandHandler("toggle", self._cmd_toggle))
         app.add_handler(CommandHandler("strategy", self._cmd_strategy))
         app.add_handler(CommandHandler("risk", self._cmd_risk))
@@ -655,6 +658,48 @@ class TelegramController:
             return
         await self._send_text(user_id, result.to_telegram_card())
 
+    # -------------------------------------------------------------- /daily
+    async def _cmd_daily(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Admin: performance digest for today (or a given YYYY-MM-DD)."""
+        uid, admin = self._register_from_update(update)
+        if update.message is None:
+            return
+        if not admin:
+            await self._send_text(
+                uid,
+                "\U0001F4C5 گزارش روزانه فقط برای ادمین فعال است.",
+            )
+            return
+        args = context.args or []
+        try:
+            day = datetime.strptime(args[0], "%Y-%m-%d").date() if args else None
+        except ValueError:
+            await self._send_text(uid, "❌ فرمت تاریخ: <code>/daily 2026-08-30</code>")
+            return
+        stats, card = await asyncio.to_thread(self._build_daily, day)
+        if stats is None:
+            await self._send_text(uid, "❌ ساخت گزارش ناموفق بود.")
+            return
+        from core.daily_digest import format_daily_text
+
+        if card is not None:
+            await update.message.reply_photo(photo=card, caption="")
+        await self._send_text(uid, format_daily_text(stats))
+
+    def _build_daily(self, day=None):
+        """(stats, card image) built off the event loop — MT5/matplotlib safe."""
+        from core.daily_digest import build_daily_stats, render_daily_card
+
+        try:
+            stats = build_daily_stats(self.db, day)
+        except Exception as exc:
+            logger.exception("daily digest failed: {}", exc)
+            return None, None
+        card = render_daily_card(stats)
+        if card is not None:
+            card.seek(0)
+        return stats, card
+
     # -------------------------------------------------------------- text menu
     async def _on_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         uid, admin = self._register_from_update(update)
@@ -850,6 +895,13 @@ class TelegramController:
         side = str(signal.get("side", "")).upper()
         badge = "\U0001F7E9 <b>BUY</b>" if side == "BUY" else "\U0001F7E5 <b>SELL</b>"
         symbol = signal.get("symbol", "XAUUSD")
+        score = signal.get("score")
+        score_line = ""
+        if isinstance(score, (int, float)) and int(score) > 0:
+            stars = "\u2B50" if int(score) >= 70 else ("\u26A1" if int(score) >= 55 else "\U0001F526")
+            score_line = (
+                f"{stars} کیفیت ستاپ: <b>{int(score)}/100</b>\n"
+            )
         if not full:
             return (
                 f"\U0001F514 <b>سیگنال جدید {symbol}</b>\n"
@@ -873,6 +925,7 @@ class TelegramController:
             f"Risk: <b>${signal.get('risk_money', 0):,.2f}</b>\n"
             f"\U0001F4CF ATR(14): {signal.get('atr', 0):,.2f} · R:R "
             f"{signal.get('rr', 0):.2f}\n"
+            f"{score_line}"
             "——————————————\n"
             f"\U0001F9E9 <i>{signal.get('reason', '')}</i>\n"
             f"\U0001F511 <code>#{signal.get('ticket', 0)}</code> · "
@@ -940,6 +993,36 @@ class TelegramController:
 
     def broadcast_close(self, payload: Dict[str, Any]) -> None:
         self._submit(self._broadcast_close_async(dict(payload)))
+
+    # ------------------------------------------------------------- /daily push
+    def broadcast_daily(self, stats: Dict[str, Any], card: Optional[io.BytesIO] = None) -> None:
+        """Push the automatic day-rollover digest to admins (+VIP when enabled)."""
+        image = card.getvalue() if card is not None else None
+        self._submit(self._broadcast_daily_async(dict(stats), image))
+
+    async def _broadcast_daily_async(
+        self, stats: Dict[str, Any], image: Optional[bytes]
+    ) -> None:
+        from core.daily_digest import format_daily_text
+
+        text = format_daily_text(stats)
+        audience: List[int] = list(self.config.admin_ids)
+        if getattr(self.config, "send_daily_to_vip", False):
+            audience.extend(self._vip_audience())
+        seen: List[int] = []
+        sent = 0
+        for chat_id in audience:
+            if chat_id in seen:
+                continue
+            seen.append(chat_id)
+            ok = (
+                await self._send_photo(chat_id, image, text)
+                if image is not None
+                else await self._send_text(chat_id, text)
+            )
+            sent += int(ok)
+            await asyncio.sleep(0.05)
+        logger.info("daily digest broadcast → {} chats", sent)
 
     async def _broadcast_close_async(self, payload: Dict[str, Any]) -> None:
         profit = float(payload.get("profit", 0.0))
