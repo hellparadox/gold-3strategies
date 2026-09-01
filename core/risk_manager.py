@@ -108,6 +108,7 @@ class RiskConfig:
     breakeven_buffer_points: float = 10.0
     trailing_trigger_atr: float = 1.5
     trailing_distance_atr: float = 1.2
+    trail_min_step_atr: float = 0.1  # حداقل بهبود SL برای آپدیت بعدی (ضریب ATR) — ضد اسپم
     commission_per_lot: float = 6.0
     min_sl_points: float = 60.0
     include_commission_in_risk: bool = True
@@ -127,6 +128,7 @@ class RiskConfig:
             breakeven_buffer_points=float(settings.get("risk.breakeven_buffer_points", 10.0)),
             trailing_trigger_atr=float(settings.get("risk.trailing_trigger_atr", 1.5)),
             trailing_distance_atr=float(settings.get("risk.trailing_distance_atr", 1.2)),
+            trail_min_step_atr=float(settings.get("risk.trail_min_step_atr", 0.1)),
             commission_per_lot=float(settings.get("risk.commission_per_lot", 6.0)),
             min_sl_points=float(settings.get("risk.min_sl_points", 60.0)),
             include_commission_in_risk=bool(
@@ -364,7 +366,18 @@ class RiskManager:
             be = self.breakeven_price(side, position.price_open)
             # never trail to a worse-than-break-even level
             candidate = max(candidate, be) if side == "BUY" else min(candidate, be)
-            if improves(candidate) and self._respects_stop_level(side, candidate, market):
+            # anti-spam: only move SL when the improvement clears a minimum
+            # step (default 0.1 ATR) — avoids a modify+alert on every tick.
+            min_step = atr * self.config.trail_min_step_atr
+            if current_sl > 0:
+                step_ok = (
+                    candidate > current_sl + min_step
+                    if side == "BUY"
+                    else candidate < current_sl - min_step
+                )
+            else:
+                step_ok = True
+            if step_ok and self._respects_stop_level(side, candidate, market):
                 return ManageAction(
                     kind="trailing",
                     ticket=position.ticket,
@@ -388,7 +401,9 @@ class RiskManager:
                     old_sl=current_sl,
                     reason=(
                         f"profit {profit:.2f} >= {self.config.breakeven_trigger_atr}xATR "
-                        f"({atr:.2f}) → risk-free at entry+{self.config.breakeven_buffer_points:.0f}pts"
+                        f"({atr:.2f}) → risk-free at entry"
+                        f"{'+' if side == 'BUY' else '-'}"
+                        f"{self.config.breakeven_buffer_points:.0f}pts"
                     ),
                 )
         return None
