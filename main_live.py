@@ -160,13 +160,17 @@ class LiveBot:
         # --- live web dashboard ----------------------------------------------
         self.dashboard: Optional[DashboardServer] = None
         if bool(settings.get("dashboard.enabled", False)):
+            # token از env هم قابل تزریق است (DASHBOARD_TOKEN) — تا کانفیگ دست‌نخورده بماند
+            dash_token = os.environ.get("DASHBOARD_TOKEN") or str(
+                settings.get("dashboard.token", "") or ""
+            )
             self.dashboard = DashboardServer(
                 telemetry_provider=self._hook_telemetry,
                 db=self.db,
                 host=str(settings.get("dashboard.host", "0.0.0.0")),
                 port=int(settings.get("dashboard.port", 8080)),
                 brand="GOLD M5 VIP",
-                token=str(settings.get("dashboard.token", "") or ""),
+                token=dash_token,
             )
 
         # --- automatic daily digest state -------------------------------------

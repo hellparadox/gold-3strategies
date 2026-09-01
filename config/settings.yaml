@@ -45,8 +45,8 @@ risk:
   max_daily_trades: 10         # سقف تعداد معامله در روز
 
 session:
-  start_hour: 6
-  end_hour: 23
+  start_hour: 0                # معامله ۲۴ ساعته (تصمیم مالک — هم‌راستا با نمونه ichimoku)
+  end_hour: 24
   max_spread_points: 999       # فیلتر اسپرد عملاً خاموش (تصمیم مالک)
   trade_weekdays: [0, 1, 2, 3, 4]   # دوشنبه تا جمعه
   close_all_before_weekend: false
@@ -59,6 +59,7 @@ news_filter:
   pause_minutes_after: 5
   cache_refresh_hours: 1.0
   network_timeout_seconds: 5.0
+  server_utc_offset_hours: 3.0  # آفست سرور بروکر نسبت به UTC (فیکس VPS)
 
 strategy:
   active: "orb_gold"           # نمونه ۱؛ ichimoku_m15 در نمونه ۲ (settings_ichimoku.yaml)

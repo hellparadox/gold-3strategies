@@ -49,6 +49,16 @@ session:
   max_spread_points: 999       # فیلتر اسپرد عملاً خاموش (تصمیم مالک)
   trade_weekdays: [0, 1, 2, 3, 4]
 
+news_filter:                    # صریح شد — فیلتر اخبار برای نمونه دوم هم فعال (فیکس VPS)
+  enabled: true
+  currencies: ["USD"]
+  min_impact: "High"
+  pause_minutes_before: 5
+  pause_minutes_after: 5
+  cache_refresh_hours: 1.0
+  network_timeout_seconds: 5.0
+  server_utc_offset_hours: 3.0  # آفست سرور بروکر نسبت به UTC (فیکس منطقه زمانی)
+
 strategy:
   active: "ichimoku_m15"
   available:
