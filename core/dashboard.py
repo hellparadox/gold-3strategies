@@ -14,6 +14,7 @@ Settings (settings.yaml):
 from __future__ import annotations
 
 import json
+import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -65,8 +66,19 @@ class DashboardServer:
         class Handler(_BaseHandler):
             dashboard = outer
 
+        class QuietServer(ThreadingHTTPServer):
+            """Swallows connection-reset noise from internet port scanners."""
+
+            daemon_threads = True
+
+            def handle_error(self, request, client_address):  # noqa: N802
+                exc = sys.exc_info()[1]
+                if isinstance(exc, (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)):
+                    return  # remote hung up mid-request — normal on the open internet
+                super().handle_error(request, client_address)
+
         try:
-            self._httpd = ThreadingHTTPServer((self._host, self._port), Handler)
+            self._httpd = QuietServer((self._host, self._port), Handler)
             self._httpd.daemon_threads = True
         except OSError as exc:
             logger.error("dashboard could not bind {}:{} ({})", self._host, self._port, exc)
