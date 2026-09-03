@@ -177,6 +177,10 @@ class LiveBot:
         self.digest_enabled = bool(settings.get("daily_digest.enabled", True))
         self._last_digest_day: Optional[str] = None
 
+        # --- manual-close "conscience mirror": بعد از هر بستن دستی، قیمت را
+        # دنبال می‌کنیم تا معلوم شود نگه‌داشتن WIN می‌شد یا LOSS.
+        self._shadows: List[Dict[str, Any]] = []
+
     # ==================================================================== hooks
     def _build_bridge(self) -> BotBridge:
         return BotBridge(
@@ -195,6 +199,7 @@ class LiveBot:
             equity_chart=self._hook_equity_chart,
             get_cooldown=self._hook_get_cooldown,
             set_cooldown=self._hook_set_cooldown,
+            request_close=self._request_manual_close,
         )
 
     # FIX(#5): /cooldown قبلاً هیچ هوکی در bridge نداشت و بی‌آنکه چیزی تغییر
@@ -450,6 +455,92 @@ class LiveBot:
                     "outcome": outcome,
                 }
             )
+
+    # =================================================== manual close (admin)
+    def _request_manual_close(self, ticket_arg: str) -> str:
+        """بستن اضطراری پوزیشن باز توسط ادمین + ثبت «سایه» برای داوری بعدی."""
+        arg = (ticket_arg or "").strip()
+        with self._lock:
+            tracked_list = list(self.tracked.values())
+        if not tracked_list:
+            return "ℹ️ پوزیشن بازی برای بستن وجود ندارد."
+        target = None
+        if arg.isdigit():
+            for tracked in tracked_list:
+                if tracked.ticket == int(arg):
+                    target = tracked
+                    break
+            if target is None:
+                return f"❌ پوزیشن #{arg} پیدا نشد. (باز: {', '.join('#' + str(t.ticket) for t in tracked_list)})"
+        elif len(tracked_list) == 1:
+            target = tracked_list[0]
+        else:
+            return (
+                "چند پوزیشن باز است — تیکت را مشخص کن:\n"
+                + "\n".join(f"<code>/close {t.ticket}</code> · {t.side} {t.volume}" for t in tracked_list)
+            )
+
+        result = self.client.close_position(target.ticket, comment="admin manual close")
+        if not result.ok:
+            return f"❌ بستن #‌{target.ticket} ناموفق بود: {result.comment}"
+
+        # ثبت سایه: اگر نگه می‌داشتی چه می‌شد؟ (تا لحظه‌ای که TP یا SL اصلی می‌خورد)
+        with self._lock:
+            self._shadows.append(
+                {
+                    "ticket": target.ticket,
+                    "side": target.side,
+                    "entry": float(target.price_open),
+                    "sl": float(target.sl or 0.0),
+                    "tp": float(target.tp or 0.0),
+                    "volume": float(target.volume),
+                }
+            )
+        logger.success("manual close #{} by admin (shadow armed)", target.ticket)
+        return (
+            f"✅ دستور بستن #‌{target.ticket} اجرا شد — کارت بسته‌شدن به‌زودی می‌آید.\n"
+            "🪞 <i>سایه فعال شد: ربات قیمت را دنبال می‌کند تا معلوم شود "
+            "اگر نگه می‌داشتی WIN می‌شد یا LOSS — و بهت می‌گوید.</i>"
+        )
+
+    def _check_shadows(self) -> None:
+        """داوری سایه‌ها: اولین برخورد قیمت با TP یا SLِ اصلیِ معامله‌ی دست‌بسته."""
+        if not self._shadows:
+            return
+        tick = self.client.get_tick()
+        if tick is None:
+            return
+        bid, ask = float(tick.bid), float(tick.ask)
+        still_open: List[Dict[str, Any]] = []
+        for shadow in self._shadows:
+            side = shadow["side"]
+            entry, sl, tp = shadow["entry"], shadow["sl"], shadow["tp"]
+            lot = shadow["volume"]
+            verdict = None
+            if side == "BUY":
+                if tp > 0 and bid >= tp:
+                    verdict = ("WIN", (tp - entry) * lot * 100.0)
+                elif sl > 0 and bid <= sl:
+                    verdict = ("LOSS", (entry - sl) * lot * 100.0)
+            else:
+                if tp > 0 and ask <= tp:
+                    verdict = ("WIN", (entry - tp) * lot * 100.0)
+                elif sl > 0 and ask >= sl:
+                    verdict = ("LOSS", (sl - entry) * lot * 100.0)
+            if verdict is None:
+                still_open.append(shadow)
+                continue
+            outcome, money = verdict
+            emoji = "\U0001F3C1" if outcome == "WIN" else "\U0001F534"
+            if self.telegram is not None:
+                self.telegram.notify_admins(
+                    f"🪞 <b>داوری معامله‌ی دستی #{shadow['ticket']}</b>\n"
+                    f"اگر نگه می‌داشتی: {emoji} <b>{outcome}</b> "
+                    f"(${money:+,.2f})\n"
+                    f"<i>{'تصمیمت ضرر را بُرید' if outcome == 'LOSS' and money > 0 else 'ربات درست می‌گفت'}</i>"
+                )
+            logger.info("shadow verdict #{}: {} ${:.2f}", shadow["ticket"], outcome, money)
+        self._shadows = still_open
 
     def _manage_open_positions(self) -> None:
         """Sub-second break-even / trailing evaluation on live ticks."""
@@ -801,6 +892,7 @@ class LiveBot:
                 # (1) every second: reconcile + manage protective stops
                 self._sync_positions()
                 self._manage_open_positions()
+                self._check_shadows()
 
                 # (2) bar close only: hunt for new entries
                 frames = self._load_frames()

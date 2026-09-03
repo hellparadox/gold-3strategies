@@ -121,6 +121,7 @@ class BotBridge:
     run_backtest: Optional[Callable[[Optional[str]], Any]] = None
     last_backtest: Optional[Callable[[], Any]] = None
     equity_chart: Optional[Callable[[Any], Optional[io.BytesIO]]] = None
+    request_close: Optional[Callable[[str], str]] = None
 
 
 class TelegramController:
@@ -349,6 +350,7 @@ class TelegramController:
         app.add_handler(CommandHandler("backtest", self._cmd_backtest))
         app.add_handler(CommandHandler("daily", self._cmd_daily))
         app.add_handler(CommandHandler("toggle", self._cmd_toggle))
+        app.add_handler(CommandHandler("close", self._cmd_close))
         app.add_handler(CommandHandler("strategy", self._cmd_strategy))
         app.add_handler(CommandHandler("risk", self._cmd_risk))
         app.add_handler(CommandHandler("cooldown", self._cmd_cooldown))
@@ -541,6 +543,21 @@ class TelegramController:
             "\U0001F7E2 <b>Engine RESUMED</b>" if running else "\U0001F534 <b>Engine PAUSED</b>",
             parse_mode=ParseMode.HTML,
         )
+
+    async def _cmd_close(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """دستور اضطراری ادمین: بستن دستی پوزیشن باز (+ فعال‌سازی سایه‌ی وجدان)."""
+        if not await self._guard_admin(update) or update.message is None:
+            return
+        if self.bridge.request_close is None:
+            await update.message.reply_text(
+                "\u26A0\uFE0F بستن دستی در این نمونه در دسترس نیست.",
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        args = context.args or []
+        ticket_arg = args[0] if args else ""
+        message = await asyncio.to_thread(self.bridge.request_close, ticket_arg)
+        await update.message.reply_text(message, parse_mode=ParseMode.HTML)
 
     async def _cmd_risk(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not await self._guard_admin(update) or update.message is None:
