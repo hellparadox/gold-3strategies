@@ -87,6 +87,11 @@ strategy:
       min_atr: 0.40
       partial_tp_rr: 1.5
       partial_frac: 0.5
+      # فیلتر «حرکت کشیده» (anti-chase): جلوی سیگنال تنکان را می‌گیرد وقتی
+      # قیمت بیش از N×ATR از کف/سقف روز فاصله دارد. سوییچ لحظه‌ای: /extension
+      # (تغییر از تلگرام در data/extension_filter_ichimoku_m15.json ذخیره می‌شود)
+      extension_filter_enabled: false
+      extension_max_atr: 4.0
 
 engine:
   loop_sleep_seconds: 1.0

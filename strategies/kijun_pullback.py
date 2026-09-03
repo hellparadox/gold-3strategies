@@ -27,6 +27,7 @@ class KijunPullbackStrategy(BaseStrategy):
 
     name = "kijun_pullback"
     oscillator = "none"
+    bar_minutes = 5   # دقیقه‌های هر کندلِ استراتژی (برای برچسب cooldown)
 
     @classmethod
     def default_params(cls) -> Dict[str, Any]:
@@ -71,6 +72,13 @@ class KijunPullbackStrategy(BaseStrategy):
             "tenkan_tp_sl_multiplier": 2.50,
             "tenkan_min_body_fraction": 0.30,
             "tenkan_atr_rising_lookback": 5,
+
+            # Extension (anti-chase) filter: سیگنال تنکان وقتی قیمت بیش از
+            # N×ATR از کف روز (برای خرید) یا سقف روز (برای فروش) فاصله دارد
+            # بلاک می‌شود — «دنبال اتوبوسی که رفته ن دوید». پیش‌فرض خاموش؛
+            # سوییچ لحظه‌ای از تلگرام: /extension
+            "extension_filter_enabled": False,
+            "extension_max_atr": 4.0,
 
             # Optional SP2L layer.
             "enable_sp2l": True,
@@ -821,6 +829,22 @@ class KijunPullbackStrategy(BaseStrategy):
 
         base_long, base_short = self._base_layer(frame)
         tenkan_long, tenkan_short = self._tenkan_layer(frame)
+
+        # Extension (anti-chase) filter — فقط لایهٔ تنکان را می‌بندد؛ ورودی‌های
+        # کیجون ساختاراً نزدیک کیجون هستند و «کشیده» نمی‌شوند. کف/سقف سشن =
+        # اقصای تجمعی همان روز تقویمی (بدون look-ahead: لو/های کندلِ خودش
+        # در بسته‌شدن معلوم است). خاموش = رفتار بیت‌به‌بیت یکسان با قبل.
+        tenkan_ext_blocked = pd.Series(False, index=frame.index)
+        if self.pb("extension_filter_enabled", False):
+            max_ext = self.pf("extension_max_atr", 4.0) * frame["atr"]
+            session_low = frame["low"].groupby(frame.index.normalize()).cummin()
+            session_high = frame["high"].groupby(frame.index.normalize()).cummax()
+            long_ok = (frame["close"] - session_low) <= max_ext
+            short_ok = (session_high - frame["close"]) <= max_ext
+            tenkan_ext_blocked = (tenkan_long & ~long_ok) | (tenkan_short & ~short_ok)
+            tenkan_long = tenkan_long & long_ok
+            tenkan_short = tenkan_short & short_ok
+
         sp2l_long, sp2l_short = self._sp2l_layer(frame)
 
         # Regime gate: sit out when trend strength is absent.
@@ -866,6 +890,8 @@ class KijunPullbackStrategy(BaseStrategy):
         frame["tenkan_short_raw"] = tenkan_short
         frame["sp2l_long_raw"] = sp2l_long
         frame["sp2l_short_raw"] = sp2l_short
+        # تشخیص: سیگنال تنکانی که فیلتر کشش بلاکش کرده (برای لاگ/شمارنده)
+        frame["tenkan_ext_blocked"] = tenkan_ext_blocked
 
         # FIX (#7): دیگر نیازی به پاس دادن لایه‌های خام نیست؛
         # ستون‌های signal/signal_layer از قبل موجودند.

@@ -99,6 +99,9 @@ strategy:
       min_atr: 0.40
       partial_tp_rr: 1.5
       partial_frac: 0.5
+      # فیلتر «حرکت کشیده» (anti-chase) — سوییچ لحظه‌ای از تلگرام: /extension
+      extension_filter_enabled: false
+      extension_max_atr: 4.0
 
 engine:
   loop_sleep_seconds: 1.0

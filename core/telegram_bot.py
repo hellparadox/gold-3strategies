@@ -122,6 +122,14 @@ class BotBridge:
     last_backtest: Optional[Callable[[], Any]] = None
     equity_chart: Optional[Callable[[Any], Optional[io.BytesIO]]] = None
     request_close: Optional[Callable[[str], str]] = None
+    # فیلتر کشش (anti-chase): خواندن/تغییر لحظه‌ای + تعداد بلاک‌ها.
+    # None یعنی «این استراتژی فیلتر ندارد» (مثلاً orb_gold).
+    get_extension: Optional[Callable[[], Optional[Dict[str, Any]]]] = None
+    set_extension: Optional[
+        Callable[[Optional[bool], Optional[float]], Optional[Dict[str, Any]]]
+    ] = None
+    # دقیقه‌های هر کندلِ استراتژی (برای برچسب درست cooldown) — 5 = M5
+    bar_minutes: Optional[Callable[[], int]] = None
 
 
 class TelegramController:
@@ -354,6 +362,7 @@ class TelegramController:
         app.add_handler(CommandHandler("strategy", self._cmd_strategy))
         app.add_handler(CommandHandler("risk", self._cmd_risk))
         app.add_handler(CommandHandler("cooldown", self._cmd_cooldown))
+        app.add_handler(CommandHandler("extension", self._cmd_extension))
         app.add_handler(CallbackQueryHandler(self._on_callback))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._on_text))
         app.add_error_handler(self._on_error)
@@ -383,12 +392,17 @@ class TelegramController:
                 "\U0001F451 <b>Admin Panel · GOLD M5 BOT</b>\n"
                 f"Strategy: <b>{self._safe(self.bridge.get_strategy, '-')}</b>\n"
                 f"Engine: {engine_state}\n\n"
+                "<code>/status</code> · full engine status\n"
                 "<code>/addvip [uid] [days]</code> · grant VIP\n"
                 "<code>/removevip [uid]</code> · revoke\n"
+                "<code>/users</code> · subscribers\n"
                 "<code>/backtest [strategy]</code> · re-run\n"
+                "<code>/daily [date]</code> · daily performance card\n"
                 "<code>/risk 1.0</code> · set risk %\n"
-                "<code>/cooldown 12</code> · set cooldown bars (12=60m)\n"
-                "<code>/toggle</code> · kill switch"
+                "<code>/cooldown 12</code> · set cooldown bars\n"
+                "<code>/extension on|off</code> · anti-chase filter\n"
+                "<code>/toggle [on|off]</code> · kill switch\n"
+                "<code>/close [ticket]</code> · manual close + shadow verdict"
             )
         else:
             status = self.db.get_user_status(uid)
@@ -410,11 +424,55 @@ class TelegramController:
 
     # ------------------------------------------------------------------ status
     async def _cmd_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        uid, _ = self._register_from_update(update)
+        uid, admin = self._register_from_update(update)
         if update.message:
-            await update.message.reply_text(
-                self._subscription_card(uid), parse_mode=ParseMode.HTML
+            # ادمین: کارت کامل وضعیت موتور — مشترک: کارت اشتراک
+            if admin:
+                await update.message.reply_text(
+                    self._engine_status_card(), parse_mode=ParseMode.HTML
+                )
+            else:
+                await update.message.reply_text(
+                    self._subscription_card(uid), parse_mode=ParseMode.HTML
+                )
+
+    def _engine_status_card(self) -> str:
+        """کارت وضعیت موتور برای ادمین — همهٔ سوییچ‌ها یک‌جا."""
+        running = bool(self._safe(self.bridge.is_running, False))
+        tel = self._safe(self.bridge.telemetry, {}) or {}
+        lines = [
+            "🛠 <b>وضعیت ربات</b>",
+            ("🟢 موتور: <b>روشن</b>" if running else "🔴 موتور: <b>متوقف (PAUSE)</b>"),
+            ("🟢 اتصال MT5" if tel.get("connected") else "🔴 اتصال MT5 قطع"),
+            f"استراتژی: <b>{tel.get('strategy') or self._safe(self.bridge.get_strategy, '-')}</b>",
+            f"حساب: <code>{tel.get('login', '-')}</code> ({tel.get('server', '-')})",
+            f"موجودی: <b>{float(tel.get('balance', 0.0)):.2f}</b> $ | "
+            f"اکوییتی: <b>{float(tel.get('equity', 0.0)):.2f}</b> $",
+            f"سود شناور: <b>{float(tel.get('profit', 0.0)):+.2f}</b> $",
+            f"پوزیشن باز: <b>{len(tel.get('positions', []) or [])}</b>",
+        ]
+        risk = self._safe(self.bridge.get_risk, None)
+        if risk is not None:
+            lines.append(f"ریسک هر معامله: <b>{float(risk):.2f}%</b>")
+        cd = self._safe(self.bridge.get_cooldown, None)
+        if cd is not None:
+            bar_min = int(self._safe(self.bridge.bar_minutes, 5) or 5)
+            lines.append(
+                f"وقفه بین معاملات: <b>{int(cd)} کندل ({int(cd) * bar_min} دقیقه)</b>"
             )
+        ext = self._safe(self.bridge.get_extension, None)
+        if ext is not None:
+            es = "روشن ✅" if ext.get("enabled") else "خاموش ⛔"
+            lines.append(
+                f"فیلتر حرکت کشیده: <b>{es}</b> — حد {float(ext.get('max_atr', 4.0)):.1f}×ATR، "
+                f"{int(ext.get('blocks', 0))} سیگنال بلاک‌شده"
+            )
+        lines.append(f"سیگنال‌های ارسالی: <b>{tel.get('signals_sent', 0)}</b>")
+        if tel.get("uptime"):
+            lines.append(f"آپ‌تایم: <code>{tel['uptime']}</code>")
+        if tel.get("atr"):
+            lines.append(f"ATR فعلی: <b>{tel['atr']}</b>")
+        return "\n".join(lines)
 
     def _subscription_card(self, user_id: int) -> str:
         s = self.db.get_user_status(user_id)
@@ -538,7 +596,21 @@ class TelegramController:
     async def _cmd_toggle(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not await self._guard_admin(update) or update.message is None:
             return
-        running = bool(self._safe(self.bridge.toggle_bot, False, None))
+        # /toggle (بدون آرگومان) = تغییر وضعیت؛ /toggle on|off = صریح
+        args = context.args or []
+        desired: Optional[bool] = None
+        if args:
+            low = str(args[0]).lower()
+            if low in ("on", "روشن", "start"):
+                desired = True
+            elif low in ("off", "خاموش", "stop", "pause"):
+                desired = False
+            else:
+                await update.message.reply_text(
+                    "Usage: <code>/toggle [on|off]</code>", parse_mode=ParseMode.HTML
+                )
+                return
+        running = bool(self._safe(self.bridge.toggle_bot, False, desired))
         await update.message.reply_text(
             "\U0001F7E2 <b>Engine RESUMED</b>" if running else "\U0001F534 <b>Engine PAUSED</b>",
             parse_mode=ParseMode.HTML,
@@ -596,14 +668,15 @@ class TelegramController:
                 await update.message.reply_text("Usage: <code>/cooldown 12</code>", parse_mode=ParseMode.HTML)
                 return
             applied = self._safe(self.bridge.set_cooldown, value, value)
-            mins = int(applied if applied is not None else value) * 5
+            bar_min = int(self._safe(self.bridge.bar_minutes, 5) or 5)
+            mins = int(applied if applied is not None else value) * bar_min
             await update.message.reply_text(
                 f"⏱️ وقفه معاملات روی <b>{applied if applied is not None else value} کندل ({mins} دقیقه)</b> تنظیم شد.",
                 parse_mode=ParseMode.HTML,
             )
             return
         current = self._safe(self.bridge.get_cooldown, 12)
-        mins_cur = int(current) * 5
+        mins_cur = int(current) * int(self._safe(self.bridge.bar_minutes, 5) or 5)
         await update.message.reply_text(
             f"⏱️ <b>تنظیم وقفه بین معاملات (Cooldown)</b>\n"
             f"مقدار فعلی: <b>{current} کندل ({mins_cur} دقیقه)</b>\n"
@@ -621,6 +694,70 @@ class TelegramController:
                     ],
                 ]
             ),
+        )
+
+    async def _cmd_extension(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """سوییچ لحظه‌ای فیلتر «حرکت کشیده» (anti-chase) — بدون ری‌استارت.
+
+        /extension          → وضعیت فعلی + راهنما
+        /extension on|off   → روشن/خاموش (ذخیره دائمی، بعد از ری‌استارت هم می‌ماند)
+        /extension on 3.5   → روشن با حد جدید (فاصله مجاز از کف/سقف روز بر حسب ATR)
+        """
+        if not await self._guard_admin(update) or update.message is None:
+            return
+        args = context.args or []
+        enabled: Optional[bool] = None
+        max_atr: Optional[float] = None
+        for arg in args:
+            low = arg.lower()
+            if low in ("on", "روشن"):
+                enabled = True
+            elif low in ("off", "خاموش"):
+                enabled = False
+            else:
+                try:
+                    max_atr = float(low)
+                except ValueError:
+                    await update.message.reply_text(
+                        "Usage: <code>/extension on|off [حد ATR]</code>",
+                        parse_mode=ParseMode.HTML,
+                    )
+                    return
+        if enabled is None and max_atr is None:
+            state = self._safe(self.bridge.get_extension, None)
+            if state is None:
+                await update.message.reply_text(
+                    "⚠️ این استراتژی فیلتر حرکت کشیده ندارد.",
+                    parse_mode=ParseMode.HTML,
+                )
+                return
+            status = "روشن ✅" if state["enabled"] else "خاموش ⛔"
+            await update.message.reply_text(
+                "🚌 <b>فیلتر حرکت کشیده (Anti-Chase)</b>\n"
+                "جلوی سیگنال تنکان را می‌گیرد وقتی قیمت آن‌قدر از کف/سقفِ "
+                "روز دور شده که ورود = دویدن پشت حرکتی که رفته.\n\n"
+                f"وضعیت: <b>{status}</b>\n"
+                f"حد فاصله مجاز از کف/سقف روز: <b>{float(state['max_atr']):.1f}×ATR</b>\n"
+                f"سیگنال‌های بلاک‌شده (از روشن شدن): <b>{int(state['blocks'])}</b>\n\n"
+                "<code>/extension on</code> — روشن\n"
+                "<code>/extension off</code> — خاموش\n"
+                "<code>/extension on 3.5</code> — روشن با حد جدید",
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        state = self._safe(self.bridge.set_extension, None, enabled, max_atr)
+        if state is None:
+            await update.message.reply_text(
+                "⚠️ این استراتژی فیلتر حرکت کشیده ندارد.",
+                parse_mode=ParseMode.HTML,
+            )
+            return
+        status = "روشن ✅" if state["enabled"] else "خاموش ⛔"
+        await update.message.reply_text(
+            f"🚌 فیلتر حرکت کشیده: <b>{status}</b>\n"
+            f"حد فاصله مجاز: <b>{float(state['max_atr']):.1f}×ATR</b>\n"
+            "✅ همین حالا اعمال شد (بدون ری‌استارت) و ذخیره شد.",
+            parse_mode=ParseMode.HTML,
         )
 
     async def _cmd_strategy(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -832,7 +969,8 @@ class TelegramController:
         elif data.startswith("cd:"):
             value = int(data.split(":", 1)[1])
             applied = self._safe(self.bridge.set_cooldown, value, value)
-            mins = int(applied if applied is not None else value) * 5
+            bar_min = int(self._safe(self.bridge.bar_minutes, 5) or 5)
+            mins = int(applied if applied is not None else value) * bar_min
             await query.edit_message_text(
                 f"⏱️ وقفه معاملات → <b>{applied if applied is not None else value} کندل ({mins} دقیقه)</b>",
                 parse_mode=ParseMode.HTML,

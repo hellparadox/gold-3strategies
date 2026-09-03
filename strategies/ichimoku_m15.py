@@ -21,6 +21,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 import pandas as pd
+from loguru import logger
 
 from strategies.kijun_pullback import KijunPullbackStrategy
 from strategies.base import Signal
@@ -31,6 +32,11 @@ class IchimokuM15Strategy(KijunPullbackStrategy):
 
     name = "ichimoku_m15"
     oscillator = "none"
+    bar_minutes = 15  # دقیقه‌های هر کندلِ استراتژی (برای برچسب cooldown)
+
+    # شمارندهٔ سیگنال‌هایی که فیلتر کشش (/extension) واقعاً حذف کرده —
+    # فقط در مسیر زنده (evaluate) incremented می‌شود؛ با ری‌استارت صفر می‌شود.
+    extension_blocks = 0
 
     @classmethod
     def default_params(cls) -> Dict[str, Any]:
@@ -102,6 +108,23 @@ class IchimokuM15Strategy(KijunPullbackStrategy):
 
         prepared = self.prepare(m5, m15, h1)
         signal = self.generate_signal(prepared, index=-1)
+
+        # فیلتر کشش: فقط وقتی بشمار که واقعاً سیگنالی حذف شده (هیچ لایهٔ
+        # دیگری همان کندل سیگنال نداده) — و هر کندل فقط یک بار (dedup).
+        if signal is None and len(prepared) > 0:
+            last = prepared.iloc[-1]
+            if bool(last.get("tenkan_ext_blocked", False)) and last_closed != getattr(
+                self, "_last_block_bar", None
+            ):
+                self._last_block_bar = last_closed
+                self.extension_blocks = int(getattr(self, "extension_blocks", 0)) + 1
+                logger.warning(
+                    "🚌 extension filter blocked a tenkan entry @ {} "
+                    "(price extended > {:.1f}xATR from the session extreme)",
+                    last_closed,
+                    float(self.pf("extension_max_atr", 4.0)),
+                )
+
         if signal is not None:
             self._last_eval_bar = last_closed
         return signal

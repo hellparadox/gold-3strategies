@@ -14,6 +14,7 @@ the bot loop.  Shared mutable state lives behind ``self._lock``.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import signal as os_signal
@@ -101,6 +102,12 @@ class LiveBot:
         self.risk_config = RiskConfig.from_settings(settings)
         self.risk = RiskManager(self.risk_config, SymbolSpec.gold_default())
         self.strategy: BaseStrategy = build_from_settings(settings)
+        # سوییچ لحظه‌ای /extension — آخرین تصمیم ادمین از yaml مهم‌تر است و
+        # بعد از ری‌استارت هم می‌ماند (فایل per-strategy تا دوInstance تداخل نکنند).
+        self._extension_state_path = os.path.join(
+            "data", f"extension_filter_{self.strategy.name}.json"
+        )
+        self._load_extension_state()
         self.charts = ChartGenerator()
 
         self.telegram: Optional[TelegramController] = None
@@ -199,6 +206,9 @@ class LiveBot:
             equity_chart=self._hook_equity_chart,
             get_cooldown=self._hook_get_cooldown,
             set_cooldown=self._hook_set_cooldown,
+            get_extension=self._hook_get_extension,
+            set_extension=self._hook_set_extension,
+            bar_minutes=lambda: int(getattr(self.strategy, "bar_minutes", 5)),
             request_close=self._request_manual_close,
         )
 
@@ -214,6 +224,86 @@ class LiveBot:
         with self._lock:
             self.strategy.params["cooldown_bars"] = value
         return value
+
+    # -------------------------------------------------- extension filter
+    # مثل cooldown: پارامتر در prepare() خوانده می‌شود پس تغییر زندهٔ آن
+    # بدون ری‌استارت اثر می‌گذارد. تصمیم ادمین در فایل JSON ذخیره می‌شود.
+    def _extension_supported(self) -> bool:
+        return "extension_filter_enabled" in self.strategy.params
+
+    def _hook_get_extension(self) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            if not self._extension_supported():
+                return None
+            return {
+                "enabled": bool(self.strategy.params["extension_filter_enabled"]),
+                "max_atr": float(self.strategy.params.get("extension_max_atr", 4.0)),
+                "blocks": int(getattr(self.strategy, "extension_blocks", 0)),
+            }
+
+    def _hook_set_extension(
+        self, enabled: Optional[bool], max_atr: Optional[float] = None
+    ) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            if not self._extension_supported():
+                return None
+            if max_atr is not None:
+                self.strategy.params["extension_max_atr"] = max(
+                    0.5, min(float(max_atr), 20.0)
+                )
+            if enabled is not None:
+                self.strategy.params["extension_filter_enabled"] = bool(enabled)
+            state = {
+                "enabled": bool(self.strategy.params["extension_filter_enabled"]),
+                "max_atr": float(self.strategy.params.get("extension_max_atr", 4.0)),
+                "blocks": int(getattr(self.strategy, "extension_blocks", 0)),
+            }
+        self._persist_extension_state(state)
+        logger.info(
+            "extension filter -> enabled={} max_atr={:.1f}",
+            state["enabled"],
+            state["max_atr"],
+        )
+        return state
+
+    def _load_extension_state(self) -> None:
+        """آخرین تصمیم /extension بعد از ری‌استارت هم برقرار می‌ماند."""
+        try:
+            with open(self._extension_state_path, "r", encoding="utf-8") as fh:
+                state = json.load(fh)
+        except (OSError, ValueError):
+            return  # فایل نیست → همان پیش‌فرض yaml/کد
+        if not self._extension_supported():
+            return
+        if "enabled" in state:
+            self.strategy.params["extension_filter_enabled"] = bool(state["enabled"])
+        if "max_atr" in state:
+            try:
+                self.strategy.params["extension_max_atr"] = max(
+                    0.5, min(float(state["max_atr"]), 20.0)
+                )
+            except (TypeError, ValueError):
+                pass
+        logger.info(
+            "extension filter state restored: enabled={} max_atr={}",
+            self.strategy.params["extension_filter_enabled"],
+            self.strategy.params.get("extension_max_atr"),
+        )
+
+    def _persist_extension_state(self, state: Dict[str, Any]) -> None:
+        try:
+            os.makedirs(os.path.dirname(self._extension_state_path) or ".", exist_ok=True)
+            with open(self._extension_state_path, "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        "enabled": bool(state["enabled"]),
+                        "max_atr": float(state["max_atr"]),
+                    },
+                    fh,
+                    indent=2,
+                )
+        except OSError as exc:
+            logger.error("cannot persist extension filter state: {}", exc)
 
     def _hook_telemetry(self) -> Dict[str, Any]:
         data = self.client.telemetry()
