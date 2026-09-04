@@ -59,6 +59,13 @@ class NewsFilterConfig:
     min_impact: str = "High"  # "High", "Medium", "Low"
     pause_minutes_before: int = 5
     pause_minutes_after: int = 5
+    # FIX(NFP): رویدادهای درجه‌یک (NFP/CPI/FOMC/پاول) ساعت‌ها بازار را آشفته
+    # نگه می‌دارند. پنجرهٔ بعد از این رویدادها جداگانه و طولانی‌تر است؛
+    # صفر = غیرفعال (رفتار قبلی).
+    pause_minutes_after_tier1: int = 0
+    tier1_patterns: List[str] = field(default_factory=lambda: [
+        "non-farm", "nfp", "cpi", "fomc", "federal funds", "powell",
+    ])
     cache_refresh_hours: float = 1.0
     network_timeout_seconds: float = 5.0
     max_retries: int = 3
@@ -284,8 +291,15 @@ class NewsFilter:
 
         # Check all events for active blackout windows
         for event in sorted(events, key=lambda e: e.event_time_utc):
+            # FIX(NFP): پنجرهٔ after برای رویدادهای درجه‌یک جدا و طولانی‌تر است.
+            ev_after = after_buffer
+            if (
+                self.config.pause_minutes_after_tier1 > 0
+                and self._is_tier1(event.title)
+            ):
+                ev_after = timedelta(minutes=self.config.pause_minutes_after_tier1)
             window_start = event.event_time_utc - before_buffer
-            window_end = event.event_time_utc + after_buffer
+            window_end = event.event_time_utc + ev_after
 
             if window_start <= now_utc <= window_end:
                 time_to_event = (event.event_time_utc - now_utc).total_seconds() / 60
@@ -544,6 +558,11 @@ class NewsFilter:
     def _matches_filter(self, event: EconomicEvent) -> bool:
         """Check if event passes currency and impact filters."""
         return self._matches_filter_fields(event.currency, event.impact)
+
+    def _is_tier1(self, title: str) -> bool:
+        """Check if an event title matches a tier-1 (market-moving) pattern."""
+        title_lower = title.lower()
+        return any(p in title_lower for p in self.config.tier1_patterns)
 
     def _matches_filter_fields(self, currency: str, impact: str) -> bool:
         """Check currency and impact against config."""

@@ -59,15 +59,21 @@ class HistoricalNewsChecker:
         after_minutes: int = 5,
         enabled: bool = True,
         server_utc_offset_hours: float = 0.0,
+        after_minutes_tier1: int = 0,
+        tier1_patterns: Optional[List[str]] = None,
     ) -> None:
         self.enabled = enabled
         self.before_sec = before_minutes * 60
         self.after_sec = after_minutes * 60
+        # FIX(NFP): پنجرهٔ after طولانی‌تر برای رویدادهای درجه‌یک (NFP/CPI/FOMC)
+        self.after_sec_tier1 = after_minutes_tier1 * 60
+        self.tier1_patterns = [p.lower() for p in (tier1_patterns or [])]
         # FIX(tz): کندل‌های MT5 به وقت سرور بروکر هستند (مثلاً UTC+3)؛ برای
         # مقایسه با رویدادهای UTC باید آفست سرور کم شود، وگرنه پنجره‌های
         # بلاک چند ساعت جابه‌جا می‌شوند و فیلتر هیچ‌وقت بلاک نمی‌کند.
         self.offset_sec = server_utc_offset_hours * 3600.0
         self.event_timestamps: List[float] = []
+        self.event_tier1: List[bool] = []
 
         if not self.enabled:
             return
@@ -78,6 +84,7 @@ class HistoricalNewsChecker:
                 with open(p, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     ts_list: List[float] = []
+                    tier1_list: List[bool] = []
                     for item in data:
                         t_str = item.get("time") or item.get("date")
                         if t_str:
@@ -85,7 +92,13 @@ class HistoricalNewsChecker:
                             if dt.tzinfo is None:
                                 dt = dt.replace(tzinfo=timezone.utc)
                             ts_list.append(dt.timestamp())
-                    self.event_timestamps = sorted(ts_list)
+                            title = str(item.get("title", "")).lower()
+                            tier1_list.append(
+                                any(pat in title for pat in self.tier1_patterns)
+                            )
+                    order = sorted(range(len(ts_list)), key=lambda i: ts_list[i])
+                    self.event_timestamps = [ts_list[i] for i in order]
+                    self.event_tier1 = [tier1_list[i] for i in order]
                 logger.info(
                     "loaded {} historical news events for backtesting blackout",
                     len(self.event_timestamps),
@@ -107,16 +120,22 @@ class HistoricalNewsChecker:
         idx = bisect.bisect_left(self.event_timestamps, ts)
 
         # Check candidate timestamps around insertion point
-        candidates: List[float] = []
+        candidates: List[int] = []
         if idx > 0:
-            candidates.append(self.event_timestamps[idx - 1])
+            candidates.append(idx - 1)
         if idx < len(self.event_timestamps):
-            candidates.append(self.event_timestamps[idx])
+            candidates.append(idx)
         if idx + 1 < len(self.event_timestamps):
-            candidates.append(self.event_timestamps[idx + 1])
+            candidates.append(idx + 1)
 
-        for ev_ts in candidates:
-            if (ev_ts - self.before_sec) <= ts <= (ev_ts + self.after_sec):
+        for i in candidates:
+            ev_ts = self.event_timestamps[i]
+            after = (
+                self.after_sec_tier1
+                if self.event_tier1[i] and self.after_sec_tier1 > 0
+                else self.after_sec
+            )
+            if (ev_ts - self.before_sec) <= ts <= (ev_ts + after):
                 return True
         return False
 
@@ -142,6 +161,10 @@ class BacktestConfig:
     news_file_path: str = "data/historical_news.json"
     news_pause_before: int = 5
     news_pause_after: int = 5
+    news_pause_after_tier1: int = 0
+    news_tier1_patterns: Tuple[str, ...] = (
+        "non-farm", "nfp", "cpi", "fomc", "federal funds", "powell",
+    )
     news_server_utc_offset_hours: float = 0.0
 
     @classmethod
@@ -188,6 +211,22 @@ class BacktestConfig:
                     "pause_minutes_after",
                     settings.get("news_filter.pause_minutes_after", 5),
                 )
+            ),
+            news_pause_after_tier1=int(
+                news_sec.get(
+                    "pause_minutes_after_tier1",
+                    settings.get("news_filter.pause_minutes_after_tier1", 0),
+                )
+            ),
+            news_tier1_patterns=tuple(
+                news_sec.get(
+                    "tier1_patterns",
+                    settings.get(
+                        "news_filter.tier1_patterns",
+                        ["non-farm", "nfp", "cpi", "fomc", "federal funds", "powell"],
+                    ),
+                )
+                or []
             ),
             news_server_utc_offset_hours=float(
                 news_sec.get(
@@ -346,6 +385,8 @@ class BacktestEngine:
             after_minutes=self.cfg.news_pause_after,
             enabled=self.cfg.news_filter_enabled,
             server_utc_offset_hours=self.cfg.news_server_utc_offset_hours,
+            after_minutes_tier1=self.cfg.news_pause_after_tier1,
+            tier1_patterns=list(self.cfg.news_tier1_patterns),
         )
 
         # Staged partial exit: enabled by backtest.simulate_partial plus the

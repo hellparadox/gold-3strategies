@@ -79,6 +79,10 @@ class KijunPullbackStrategy(BaseStrategy):
             # سوییچ لحظه‌ای از تلگرام: /extension
             "extension_filter_enabled": False,
             "extension_max_atr": 4.0,
+            # FIX(NFP): گیت هوشمند فیلتر کشش — فقط وقتی ATR جاری ≥ این
+            # نسبت× میانگین ۵۰ کندلی باشد فیلتر اعمال شود. صفر = همیشه
+            # (رفتار قدیمی). مقدار پیشنهادی: 1.8
+            "extension_atr_ratio_gate": 0.0,
 
             # Optional SP2L layer.
             "enable_sp2l": True,
@@ -841,6 +845,17 @@ class KijunPullbackStrategy(BaseStrategy):
             session_high = frame["high"].groupby(frame.index.normalize()).cummax()
             long_ok = (frame["close"] - session_low) <= max_ext
             short_ok = (session_high - frame["close"]) <= max_ext
+            # FIX(NFP) — گیت هوشمند: فیلتر کشش فقط وقتی اعمال شود که رژیم
+            # نوسان غیرعادی باشد (ATR جاری ≥ N× میانگین ۵۰ کندل اخیر).
+            # در روزهای عادی (نسبت ~1) فیلتر عملاً خاموش است و رفتار با
+            # نسخهٔ بدون فیلر یکسان می‌ماند (A/B ۱۳ ماهه: فیلتر همیشگی
+            # −$220..−$348 ضرر داشت؛ این گیت فقط روزهای طوفانی را می‌گیرد).
+            gate = self.pf("extension_atr_ratio_gate", 0.0)
+            if gate > 0:
+                atr_baseline = frame["atr"].rolling(50, min_periods=10).mean()
+                regime_abnormal = (frame["atr"] / atr_baseline) >= gate
+                long_ok = long_ok | ~regime_abnormal
+                short_ok = short_ok | ~regime_abnormal
             tenkan_ext_blocked = (tenkan_long & ~long_ok) | (tenkan_short & ~short_ok)
             tenkan_long = tenkan_long & long_ok
             tenkan_short = tenkan_short & short_ok

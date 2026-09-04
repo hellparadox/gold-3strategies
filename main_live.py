@@ -133,6 +133,15 @@ class LiveBot:
             min_impact=str(news_sec.get("min_impact", "High")),
             pause_minutes_before=int(news_sec.get("pause_minutes_before", 5)),
             pause_minutes_after=int(news_sec.get("pause_minutes_after", 5)),
+            pause_minutes_after_tier1=int(
+                news_sec.get("pause_minutes_after_tier1", 0)
+            ),
+            tier1_patterns=list(
+                news_sec.get(
+                    "tier1_patterns",
+                    ["non-farm", "nfp", "cpi", "fomc", "federal funds", "powell"],
+                )
+            ),
             cache_refresh_hours=float(news_sec.get("cache_refresh_hours", 1.0)),
             network_timeout_seconds=float(news_sec.get("network_timeout_seconds", 5.0)),
             server_utc_offset_hours=float(news_sec.get("server_utc_offset_hours", 0.0)),
