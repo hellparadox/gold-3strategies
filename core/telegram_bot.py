@@ -27,6 +27,8 @@ from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tup
 
 from loguru import logger
 from telegram import (
+    BotCommand,
+    BotCommandScopeChat,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     KeyboardButton,
@@ -64,6 +66,10 @@ BTN_RISK = "\U0001F39A تنطیم ریسک"
 BTN_COOLDOWN = "⏱️ وقفه معاملات"
 BTN_TOGGLE = "\U0001F6A6 روشن/خاموش کردن ربات"
 BTN_USERS = "\U0001F465 آمار کاربران"
+# --- قابلیت‌های جدید (۲۰۲۶-۰۹): کارت روزانه، بستن اضطراری، فیلتر حرکت کشیده
+BTN_DAILY = "\U0001F4C5 کارت روزانه"
+BTN_CLOSE = "\U0001F6D1 بستن پوزیشن‌ها"
+BTN_EXTENSION = "\U0001F6B7 فیلتر حرکت کشیده"
 
 
 @dataclass
@@ -239,7 +245,10 @@ class TelegramController:
         await app.initialize()
         me = await app.bot.get_me()
         self._bot_username = me.username or ""
-        
+
+        # همگام‌سازی منوی ☰ با کامندهای فعلی — اصلاح باگ «دکمه‌های قدیمی»
+        await self._register_menu_commands()
+
         await app.start()
         
         # استارت کنترل‌شده Polling برای رفع قطعی Conflict
@@ -315,10 +324,11 @@ class TelegramController:
         if self.is_admin(user_id):
             rows = [
                 [KeyboardButton(BTN_TELEMETRY), KeyboardButton(BTN_LIVE_PRICE)],
-                [KeyboardButton(BTN_POSITIONS), KeyboardButton(BTN_RUN_BACKTEST)],
+                [KeyboardButton(BTN_POSITIONS), KeyboardButton(BTN_DAILY)],
+                [KeyboardButton(BTN_RUN_BACKTEST), KeyboardButton(BTN_USERS)],
                 [KeyboardButton(BTN_STRATEGY), KeyboardButton(BTN_RISK)],
-                [KeyboardButton(BTN_COOLDOWN), KeyboardButton(BTN_TOGGLE)],
-                [KeyboardButton(BTN_USERS)],
+                [KeyboardButton(BTN_COOLDOWN), KeyboardButton(BTN_EXTENSION)],
+                [KeyboardButton(BTN_TOGGLE), KeyboardButton(BTN_CLOSE)],
             ]
         else:
             rows = [
@@ -366,6 +376,51 @@ class TelegramController:
         app.add_handler(CallbackQueryHandler(self._on_callback))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._on_text))
         app.add_error_handler(self._on_error)
+
+    async def _register_menu_commands(self) -> None:
+        """منوی ☰ تلگرام را با کامندهای واقعی ربات همگام می‌کند.
+
+        بدون این فراخوانی، لیست کامندها در سرور تلگرام برای همیشه خالی یا کهنه
+        می‌ماند — ری‌استارت/ری‌دیپلوی ربات هیچ اثری روی آن ندارد
+        (ریشهٔ باگ «دکمه‌های قدیمی منو»).
+        default scope: کامندهای عمومی؛ chat scope: مجموعهٔ کامل فقط برای ادمین‌ها.
+        """
+        public_cmds = [
+            BotCommand("start", "شروع و راهنما"),
+            BotCommand("help", "راهنما"),
+            BotCommand("status", "وضعیت موتور / اشتراک من"),
+            BotCommand("price", "استعلام قیمت لحظه‌ای طلا"),
+            BotCommand("backtest", "کارنامه و بک‌تست"),
+            BotCommand("daily", "کارت عملکرد امروز"),
+        ]
+        admin_cmds = public_cmds + [
+            BotCommand("toggle", "روشن/خاموش کردن موتور"),
+            BotCommand("close", "بستن اضطراری پوزیشن باز"),
+            BotCommand("strategy", "تغییر استراتژی فعال"),
+            BotCommand("risk", "تنظیم درصد ریسک"),
+            BotCommand("cooldown", "وقفه معاملات"),
+            BotCommand("extension", "فیلتر حرکت کشیده on/off"),
+            BotCommand("users", "آمار کاربران"),
+            BotCommand("addvip", "افزودن اشتراک VIP"),
+            BotCommand("removevip", "حذف اشتراک VIP"),
+        ]
+        try:
+            await self._app.bot.set_my_commands(public_cmds)
+            for admin_id in self.config.admin_ids:
+                try:
+                    await self._app.bot.set_my_commands(
+                        admin_cmds, scope=BotCommandScopeChat(chat_id=admin_id)
+                    )
+                except TelegramError as exc:
+                    logger.warning(
+                        "admin menu not registered for {}: {}", admin_id, exc
+                    )
+            logger.success(
+                "telegram menu commands registered ({} public / {} admin)",
+                len(public_cmds), len(admin_cmds),
+            )
+        except TelegramError as exc:
+            logger.error("failed to register telegram menu commands: {}", exc)
 
     async def _on_error(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
         logger.error("telegram handler error: {}", context.error)
@@ -900,6 +955,12 @@ class TelegramController:
             await self._cmd_strategy(update, context)
         elif text == BTN_RUN_BACKTEST:
             await self._cmd_backtest(update, context)
+        elif text == BTN_DAILY:
+            await self._cmd_daily(update, context)
+        elif text == BTN_CLOSE:
+            await self._cmd_close(update, context)
+        elif text == BTN_EXTENSION:
+            await self._cmd_extension(update, context)
         else:
             await update.message.reply_text(
                 "❓ Unknown command.", reply_markup=self._main_keyboard(uid)
