@@ -82,8 +82,9 @@ strategy:
       tenkan_min_distance_atr: 0.40
       tenkan_tp_sl_multiplier: 3.0
       cooldown_bars: 6
-      trade_start_hour: null     # بدون محدودیت زمانی (تصمیم مالک)
-      trade_end_hour: null
+      trade_start_hour: 0        # بدون محدودیت در ابتدای روز (ساعات ۱ تا ۵ صبح سودده‌اند)
+      trade_end_hour: 21         # قطع ورود جدید از ساعت ۲۱ سرور — ۲ ساعت آخر روز ضررده است
+                                  # (A/B ۱۳ ماهه: سود +۱,۴۴۳$ → +۱,۶۶۱$، شارپ ۵.۲ → ۶.۰) — ۲۰۲۶-۰۹-۰۴
       min_atr: 0.40
       partial_tp_rr: 1.5
       partial_frac: 0.5

@@ -45,8 +45,9 @@ risk:
   max_daily_trades: 10         # سقف تعداد معامله در روز
 
 session:
-  start_hour: 0                # معامله ۲۴ ساعته (تصمیم مالک — هم‌راستا با نمونه ichimoku)
-  end_hour: 24
+  start_hour: 0                # ورود آزاد از ابتدای روز سرور
+  end_hour: 18                 # قطع ورود جدید از ساعت ۱۸ سرور — عصرِ ORB ضررده است
+                               # (A/B ۱۳ ماهه: سود +۳۸۲$ → +۵۵۱$، افت سرمایه ۱۶.۶٪ → ۹.۳٪) — ۲۰۲۶-۰۹-۰۴
   max_spread_points: 999       # فیلتر اسپرد عملاً خاموش (تصمیم مالک)
   trade_weekdays: [0, 1, 2, 3, 4]   # دوشنبه تا جمعه
   close_all_before_weekend: false
