@@ -379,8 +379,13 @@ class LiveBot:
             threading.main_thread().join(timeout=25.0)
             try:
                 flags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
+                # FIX(2026-09-05): آرگومان‌های راه‌اندازی اصلی (مثل --config
+                # settings_ichimoku.yaml) به پروسه‌ی جدید منتقل شوند تا
+                # ری‌استارت خودکار هرگز با کانفیگ/استراتژی/توکنِ غلط بالا نیاید.
+                relaunch = [sys.executable, "main_live.py", *sys.argv[1:]]
+                logger.warning("relaunch args: {}", " ".join(relaunch[1:]) or "(default config)")
                 subprocess.Popen(
-                    [sys.executable, "main_live.py"],
+                    relaunch,
                     cwd=os.path.dirname(os.path.abspath(__file__)),
                     creationflags=flags,
                 )
