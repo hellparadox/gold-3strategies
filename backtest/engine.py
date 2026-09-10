@@ -485,6 +485,7 @@ class BacktestEngine:
             bar_time = idx[i]
             bar_open, bar_high, bar_low, bar_close = o[i], h[i], l[i], c[i]
             atr_now = atr_arr[i - 1]  # closed-bar ATR, never the forming one
+            occupied_at_open = open_trade is not None
 
             # ---------------------------------------------------- manage open
             if open_trade is not None:
@@ -507,7 +508,10 @@ class BacktestEngine:
                     open_trade.bars_held += 1
 
             # ------------------------------------------------------ new entry
-            if open_trade is None and not spread_blocked:
+            # A signal cannot fill at this bar's open if the previous position
+            # only exits later inside the bar. Do not queue stale signals;
+            # the next bar evaluates its own freshly closed signal, like live.
+            if not occupied_at_open and open_trade is None and not spread_blocked:
                 direction = int(sig[i - 1])  # signal from the CLOSED bar
                 if direction != 0 and self._session_ok(bar_time) and self._news_ok(bar_time):
                     atr_entry = atr_arr[i - 1]
@@ -650,16 +654,10 @@ class BacktestEngine:
                 trade.exit_reason = "sl"
             return True
 
-        if tp_hit:
-            trade.exit_time = bar_time
-            trade.exit_price = trade.tp
-            trade.exit_reason = "tp"
-            return True
-
         # --------------------------------------------- staged partial exit
         # Limit-like fill at entry +/- partial_rr * initial R.  Pessimistic
-        # ordering is preserved: if this bar also touched the SL or the full
-        # TP we already closed above, so no partial is banked.
+        # SL wins ambiguous SL/target bars. A partial target strictly before
+        # the full TP must be booked first, even when both occur in one bar.
         if self.partial_enabled and not trade.partial_done and trade.initial_sl_distance > 0:
             if is_long:
                 level = trade.entry_price + self.partial_rr * trade.initial_sl_distance
@@ -667,7 +665,8 @@ class BacktestEngine:
             else:
                 level = trade.entry_price - self.partial_rr * trade.initial_sl_distance
                 touched = (bar_low + spread) <= level
-            if touched:
+            before_tp = level < trade.tp if is_long else level > trade.tp
+            if touched and before_tp:
                 step = self.spec.volume_step or 0.01
                 min_lot = max(self.spec.volume_min, step)
                 raw = trade.lot * self.partial_frac
@@ -693,6 +692,12 @@ class BacktestEngine:
                     if improves_be:
                         trade.sl = be
                         trade.breakeven_done = True
+
+        if tp_hit:
+            trade.exit_time = bar_time
+            trade.exit_price = trade.tp
+            trade.exit_reason = "tp"
+            return True
 
         # ------------------------------------------ protective stop management
         if not (self.cfg.simulate_breakeven or self.cfg.simulate_trailing):

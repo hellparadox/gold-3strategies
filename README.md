@@ -136,12 +136,33 @@ Start-ScheduledTask -TaskName "GoldBot"
 python main_backtest.py --bars 75000              # یک سال M5
 python main_backtest.py --bars 350000             # ۵ سال کامل
 python main_backtest.py --bars 25000 --spread 20  # با اسپرد دلخواه
+python main_backtest.py --bars 75000 --output-dir exports/run-001 --save-bars
 ```
 
 **نکات واقع‌بینی:**
 - اسپرد واقعی بروکر خود را از تیک‌ها اندازه بگیرید و در `backtest.spread_points` بگذارید — لبه استراتژی به اسپرد فوق‌حساس است
 - خروج پله‌ای (partial) با `--partial` یا `backtest.simulate_partial: true` شبیه‌سازی می‌شود (پارامترهای `partial_tp_rr` / `partial_frac` استراتژی) — قبل از اعتماد به آن در لایو، اثرش را روی PF اندازه بگیرید
 - اعداد بک‌تست بدون اسپرد واقعی = داستان، نه داده
+- `--output-dir` گزارش JSON، معاملات CSV و خلاصه را با هش داده‌ها ذخیره می‌کند؛ مسیر باید جدید باشد تا گزارش قبلی بازنویسی نشود
+
+### توقف ایمن بعد از وضعیت نامعلوم سفارش
+
+اگر MT5 پاسخ قطعی به ارسال سفارش ندهد، ربات همان سفارش را دوباره نمی‌فرستد و
+ورودهای جدید را تا بررسی دستی متوقف می‌کند. ابتدا ربات را متوقف و تب‌های
+Positions و History را در MT5 بررسی کنید، سپس دفتر وضعیت را ببینید:
+
+```powershell
+python -m tools.execution_journal --config config/settings.yaml
+```
+
+فقط بعد از تطبیق با MT5، کلید نمایش‌داده‌شده را تأیید کنید:
+
+```powershell
+python -m tools.execution_journal --config config/settings.yaml `
+  --acknowledge 'EXACT_SIGNAL_KEY' --broker-reviewed --note 'checked MT5 history'
+```
+
+برای نمونهٔ ایچیموکو، همان دستورها را با `config/settings_ichimoku.yaml` اجرا کنید.
 
 ---
 

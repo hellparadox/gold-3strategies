@@ -72,6 +72,15 @@ CREATE INDEX IF NOT EXISTS idx_users_plan   ON users (plan_type);
 CREATE INDEX IF NOT EXISTS idx_users_expiry ON users (vip_expire_at);
 CREATE INDEX IF NOT EXISTS idx_signals_time ON signals (created_at);
 CREATE INDEX IF NOT EXISTS idx_signals_tkt  ON signals (ticket);
+
+CREATE TABLE IF NOT EXISTS execution_intents (
+    signal_key TEXT PRIMARY KEY,
+    scope TEXT NOT NULL,
+    status TEXT NOT NULL,
+    detail TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_execution_scope ON execution_intents (scope, status);
 """
 
 
@@ -163,7 +172,7 @@ class Database:
         with self._lock:
             cur = self._conn.cursor()
             cur.execute("PRAGMA journal_mode=WAL")
-            cur.execute("PRAGMA synchronous=NORMAL")
+            cur.execute("PRAGMA synchronous=FULL")
             cur.execute("PRAGMA foreign_keys=ON")
             cur.execute("PRAGMA busy_timeout=10000")
             self._conn.commit()
@@ -194,6 +203,34 @@ class Database:
                 logger.debug("db close raised: {}", exc)
 
     # ------------------------------------------------------------------ users
+    def claim_execution(self, scope: str, signal_key: str) -> bool:
+        """Persist before sending. Atomic across processes sharing this DB."""
+        with self._cursor() as cur:
+            cur.execute("BEGIN IMMEDIATE")
+            if cur.execute(
+                "SELECT 1 FROM execution_intents WHERE scope=? AND status IN ('pending','uncertain')",
+                (scope,),
+            ).fetchone():
+                return False
+            cur.execute(
+                "INSERT OR IGNORE INTO execution_intents (signal_key,scope,status,created_at) VALUES (?,?,'pending',?)",
+                (signal_key, scope, _fmt(utc_now())),
+            )
+            return cur.rowcount == 1
+
+    def finish_execution(self, signal_key: str, status: str, detail: str = "") -> None:
+        if status not in ("accepted", "rejected", "uncertain", "reviewed"):
+            raise ValueError("invalid execution status")
+        with self._cursor() as cur:
+            cur.execute("UPDATE execution_intents SET status=?, detail=? WHERE signal_key=?",
+                        (status, detail, signal_key))
+
+    def unresolved_executions(self) -> List[Dict[str, Any]]:
+        with self._cursor() as cur:
+            return [dict(r) for r in cur.execute(
+                "SELECT * FROM execution_intents WHERE status IN ('pending','uncertain') ORDER BY created_at"
+            ).fetchall()]
+
     def register_user(
         self,
         user_id: int,

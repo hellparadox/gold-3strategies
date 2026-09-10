@@ -14,6 +14,7 @@ the bot loop.  Shared mutable state lives behind ``self._lock``.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -22,7 +23,7 @@ import subprocess
 import sys
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -35,7 +36,7 @@ from core.chart_generator import ChartGenerator
 from core.database import Database
 from core.dashboard import DashboardServer
 from core.daily_digest import build_daily_stats, render_daily_card
-from core.mt5_client import TIMEFRAME_SECONDS, MT5Client, MT5Config
+from core.mt5_client import TIMEFRAME_SECONDS, MT5Client, MT5Config, MT5ReadError
 from core.risk_manager import (
     ManageAction,
     PositionView,
@@ -64,6 +65,7 @@ class TrackedPosition:
     breakeven_done: bool = False
     trailing_active: bool = False
     opened_at: datetime = field(default_factory=datetime.now)
+    position_id: int = 0
 
     def to_view(self) -> PositionView:
         return PositionView(
@@ -502,7 +504,7 @@ class LiveBot:
         }
 
     # =========================================================== position mgmt
-    def _sync_positions(self) -> None:
+    def _sync_positions(self) -> bool:
         """Reconcile the local mirror with the broker and report closures."""
         live = {int(p.ticket): p for p in self.client.positions()}
         with self._lock:
@@ -514,6 +516,8 @@ class LiveBot:
                     tracked = self.tracked[ticket]
                     tracked.sl = float(pos.sl or 0.0)
                     tracked.tp = float(pos.tp or 0.0)
+                    tracked.volume = float(pos.volume)
+                    tracked.position_id = int(getattr(pos, "identifier", pos.ticket))
                 else:
                     self.tracked[ticket] = TrackedPosition(
                         ticket=ticket,
@@ -523,30 +527,44 @@ class LiveBot:
                         sl=float(pos.sl or 0.0),
                         tp=float(pos.tp or 0.0),
                         atr=self.current_atr,
+                        position_id=int(getattr(pos, "identifier", pos.ticket)),
                     )
                     logger.info("adopted existing position #{}", ticket)
 
+        complete = True
         for ticket in known - set(live):
-            self._handle_closed_position(ticket)
+            if not self._handle_closed_position(ticket):
+                complete = False
+        return complete
 
-    def _handle_closed_position(self, ticket: int) -> None:
+    def _handle_closed_position(self, ticket: int) -> bool:
         with self._lock:
-            tracked = self.tracked.pop(ticket, None)
+            tracked = self.tracked.get(ticket)
         if tracked is None:
-            return
-        profit = 0.0
-        close_price = 0.0
-        for deal in self.client.deals_since(tracked.opened_at - timedelta(minutes=5)):
-            if int(getattr(deal, "position_id", 0)) == ticket:
-                profit += float(getattr(deal, "profit", 0.0))
-                profit += float(getattr(deal, "commission", 0.0))
-                profit += float(getattr(deal, "swap", 0.0))
-                if int(getattr(deal, "entry", 0)) == 1:      # DEAL_ENTRY_OUT
-                    close_price = float(getattr(deal, "price", 0.0))
+            return True
+        deals = self.client.deals_for_position(tracked.position_id or ticket)
+        entries = [d for d in deals if int(getattr(d, "entry", -1)) == 0]
+        exits = [d for d in deals if int(getattr(d, "entry", -1)) in (1, 3)]
+        volume_in = sum(float(d.volume) for d in entries)
+        volume_out = sum(float(d.volume) for d in exits)
+        # Empty/successful history can still lag behind positions_get. Partial
+        # exits alone are not proof of a full close. Keep the mirror and retry.
+        if not exits or volume_in <= 0 or volume_out + 1e-8 < volume_in:
+            logger.warning("closure #{} awaiting complete broker deal history", ticket)
+            return False
+        last_exit = max(exits, key=lambda d: (getattr(d, "time_msc", 0), getattr(d, "ticket", 0)))
+        close_price = float(last_exit.price)
+        if close_price <= 0:
+            return False
+        profit = sum(float(getattr(d, key, 0.0)) for d in deals
+                     for key in ("profit", "commission", "swap", "fee"))
         outcome = "WIN" if profit > 0 else ("BE" if abs(profit) < 0.01 else "LOSS")
-        with self._lock:
-            self.daily_realized_pnl += profit
+        # Rebuild day-specific P/L before committing the closure. A history
+        # failure leaves the mirror intact for the next reconciliation cycle.
+        self._sync_daily()
         self.db.close_signal(ticket, close_price, profit, outcome)
+        with self._lock:
+            self.tracked.pop(ticket, None)
         logger.success("position #{} closed | {} | ${:.2f}", ticket, outcome, profit)
         if self.telegram is not None:
             self.telegram.broadcast_close(
@@ -559,6 +577,8 @@ class LiveBot:
                     "outcome": outcome,
                 }
             )
+
+        return True
 
     # =================================================== manual close (admin)
     def _request_manual_close(self, ticket_arg: str) -> str:
@@ -691,44 +711,27 @@ class LiveBot:
 
     # ============================================================= daily guard
     def _sync_daily(self) -> None:
-        """Roll counters at server midnight; rebuild today's P/L after a restart."""
+        """Rebuild today's counters from confirmed history, including restarts."""
         server_now = self.client.server_time()
         if server_now is None:
-            return
-        if self.daily_date is None:
-            day_start = server_now.replace(hour=0, minute=0, second=0, microsecond=0)
-            pnl = 0.0
-            for deal in self.client.deals_since(day_start):
-                if str(getattr(deal, "symbol", "")) == self.client.symbol and int(getattr(deal, "entry", 0)) == 1:
-                    pnl += float(getattr(deal, "profit", 0.0))
-                    pnl += float(getattr(deal, "commission", 0.0))
-                    pnl += float(getattr(deal, "swap", 0.0))
-            bal = self.client.balance() or 0.0
-            with self._lock:
-                self.daily_date = server_now.date()
-                self.daily_realized_pnl = pnl
-                self.daily_trades = 0
-                self.day_start_balance = bal - pnl
+            raise MT5ReadError("server time unavailable for daily guard")
+        day_start = server_now.replace(hour=0, minute=0, second=0, microsecond=0)
+        deals = [d for d in self.client.deals_since(day_start)
+                 if str(getattr(d, "symbol", "")) == self.client.symbol]
+        pnl = sum(float(getattr(d, key, 0.0)) for d in deals
+                  for key in ("profit", "commission", "swap", "fee"))
+        entries = {int(getattr(d, "position_id", 0) or getattr(d, "order", 0) or d.ticket)
+                   for d in deals if int(getattr(d, "entry", -1)) in (0, 2)}
+        account = self.client.account_info()
+        if account is None:
+            raise MT5ReadError("account unavailable for daily guard")
+        with self._lock:
+            if self.daily_date != server_now.date():
+                self.day_start_balance = float(account.balance) - pnl
                 self.daily_halt_notified = False
-            logger.info(
-                "daily guard init | realized today=${:.2f} | day-start balance=${:.2f} | cap -{:.0f}%/${:.2f}",
-                pnl, bal - pnl, self.max_daily_loss_pct, (bal - pnl) * self.max_daily_loss_pct / 100.0,
-            )
-            if pnl == 0.0 and (server_now - day_start).total_seconds() > 4 * 3600:
-                logger.warning(
-                    "daily guard init found 0 closed deals for a day >4h old; "
-                    "terminal history may not be synced yet"
-                )
-            return
-        if server_now.date() != self.daily_date:
-            bal = self.client.balance() or 0.0
-            with self._lock:
-                self.daily_date = server_now.date()
-                self.daily_realized_pnl = 0.0
-                self.daily_trades = 0
-                self.day_start_balance = bal
-                self.daily_halt_notified = False
-            logger.info("daily guard reset | new server day {} | balance=${:.2f}", server_now.date(), bal)
+            self.daily_date = server_now.date()
+            self.daily_realized_pnl = pnl
+            self.daily_trades = len(entries)
 
     # ============================================================ daily digest
     def _check_daily_digest(self) -> None:
@@ -905,25 +908,93 @@ class LiveBot:
         if tick is None:
             return None
         entry_price = float(tick.ask if signal.is_long else tick.bid)
-        balance = self.client.balance() or self.risk_config.base_balance
+        account = self.client.account_info()
+        if account is None or float(account.balance) <= 0:
+            logger.error("cannot size trade without a positive confirmed balance")
+            return None
+        balance = float(account.balance)
         levels = self.risk.build_levels(signal.side, entry_price, signal.atr, balance)
         if levels is None:
             return None
 
-        result = self.client.send_market_order(
-            signal.side, levels.lot, sl=levels.sl, tp=levels.tp,
-            comment=f"{signal.strategy}",
-        )
+        scope = json.dumps([str(getattr(account, "server", self.client.config.server)),
+                            int(account.login), self.client.symbol, self.client.magic])
+        signal_key = json.dumps([scope, signal.strategy, str(signal.ref_time), signal.side])
+        if not self.db.claim_execution(scope, signal_key):
+            logger.warning("entry skipped: duplicate signal or unresolved order; inspect execution journal")
+            return None
+        try:
+            execution_tag = hashlib.sha256(signal_key.encode("utf-8")).hexdigest()[:8]
+            execution_comment = f"{signal.strategy}:{execution_tag}"[:31]
+            result = self.client.send_market_order(
+                signal.side, levels.lot, sl=levels.sl, tp=levels.tp,
+                comment=execution_comment,
+            )
+        except Exception:
+            self.db.finish_execution(signal_key, "uncertain", "exception during send")
+            raise
         if not result.ok:
-            logger.warning("اردر در MT5 ثبت نشد (حالت فقط سیگنال یا ریجکت بروکر): {}", result.comment)
+            status = "uncertain" if result.uncertain else "rejected"
+            self.db.finish_execution(signal_key, status, str(result))
+        if result.uncertain and not result.ok:
+            logger.error("order needs broker verification; new entries blocked persistently")
+            if self.telegram is not None:
+                self.telegram.notify_admins(
+                    "⚠️ نتیجه یا حجم نهایی سفارش نیاز به بررسی در MT5 دارد. "
+                    "ورود جدید تا بررسی دفتر سفارش‌ها متوقف است؛ مدیریت پوزیشن‌ها ادامه دارد."
+                )
+        if not result.ok:
+            logger.warning("order not confirmed: {}", result.comment)
             return None
 
         # در صورت موفقیت‌آمیز بودن معامله لایو
-        ticket = result.position or result.order
-        for candidate in self.client.positions():
-            if int(candidate.ticket) == int(ticket) or int(getattr(candidate, "identifier", 0)) == int(ticket):
-                ticket = int(candidate.ticket)
-                break
+        ticket = int(result.position or 0)
+        position_id = ticket
+        if position_id <= 0 and result.deal:
+            try:
+                position_id = int(self.client.position_id_for_deal(result.deal) or 0)
+                ticket = position_id
+            except MT5ReadError:
+                logger.warning("confirmed deal exists; position id not available yet")
+        try:
+            for candidate in self.client.positions():
+                candidate_comment = str(getattr(candidate, "comment", "") or "")
+                candidate_identifier = int(getattr(candidate, "identifier", 0) or 0)
+                if ((ticket > 0 and int(candidate.ticket) == ticket)
+                        or (position_id > 0 and candidate_identifier == position_id)
+                        or candidate_comment == execution_comment):
+                    ticket = int(candidate.ticket)
+                    position_id = int(getattr(candidate, "identifier", ticket))
+                    break
+        except MT5ReadError:
+            logger.warning("order confirmed; using returned ticket until broker sync recovers")
+        if ticket <= 0 or position_id <= 0:
+            self.db.finish_execution(signal_key, "uncertain",
+                                     f"confirmed order but unresolved position; {result}")
+            logger.error("confirmed order could not be mapped to a position; new entries blocked")
+            if self.telegram is not None:
+                self.telegram.notify_admins(
+                    "⚠️ سفارش در بروکر تأیید شد اما شناسهٔ پوزیشن هنوز مشخص نیست. "
+                    "SL/TP داخل سفارش است؛ ورودهای جدید تا بررسی MT5 متوقف شدند."
+                )
+            return None
+        self.db.finish_execution(signal_key, "uncertain" if result.uncertain else "accepted",
+                                 f"position={position_id}; {result}")
+        if result.uncertain:
+            logger.error("partially completed order requires broker verification; new entries blocked")
+            if self.telegram is not None:
+                self.telegram.notify_admins(
+                    "⚠️ سفارش فقط بخشی اجرا شده یا وضعیت نهایی آن قطعی نیست. "
+                    "حجم اجراشده مدیریت می‌شود؛ ورودهای جدید تا بررسی MT5 متوقف شدند."
+                )
+        filled_lot = float(result.volume or levels.lot)
+        fill = float(result.price or levels.entry)
+        actual_risk = self.risk.spec.money_per_lot(abs(fill - levels.sl)) * filled_lot
+        actual_risk += self.risk_config.commission_per_lot * filled_lot
+        reward = self.risk.spec.money_per_lot(abs(levels.tp - fill)) * filled_lot
+        reward -= self.risk_config.commission_per_lot * filled_lot
+        levels = replace(levels, entry=fill, lot=filled_lot, risk_money=actual_risk,
+                         reward_money=reward, rr=reward / actual_risk if actual_risk > 0 else 0.0)
 
         signal.entry = float(result.price or levels.entry)
         signal.sl, signal.tp, signal.lot = levels.sl, levels.tp, levels.lot
@@ -938,6 +1009,7 @@ class LiveBot:
                 sl=levels.sl,
                 tp=levels.tp,
                 atr=signal.atr,
+                position_id=position_id,
             )
             self.signals_sent += 1
             self.daily_trades += 1
@@ -961,8 +1033,11 @@ class LiveBot:
         else:
             self.risk.update_spec(SymbolSpec.from_mt5(self.client.symbol_info(refresh=True)))
             for attempt in range(1, 4):
-                self._sync_daily()
-                if self.daily_date is not None and self.daily_realized_pnl != 0.0:
+                try:
+                    self._sync_daily()
+                except MT5ReadError as exc:
+                    logger.warning("daily guard not ready: {}", exc)
+                if self.daily_date is not None:
                     break
                 if attempt < 3:
                     logger.warning("daily guard init attempt {} returned no deals; retrying in 5s", attempt)
@@ -981,6 +1056,20 @@ class LiveBot:
                 f"Risk: <b>{self.risk_config.risk_percent:.2f}%</b>"
             )
 
+        unresolved = self.db.unresolved_executions()
+        if unresolved:
+            logger.critical(
+                "{} unresolved execution(s) require broker-history review; "
+                "new entries for the affected account/symbol are blocked",
+                len(unresolved),
+            )
+            if self.telegram is not None:
+                self.telegram.notify_admins(
+                    "\u26a0\ufe0f <b>Execution review required</b>\n"
+                    f"Unresolved attempts: <b>{len(unresolved)}</b>\n"
+                    "New entries are blocked until broker history is checked."
+                )
+
         bar_seconds = TIMEFRAME_SECONDS.get(self.tf_trigger, 300)
         logger.info("entering main loop ({}s cadence, {}s bars)", self.loop_sleep, bar_seconds)
 
@@ -994,9 +1083,13 @@ class LiveBot:
                     continue
 
                 # (1) every second: reconcile + manage protective stops
-                self._sync_positions()
+                reconciled = self._sync_positions()
                 self._manage_open_positions()
                 self._check_shadows()
+
+                if not reconciled:
+                    self._stop.wait(self.loop_sleep)
+                    continue
 
                 # (2) bar close only: hunt for new entries
                 frames = self._load_frames()
@@ -1011,6 +1104,8 @@ class LiveBot:
                         "warming up: {} / {} bars", len(m5), self.strategy.min_bars()
                     )
 
+            except MT5ReadError as exc:
+                logger.warning("broker state unknown; entry cycle skipped: {}", exc)
             except Exception as exc:
                 logger.exception("main loop iteration failed: {}", exc)
 
