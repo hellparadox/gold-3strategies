@@ -12,6 +12,7 @@ import time
 from loguru import logger
 
 from backtest.engine import BacktestConfig, BacktestEngine
+from backtest.reporting import export_run
 from core import Settings
 from core.mt5_client import MT5Client, MT5Config
 from core.risk_manager import RiskConfig, SymbolSpec
@@ -26,6 +27,8 @@ def main() -> None:
     parser.add_argument("--spread", type=float, default=None, help="override spread points")
     parser.add_argument("--slippage", type=float, default=None, help="override slippage points")
     parser.add_argument("--commission", type=float, default=None, help="override commission $/lot")
+    parser.add_argument("--output-dir", help="new directory for trades and reproducible report")
+    parser.add_argument("--save-bars", action="store_true", help="also export input OHLC frames (requires --output-dir)")
     parser.add_argument(
         "--partial", dest="partial", action="store_true", default=None,
         help="simulate the strategy's staged partial exit (bank partial_frac at +partial_tp_rr)",
@@ -35,6 +38,8 @@ def main() -> None:
         help="disable partial-exit simulation even if the yaml enables it",
     )
     args = parser.parse_args()
+    if args.save_bars and not args.output_dir:
+        parser.error("--save-bars requires --output-dir")
 
     logger.remove()
     logger.add(sys.stdout, level="INFO", format="{time:HH:mm:ss} | {level} | {message}")
@@ -70,6 +75,9 @@ def main() -> None:
     m15 = client.get_history_bars("M15", max(12_000, args.bars // 3))
     h1 = client.get_history_bars("H1", max(4_000, args.bars // 12))
     client.shutdown()
+    if m5.empty:
+        logger.error("No M5 history returned; backtest was not run")
+        return
     logger.info("data in {:.0f}s | M5={} M15={} H1={} | range {} .. {}",
                 time.time() - t0, len(m5), len(m15), len(h1), m5.index[0], m5.index[-1])
 
@@ -86,6 +94,10 @@ def main() -> None:
     print()
     for line in result.summary_lines():
         print(line)
+    if args.output_dir:
+        path = export_run(args.output_dir, engine, result,
+                          {"m5": m5, "m15": m15, "h1": h1}, args.save_bars)
+        logger.info("backtest evidence saved to {}", path)
 
 
 if __name__ == "__main__":

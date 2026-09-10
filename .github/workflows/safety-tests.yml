@@ -1,0 +1,31 @@
+name: safety-tests
+
+on:
+  pull_request:
+  push:
+    branches: [main, "codex/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install test dependencies
+        run: >-
+          python -m pip install pandas numpy ta loguru pyyaml
+          python-telegram-bot python-dotenv requests matplotlib mplfinance
+      - name: Compile
+        run: python -m compileall -q .
+      - name: Regression tests
+        run: python -m unittest discover -s tests -v
+      - name: News filter tests
+        run: python _test_news_filter.py
+      - name: Existing partial-exit tests
+        run: python _test_partial_exit.py

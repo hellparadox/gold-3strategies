@@ -6,8 +6,8 @@ Design notes
   terminal.  It is **not** thread-safe, so every call in this module is taken
   under a single re-entrant lock.  The live loop and the Telegram thread can
   therefore both query the terminal safely.
-* No method raises on a network failure.  Reads return ``None``/empty frames,
-  writes return an ``OrderResult`` with ``ok=False``.  The caller decides.
+* Position/deal read failures raise MT5ReadError: an unknown state must never
+  be mistaken for an empty account. Other reads retain their optional results.
 """
 from __future__ import annotations
 
@@ -33,6 +33,7 @@ __all__ = [
     "MT5_AVAILABLE",
     "MT5Client",
     "MT5Config",
+    "MT5ReadError",
     "OrderResult",
     "TIMEFRAME_SECONDS",
     "timeframe_to_mt5",
@@ -61,6 +62,10 @@ def timeframe_to_mt5(name: str) -> int:
     if attr is None:
         raise ValueError(f"MetaTrader5 has no TIMEFRAME_{key}")
     return int(attr)
+
+
+class MT5ReadError(RuntimeError):
+    """The broker state could not be read after bounded retries."""
 
 
 @dataclass
@@ -117,6 +122,7 @@ class OrderResult:
     price: float = 0.0
     volume: float = 0.0
     request: Dict[str, Any] = field(default_factory=dict)
+    uncertain: bool = False
 
     def __str__(self) -> str:
         state = "OK" if self.ok else "FAIL"
@@ -487,7 +493,7 @@ class MT5Client:
     def positions(self, magic_only: bool = True) -> List[Any]:
         raw = self._guarded("positions_get", lambda: mt5.positions_get(symbol=self.symbol))
         if raw is None:
-            return []
+            raise MT5ReadError(f"positions unavailable: {self.last_error}")
         items = list(raw)
         if magic_only:
             items = [p for p in items if int(getattr(p, "magic", 0)) == self.magic]
@@ -495,6 +501,8 @@ class MT5Client:
 
     def position_by_ticket(self, ticket: int) -> Optional[Any]:
         raw = self._guarded("positions_get_ticket", lambda: mt5.positions_get(ticket=int(ticket)))
+        if raw is None:
+            raise MT5ReadError(f"position {ticket} unavailable: {self.last_error}")
         items = list(raw) if raw else []
         return items[0] if items else None
 
@@ -507,8 +515,32 @@ class MT5Client:
             lambda: mt5.history_deals_get(since, datetime.now() + timedelta(days=1)),
         )
         if raw is None:
-            return []
+            raise MT5ReadError(f"deal history unavailable: {self.last_error}")
         return [d for d in raw if int(getattr(d, "magic", 0)) == self.magic]
+
+    def deals_for_position(self, position_id: int) -> List[Any]:
+        """Complete position history, including manual exits with another magic."""
+        raw = self._guarded(
+            "history_deals_get_position",
+            lambda: mt5.history_deals_get(position=int(position_id)),
+        )
+        if raw is None:
+            raise MT5ReadError(f"position history unavailable: {self.last_error}")
+        return [d for d in raw if int(getattr(d, "position_id", 0)) == int(position_id)]
+
+    def position_id_for_deal(self, deal_ticket: int) -> Optional[int]:
+        """Resolve a market-order deal to its broker position identifier."""
+        raw = self._guarded(
+            "history_deals_get_ticket",
+            lambda: mt5.history_deals_get(ticket=int(deal_ticket)),
+        )
+        if raw is None:
+            raise MT5ReadError(f"deal {deal_ticket} unavailable: {self.last_error}")
+        for deal in raw:
+            position_id = int(getattr(deal, "position_id", 0) or 0)
+            if position_id > 0:
+                return position_id
+        return None
 
     # ---------------------------------------------------------------- writes
     def _filling_modes(self) -> List[int]:
@@ -601,9 +633,12 @@ class MT5Client:
                         last = None
                 if last is None:
                     self._capture_error("order_send")
-                    time.sleep(0.3 * attempt)
-                    continue
-                if last.retcode == mt5.TRADE_RETCODE_DONE:
+                    return OrderResult(False, comment="order outcome unknown; do not resend",
+                                       request=request, uncertain=True)
+                if last.retcode in (10008, 10012, 10028, 10031):
+                    return OrderResult(False, int(last.retcode), str(last.comment),
+                                       request=request, uncertain=True)
+                if last.retcode in (mt5.TRADE_RETCODE_DONE, 10010):
                     logger.success(
                         "{} {} lots @ {} | sl={} tp={} ticket={}",
                         side_u, vol, last.price, base.get("sl"), base.get("tp"), last.order,
@@ -612,6 +647,7 @@ class MT5Client:
                         True, int(last.retcode), str(last.comment), int(last.order),
                         int(last.deal), int(getattr(last, "position", 0) or 0),
                         float(last.price), float(last.volume), request,
+                        uncertain=(last.retcode == 10010),
                     )
                 if last.retcode in (
                     mt5.TRADE_RETCODE_REQUOTE,
@@ -709,10 +745,16 @@ class MT5Client:
                     res = mt5.order_send(dict(request, type_filling=filling))
                 except Exception as exc:
                     logger.error("close_position raised: {}", exc)
-                    continue
+                    return OrderResult(False, comment=str(exc), request=request, uncertain=True)
+            if res is None or res.retcode in (10008, 10012, 10028, 10031):
+                return OrderResult(False, comment="close outcome unknown; reconcile before retry",
+                                   request=request, uncertain=True)
             if res is not None and res.retcode == mt5.TRADE_RETCODE_DONE:
                 logger.success("closed position {} ({} lots)", ticket, pos.volume)
                 return OrderResult(True, int(res.retcode), str(res.comment), price=float(res.price))
+            if res.retcode != 10030:
+                return OrderResult(False, int(res.retcode), str(res.comment), request=request,
+                                   uncertain=(res.retcode == 10010))
         return OrderResult(False, comment="close failed", request=request)
 
     # ------------------------------------------------------------- telemetry
