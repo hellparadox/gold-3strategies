@@ -112,6 +112,11 @@ class RiskConfig:
     commission_per_lot: float = 6.0
     min_sl_points: float = 60.0
     include_commission_in_risk: bool = True
+    # If > 0: when min-lot would FORCE a risk above this % of balance, skip the
+    # trade entirely instead of taking an oversized bet (0 = guard disabled).
+    # 3.0 chosen 2026-09-14: caps forced min-lot bets; 5y test shows skipped
+    # trades were net winners (~+$255 @3%), so this is insurance, not edge.
+    max_forced_risk_percent: float = 3.0
 
     @classmethod
     def from_settings(cls, settings: Any) -> "RiskConfig":
@@ -133,6 +138,9 @@ class RiskConfig:
             min_sl_points=float(settings.get("risk.min_sl_points", 60.0)),
             include_commission_in_risk=bool(
                 settings.get("risk.include_commission_in_risk", True)
+            ),
+            max_forced_risk_percent=float(
+                settings.get("risk.max_forced_risk_percent", 3.0)
             ),
         )
 
@@ -261,11 +269,21 @@ class RiskManager:
         risk_money = self.spec.money_per_lot(sl_price_distance) * lot
         risk_money += self.config.commission_per_lot * lot
         if raw_lot < self.config.min_lot:
+            forced_pct = (risk_money / bal * 100.0) if bal else 0.0
+            if (
+                self.config.max_forced_risk_percent > 0.0
+                and forced_pct > self.config.max_forced_risk_percent
+            ):
+                logger.warning(
+                    "🛑 risk guard: min-lot would force ${:.2f} risk "
+                    "({:.2f}% of balance) > {:.2f}% cap — SKIPPING entry",
+                    risk_money, forced_pct, self.config.max_forced_risk_percent,
+                )
+                return 0.0, risk_money
             logger.warning(
                 "risk budget ${:.2f} implies {:.4f} lots (< min {:.2f}); "
                 "trading min lot risks ${:.2f} ({:.2f}% of balance)",
-                budget, raw_lot, self.config.min_lot, risk_money,
-                (risk_money / bal * 100.0) if bal else 0.0,
+                budget, raw_lot, self.config.min_lot, risk_money, forced_pct,
             )
         return lot, risk_money
 
@@ -294,6 +312,9 @@ class RiskManager:
             tp = self._round_price(entry - tp_dist)
 
         lot, risk_money = self.calculate_lot(balance, sl_dist)
+        if lot <= 0.0:
+            logger.warning("risk guard tripped — no trade levels built for this signal")
+            return None
         reward_money = self.spec.money_per_lot(tp_dist) * lot - self.config.commission_per_lot * lot
         return TradeLevels(
             side=side,
