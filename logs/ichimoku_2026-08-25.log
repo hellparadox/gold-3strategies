@@ -1,0 +1,127 @@
+2026-08-25 12:02:31.723 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-08-25 12:02:31.883 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 12:02:31.891 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-08-25 12:02:31.897 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 12:02:31.909 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 12:02:31.911 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 12:02:31.911 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 12:02:31.911 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-25 12:02:31.911 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 12:02:36.913 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 12:02:41.921 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 12:02:46.192 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @MatrixGolden_bot
+2026-08-25 12:02:46.198 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 12:04:14.175 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-25 12:04:14.181 | INFO     | MainThread | __main__:shutdown:724 - shutting down…
+2026-08-25 12:04:16.465 | INFO     | telegram-loop | core.telegram_bot:_thread_main:197 - telegram event loop closed
+2026-08-25 12:04:16.467 | INFO     | MainThread | core.telegram_bot:stop:176 - telegram controller stopped
+2026-08-25 12:04:16.467 | INFO     | MainThread | core.mt5_client:shutdown:292 - MT5 client shut down
+2026-08-25 12:04:16.471 | SUCCESS  | MainThread | __main__:shutdown:731 - clean shutdown complete
+2026-08-25 12:04:36.748 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-08-25 12:04:36.969 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 12:04:36.973 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-08-25 12:04:36.973 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 12:04:37.001 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 12:04:37.001 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 12:04:37.001 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 12:04:37.003 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-25 12:04:37.003 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 12:04:42.005 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 12:04:47.021 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 12:04:49.070 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @MatrixGolden_bot
+2026-08-25 12:04:49.082 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 12:24:01.849 | INFO     | telegram-loop | core.database:add_vip_days:268 - VIP +30 days for 1987156365 -> expires 2026-09-24 19:24:01
+2026-08-25 15:17:01.140 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-25 15:17:01.183 | INFO     | MainThread | __main__:shutdown:724 - shutting down…
+2026-08-25 15:17:03.636 | INFO     | telegram-loop | core.telegram_bot:_thread_main:197 - telegram event loop closed
+2026-08-25 15:17:03.638 | INFO     | MainThread | core.telegram_bot:stop:176 - telegram controller stopped
+2026-08-25 15:17:03.647 | INFO     | MainThread | core.mt5_client:shutdown:292 - MT5 client shut down
+2026-08-25 15:17:03.705 | SUCCESS  | MainThread | __main__:shutdown:731 - clean shutdown complete
+2026-08-25 15:19:32.925 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-08-25 15:19:33.054 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 15:19:33.057 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-08-25 15:19:33.057 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 15:19:33.071 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 15:19:33.071 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 15:19:33.071 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 15:19:33.081 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-25 15:19:33.081 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 15:19:38.084 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 15:19:43.088 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 15:19:44.276 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @MatrixGolden_bot
+2026-08-25 15:19:44.286 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 21:00:00.694 | INFO     | MainThread | __main__:_sync_daily:493 - daily guard reset | new server day 2026-08-26 | balance=$694.91
+2026-08-25 21:39:45.179 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-08-25 21:39:45.478 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 21:39:45.482 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-08-25 21:39:45.484 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 21:39:45.498 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 21:39:45.513 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 21:39:45.515 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 21:39:45.515 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 21:39:50.517 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 21:39:55.522 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 21:39:56.961 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @MatrixGolden_bot
+2026-08-25 21:39:56.978 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 21:57:12.244 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-08-25 21:57:12.410 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 21:57:12.412 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-08-25 21:57:12.414 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 21:57:12.432 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 21:57:12.432 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 21:57:12.432 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 21:57:12.434 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 21:57:17.435 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 21:57:22.440 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 21:57:23.617 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @MatrixGolden_bot
+2026-08-25 21:57:23.627 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 22:18:07.771 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-08-25 22:18:07.980 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 22:18:08.023 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-08-25 22:18:08.027 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 22:18:08.047 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 22:18:08.049 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 22:18:08.049 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 22:18:08.051 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 22:18:13.052 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 22:18:18.057 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 22:19:47.948 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-08-25 22:19:48.189 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 22:19:48.192 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-08-25 22:19:48.192 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 22:19:48.338 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 22:19:48.343 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 22:19:48.343 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 22:19:48.343 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 22:19:53.346 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 22:19:58.354 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 22:19:59.777 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @MatrixGolden_bot
+2026-08-25 22:19:59.792 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 22:23:40.539 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-08-25 22:23:40.668 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 22:23:40.672 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-08-25 22:23:40.672 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 22:23:40.686 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 22:23:40.686 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 22:23:40.686 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 22:23:40.686 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 22:23:45.688 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 22:23:50.700 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 22:23:51.900 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @MatrixGolden_bot
+2026-08-25 22:23:51.920 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-26 05:50:00.985 | WARNING  | MainThread | core.risk_manager:calculate_lot:262 - risk budget $6.95 implies 0.0057 lots (< min 0.01); trading min lot risks $12.22 (1.76% of balance)
+2026-08-26 05:50:01.059 | INFO     | MainThread | __main__:_on_new_closed_bar:567 - 🎯 سیگنال شناسایی شد: 2026-08-26 15:30:00 → SELL (Kijun pullback)
+2026-08-26 05:50:05.933 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:591 - 📱 سیگنال به همراه چارت به تلگرام مخابره شد.
+2026-08-26 05:50:05.965 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-26 05:50:05.974 | WARNING  | MainThread | core.risk_manager:calculate_lot:262 - risk budget $6.95 implies 0.0057 lots (< min 0.01); trading min lot risks $12.22 (1.76% of balance)
+2026-08-26 05:50:06.146 | SUCCESS  | MainThread | core.mt5_client:send_market_order:607 - SELL 0.01 lots @ 4624.25 | sl=4636.41 tp=4601.27 ticket=10212352146
+2026-08-26 05:50:07.437 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:928 - signal broadcast → VIP:2 FREE:0
+2026-08-26 05:54:28.204 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10212352146 sl=4624.2 tp=4601.27
+2026-08-26 05:54:28.223 | SUCCESS  | MainThread | __main__:_manage_open_positions:441 - breakeven #10212352146 SL 4636.41 -> 4624.20
+2026-08-26 05:54:29.275 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10212352146 sl=4618.95 tp=4601.27
+2026-08-26 05:54:29.290 | SUCCESS  | MainThread | __main__:_manage_open_positions:441 - trailing #10212352146 SL 4624.20 -> 4618.95
+2026-08-26 05:54:30.566 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10212352146 sl=4618.24 tp=4601.27
+2026-08-26 05:54:30.583 | SUCCESS  | MainThread | __main__:_manage_open_positions:441 - trailing #10212352146 SL 4618.95 -> 4618.24
+2026-08-26 05:54:31.252 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10212352146 sl=4617.71 tp=4601.27
+2026-08-26 05:54:31.266 | SUCCESS  | MainThread | __main__:_manage_open_positions:441 - trailing #10212352146 SL 4618.24 -> 4617.71
+2026-08-26 05:55:09.524 | SUCCESS  | MainThread | __main__:_handle_closed_position:398 - position #10212352146 closed | WIN | $6.54

@@ -1,0 +1,151 @@
+2026-09-05 01:49:34.223 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-09-05 01:49:34.386 | INFO     | MainThread | core.news_filter:start:113 - news filter cold-start: fetching calendar synchronously...
+2026-09-05 01:49:34.760 | SUCCESS  | MainThread | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 01:49:34.765 | SUCCESS  | MainThread | core.news_filter:start:117 - cold-start successful: calendar loaded
+2026-09-05 01:49:34.767 | INFO     | MainThread | core.news_filter:start:132 - news filter background refresh started (interval: 1.0h)
+2026-09-05 01:49:34.767 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-05 01:49:34.779 | INFO     | MainThread | __main__:run:950 - ========================================================================
+2026-09-05 01:49:34.781 | INFO     | MainThread | __main__:run:951 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-09-05 01:49:34.781 | INFO     | MainThread | __main__:run:952 - ========================================================================
+2026-09-05 01:49:34.805 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:275 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-05 01:49:34.807 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=533.00 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-05 01:49:34.812 | INFO     | MainThread | __main__:_sync_daily:708 - daily guard init | realized today=$0.00 | day-start balance=$533.00 | cap -10%/$53.30
+2026-09-05 01:49:34.814 | WARNING  | MainThread | __main__:_sync_daily:713 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-09-05 01:49:34.814 | WARNING  | MainThread | __main__:run:963 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-09-05 01:49:39.815 | WARNING  | MainThread | __main__:run:963 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-09-05 01:49:44.821 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-09-05 01:49:44.828 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8081/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-05 01:49:46.098 | SUCCESS  | telegram-loop | core.telegram_bot:_register_menu_commands:418 - telegram menu commands registered (6 public / 15 admin)
+2026-09-05 01:49:46.190 | SUCCESS  | MainThread | core.telegram_bot:start:182 - telegram controller online as @MatrixGolden_bot
+2026-09-05 01:49:46.197 | INFO     | MainThread | __main__:run:980 - entering main loop (1.0s cadence, 300s bars)
+2026-09-05 02:49:35.162 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 03:49:36.360 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 04:49:37.253 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 05:49:34.138 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-09-05 05:49:34.309 | INFO     | MainThread | core.news_filter:start:113 - news filter cold-start: fetching calendar synchronously...
+2026-09-05 05:49:34.633 | SUCCESS  | MainThread | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 05:49:34.639 | SUCCESS  | MainThread | core.news_filter:start:117 - cold-start successful: calendar loaded
+2026-09-05 05:49:34.641 | INFO     | MainThread | core.news_filter:start:132 - news filter background refresh started (interval: 1.0h)
+2026-09-05 05:49:34.643 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-05 05:49:34.656 | INFO     | MainThread | __main__:run:955 - ========================================================================
+2026-09-05 05:49:34.658 | INFO     | MainThread | __main__:run:956 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-09-05 05:49:34.658 | INFO     | MainThread | __main__:run:957 - ========================================================================
+2026-09-05 05:49:34.727 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:275 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-05 05:49:34.729 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=533.00 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-05 05:49:34.731 | INFO     | MainThread | __main__:_sync_daily:713 - daily guard init | realized today=$0.00 | day-start balance=$533.00 | cap -10%/$53.30
+2026-09-05 05:49:34.733 | WARNING  | MainThread | __main__:_sync_daily:718 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-09-05 05:49:34.733 | WARNING  | MainThread | __main__:run:968 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-09-05 05:49:39.734 | WARNING  | MainThread | __main__:run:968 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-09-05 05:49:44.741 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-09-05 05:49:44.750 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8081/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-05 05:49:45.994 | SUCCESS  | telegram-loop | core.telegram_bot:_register_menu_commands:418 - telegram menu commands registered (6 public / 15 admin)
+2026-09-05 05:49:46.084 | SUCCESS  | MainThread | core.telegram_bot:start:182 - telegram controller online as @MatrixGolden_bot
+2026-09-05 05:49:46.090 | INFO     | MainThread | __main__:run:985 - entering main loop (1.0s cadence, 300s bars)
+2026-09-05 06:49:35.195 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 07:49:35.577 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 08:49:35.962 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 09:49:36.347 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 10:49:36.731 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 11:49:37.108 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 12:49:37.494 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 12:59:46.834 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #1 starting
+2026-09-05 13:01:16.098 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:275 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-05 13:01:16.114 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=533.00 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-05 13:01:16.120 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-09-05 13:49:37.997 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 14:49:38.387 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 15:49:38.758 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 16:49:39.142 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 17:49:39.541 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 18:49:39.927 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 19:49:40.295 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 20:49:40.680 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 21:25:56.030 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #2 starting
+2026-09-05 21:26:01.144 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-05 21:26:01.152 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-05 21:26:11.162 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-05 21:26:11.168 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-05 21:26:31.185 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:275 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-05 21:26:31.190 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=533.00 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-05 21:26:31.203 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 3 attempt(s)
+2026-09-05 21:49:41.053 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-05 22:36:13.309 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #3 starting
+2026-09-05 22:36:18.337 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:275 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-05 22:36:18.343 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=533.00 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-05 22:36:18.355 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-09-05 22:49:41.444 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-05 23:49:41.839 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 00:49:42.231 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 01:49:42.605 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 02:49:43.096 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 03:49:43.512 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 04:49:43.894 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 05:49:44.314 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 06:49:44.709 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 07:49:45.092 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 08:49:45.469 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 09:49:45.847 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 10:49:46.227 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 11:49:46.605 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 12:29:15.123 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #4 starting
+2026-09-06 12:30:05.593 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:275 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-06 12:30:05.636 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=533.00 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-06 12:30:05.648 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-09-06 12:49:47.177 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 13:49:47.587 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 14:49:47.955 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 15:00:01.559 | INFO     | MainThread | __main__:_sync_daily:731 - daily guard reset | new server day 2026-09-06 | balance=$533.00
+2026-09-06 15:00:01.568 | INFO     | MainThread | __main__:_check_daily_digest:757 - daily digest skipped — nothing traded on 2026-09-05
+2026-09-06 15:49:48.337 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 16:49:49.023 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 17:00:00.225 | INFO     | MainThread | __main__:_check_daily_digest:757 - daily digest skipped — nothing traded on 2026-09-06
+2026-09-06 17:49:49.649 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 18:49:50.040 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 19:49:50.428 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 20:49:50.891 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 21:00:00.618 | INFO     | MainThread | __main__:_sync_daily:731 - daily guard reset | new server day 2026-09-07 | balance=$533.00
+2026-09-06 21:49:51.373 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 22:45:00.786 | INFO     | MainThread | __main__:_on_new_closed_bar:828 - 🎯 سیگنال شناسایی شد: 2026-09-07 08:30:00 → SELL (Kijun pullback)
+2026-09-06 22:45:00.881 | WARNING  | MainThread | core.risk_manager:calculate_lot:264 - risk budget $5.33 implies 0.0042 lots (< min 0.01); trading min lot risks $12.66 (2.38% of balance)
+2026-09-06 22:45:01.049 | SUCCESS  | MainThread | core.mt5_client:send_market_order:607 - SELL 0.01 lots @ 4404.17 | sl=4416.83 tp=4380.43 ticket=102867737
+2026-09-06 22:45:01.093 | INFO     | MainThread | __main__:_on_new_closed_bar:858 - signal score 50/100 | ichimoku_m15|SELL|europe|high
+2026-09-06 22:45:06.360 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:884 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-09-06 22:45:07.866 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:1197 - signal broadcast → VIP:2 FREE:0
+2026-09-06 22:49:51.901 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-06 22:54:56.596 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=102867737 sl=4404.12 tp=4380.43
+2026-09-06 22:54:56.604 | SUCCESS  | MainThread | __main__:_manage_open_positions:679 - breakeven #102867737 SL 4416.83 -> 4404.12
+2026-09-06 22:59:58.119 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=102867737 sl=4399.77 tp=4380.43
+2026-09-06 22:59:58.127 | SUCCESS  | MainThread | __main__:_manage_open_positions:679 - trailing #102867737 SL 4404.12 -> 4399.77
+2026-09-06 23:00:58.690 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=102867737 sl=4398.77 tp=4380.43
+2026-09-06 23:00:58.696 | SUCCESS  | MainThread | __main__:_manage_open_positions:679 - trailing #102867737 SL 4399.77 -> 4398.77
+2026-09-06 23:01:09.779 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=102867737 sl=4397.28 tp=4380.43
+2026-09-06 23:01:09.787 | SUCCESS  | MainThread | __main__:_manage_open_positions:679 - trailing #102867737 SL 4398.77 -> 4397.28
+2026-09-06 23:04:03.154 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=102867737 sl=4396.15 tp=4380.43
+2026-09-06 23:04:03.168 | SUCCESS  | MainThread | __main__:_manage_open_positions:679 - trailing #102867737 SL 4397.28 -> 4396.15
+2026-09-06 23:04:08.198 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=102867737 sl=4395.1 tp=4380.43
+2026-09-06 23:04:08.204 | SUCCESS  | MainThread | __main__:_manage_open_positions:679 - trailing #102867737 SL 4396.15 -> 4395.10
+2026-09-06 23:04:19.292 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=102867737 sl=4393.4 tp=4380.43
+2026-09-06 23:04:19.298 | SUCCESS  | MainThread | __main__:_manage_open_positions:679 - trailing #102867737 SL 4395.10 -> 4393.40
+2026-09-06 23:04:31.403 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=102867737 sl=4392.27 tp=4380.43
+2026-09-06 23:04:31.409 | SUCCESS  | MainThread | __main__:_manage_open_positions:679 - trailing #102867737 SL 4393.40 -> 4392.27
+2026-09-06 23:12:17.976 | SUCCESS  | MainThread | __main__:_handle_closed_position:550 - position #102867737 closed | WIN | $11.81
+2026-09-06 23:49:52.366 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-07 00:30:00.951 | INFO     | MainThread | __main__:_on_new_closed_bar:828 - 🎯 سیگنال شناسایی شد: 2026-09-07 10:15:00 → SELL (Kijun pullback)
+2026-09-07 00:30:01.007 | WARNING  | MainThread | core.risk_manager:calculate_lot:264 - risk budget $5.38 implies 0.0041 lots (< min 0.01); trading min lot risks $13.12 (2.44% of balance)
+2026-09-07 00:30:01.112 | SUCCESS  | MainThread | core.mt5_client:send_market_order:607 - SELL 0.01 lots @ 4395.38 | sl=4408.53 tp=4370.81 ticket=102902653
+2026-09-07 00:30:01.146 | INFO     | MainThread | __main__:_on_new_closed_bar:858 - signal score 50/100 | ichimoku_m15|SELL|europe|high
+2026-09-07 00:30:03.089 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:884 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-09-07 00:30:04.259 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:1197 - signal broadcast → VIP:2 FREE:0
+2026-09-07 00:49:52.840 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-07 01:01:21.340 | SUCCESS  | MainThread | __main__:_handle_closed_position:550 - position #102902653 closed | LOSS | $-13.23
+2026-09-07 01:49:53.505 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-07 02:49:53.914 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-07 03:49:54.592 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-07 04:49:55.362 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-07 05:49:55.805 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-07 06:49:56.498 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-07 07:49:57.064 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-07 08:49:57.488 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-07 09:49:57.859 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-07 10:49:58.251 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-07 11:49:58.640 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)

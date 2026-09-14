@@ -1,0 +1,48 @@
+2026-08-27 06:52:05.806 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-27 06:52:06.797 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-27 06:52:06.797 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-27 06:52:06.797 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-27 06:52:06.841 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=714.98 USD | symbol=XAUUSD | algo_trading=True
+2026-08-27 06:52:06.841 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-27 06:52:06.841 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$714.98 | cap -10%/$71.50
+2026-08-27 06:52:06.841 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-27 06:52:06.860 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-27 06:52:12.683 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-27 06:52:17.739 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-27 06:52:21.269 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-27 06:52:21.272 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-27 07:37:49.948 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-27 07:37:50.659 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-27 07:37:50.659 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-27 07:37:50.659 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-27 07:37:50.686 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=715.03 USD | symbol=XAUUSD | algo_trading=True
+2026-08-27 07:37:50.688 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-27 07:37:50.688 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$715.03 | cap -10%/$71.50
+2026-08-27 07:37:50.688 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-27 07:37:50.688 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-27 07:37:55.735 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-27 07:38:00.764 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-27 07:38:06.723 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-27 07:38:06.727 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-27 09:46:51.850 | WARNING  | telegram-loop | __main__:_hook_set_risk:274 - risk switched -> 1.00%
+2026-08-27 09:48:56.312 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-27 09:48:56.438 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-27 09:48:56.438 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-27 09:48:56.438 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-27 09:48:56.452 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=699.13 USD | symbol=XAUUSD | algo_trading=True
+2026-08-27 09:48:56.454 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-27 09:48:56.454 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$699.13 | cap -10%/$69.91
+2026-08-27 09:48:56.454 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-27 09:48:56.454 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-27 09:49:01.468 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-27 09:49:06.469 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-27 09:49:07.571 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-27 09:49:07.575 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-27 21:00:00.347 | INFO     | MainThread | __main__:_sync_daily:493 - daily guard reset | new server day 2026-08-28 | balance=$699.13
+2026-08-28 01:23:27.608 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-28 01:23:27.844 | INFO     | MainThread | __main__:shutdown:724 - shutting down…
+2026-08-28 01:23:27.972 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-28 01:23:29.623 | INFO     | telegram-loop | core.telegram_bot:_thread_main:197 - telegram event loop closed
+2026-08-28 01:23:29.637 | INFO     | MainThread | core.telegram_bot:stop:176 - telegram controller stopped
+2026-08-28 01:23:29.637 | INFO     | MainThread | core.mt5_client:shutdown:292 - MT5 client shut down
+2026-08-28 01:23:29.662 | SUCCESS  | MainThread | __main__:shutdown:731 - clean shutdown complete

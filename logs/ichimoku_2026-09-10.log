@@ -1,0 +1,380 @@
+2026-09-10 03:54:35.069 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-09-10 03:54:35.226 | INFO     | MainThread | core.news_filter:start:113 - news filter cold-start: fetching calendar synchronously...
+2026-09-10 03:54:35.581 | SUCCESS  | MainThread | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 03:54:35.589 | SUCCESS  | MainThread | core.news_filter:start:117 - cold-start successful: calendar loaded
+2026-09-10 03:54:35.589 | INFO     | MainThread | core.news_filter:start:132 - news filter background refresh started (interval: 1.0h)
+2026-09-10 03:54:35.591 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-10 03:54:35.609 | INFO     | MainThread | __main__:run:955 - ========================================================================
+2026-09-10 03:54:35.611 | INFO     | MainThread | __main__:run:956 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-09-10 03:54:35.611 | INFO     | MainThread | __main__:run:957 - ========================================================================
+2026-09-10 03:54:35.629 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:275 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-10 03:54:35.629 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=507.85 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-10 03:54:35.636 | INFO     | MainThread | __main__:_sync_daily:713 - daily guard init | realized today=$3.90 | day-start balance=$503.95 | cap -10%/$50.40
+2026-09-10 03:54:35.638 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-09-10 03:54:35.644 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8081/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-10 03:54:37.085 | SUCCESS  | telegram-loop | core.telegram_bot:_register_menu_commands:418 - telegram menu commands registered (6 public / 15 admin)
+2026-09-10 03:54:37.186 | SUCCESS  | MainThread | core.telegram_bot:start:182 - telegram controller online as @MatrixGolden_bot
+2026-09-10 03:54:37.192 | INFO     | MainThread | __main__:run:985 - entering main loop (1.0s cadence, 300s bars)
+2026-09-10 03:59:33.544 | INFO     | MainThread | core.database:__init__:168 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-09-10 03:59:33.672 | INFO     | MainThread | core.news_filter:start:113 - news filter cold-start: fetching calendar synchronously...
+2026-09-10 03:59:34.034 | SUCCESS  | MainThread | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 03:59:34.040 | SUCCESS  | MainThread | core.news_filter:start:117 - cold-start successful: calendar loaded
+2026-09-10 03:59:34.042 | INFO     | MainThread | core.news_filter:start:132 - news filter background refresh started (interval: 1.0h)
+2026-09-10 03:59:34.044 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-10 03:59:34.050 | INFO     | MainThread | __main__:run:1027 - ========================================================================
+2026-09-10 03:59:34.050 | INFO     | MainThread | __main__:run:1028 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-09-10 03:59:34.052 | INFO     | MainThread | __main__:run:1029 - ========================================================================
+2026-09-10 03:59:34.068 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:281 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-10 03:59:34.070 | SUCCESS  | MainThread | core.mt5_client:connect:238 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=507.85 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-10 03:59:34.090 | INFO     | MainThread | core.mt5_client:start_heartbeat:342 - heartbeat thread started (30s)
+2026-09-10 03:59:34.096 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8081/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-10 03:59:35.757 | SUCCESS  | telegram-loop | core.telegram_bot:_register_menu_commands:418 - telegram menu commands registered (6 public / 15 admin)
+2026-09-10 03:59:35.853 | SUCCESS  | MainThread | core.telegram_bot:start:182 - telegram controller online as @MatrixGolden_bot
+2026-09-10 03:59:35.858 | INFO     | MainThread | __main__:run:1074 - entering main loop (1.0s cadence, 300s bars)
+2026-09-10 04:04:33.503 | INFO     | MainThread | core.database:__init__:168 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-09-10 04:04:33.630 | INFO     | MainThread | core.news_filter:start:113 - news filter cold-start: fetching calendar synchronously...
+2026-09-10 04:04:33.978 | SUCCESS  | MainThread | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 04:04:33.985 | SUCCESS  | MainThread | core.news_filter:start:117 - cold-start successful: calendar loaded
+2026-09-10 04:04:33.986 | INFO     | MainThread | core.news_filter:start:132 - news filter background refresh started (interval: 1.0h)
+2026-09-10 04:04:33.986 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-10 04:04:33.994 | INFO     | MainThread | __main__:run:1027 - ========================================================================
+2026-09-10 04:04:33.994 | INFO     | MainThread | __main__:run:1028 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-09-10 04:04:33.994 | INFO     | MainThread | __main__:run:1029 - ========================================================================
+2026-09-10 04:04:34.020 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:281 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-10 04:04:34.022 | SUCCESS  | MainThread | core.mt5_client:connect:238 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=507.85 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-10 04:04:34.028 | INFO     | MainThread | core.mt5_client:start_heartbeat:342 - heartbeat thread started (30s)
+2026-09-10 04:04:34.034 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8081/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-10 04:04:35.381 | SUCCESS  | telegram-loop | core.telegram_bot:_register_menu_commands:418 - telegram menu commands registered (6 public / 15 admin)
+2026-09-10 04:04:35.476 | SUCCESS  | MainThread | core.telegram_bot:start:182 - telegram controller online as @MatrixGolden_bot
+2026-09-10 04:04:35.484 | INFO     | MainThread | __main__:run:1074 - entering main loop (1.0s cadence, 300s bars)
+2026-09-10 04:06:16.191 | INFO     | asyncio_0 | backtest.engine:__init__:102 - loaded 162 historical news events for backtesting blackout
+2026-09-10 04:06:16.197 | INFO     | asyncio_0 | backtest.engine:__init__:404 - partial-exit simulation ON: bank 50% of the position at +1.5R, remainder runs with SL/TP
+2026-09-10 04:06:16.199 | INFO     | asyncio_0 | backtest.engine:run:445 - backtest start | strategy=ichimoku_m15 bars=25000 spread=8.0pts commission=$0.0/lot news_filter=True
+2026-09-10 04:06:16.583 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.33 implies 0.0033 lots (< min 0.01); trading min lot risks $16.09 (3.02% of balance)
+2026-09-10 04:06:16.593 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.45 implies 0.0028 lots (< min 0.01); trading min lot risks $19.67 (3.61% of balance)
+2026-09-10 04:06:16.595 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.26 implies 0.0030 lots (< min 0.01); trading min lot risks $17.24 (3.28% of balance)
+2026-09-10 04:06:16.595 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.26 implies 0.0028 lots (< min 0.01); trading min lot risks $18.80 (3.58% of balance)
+2026-09-10 04:06:16.597 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.51 implies 0.0037 lots (< min 0.01); trading min lot risks $14.79 (2.68% of balance)
+2026-09-10 04:06:16.597 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.59 implies 0.0039 lots (< min 0.01); trading min lot risks $14.24 (2.55% of balance)
+2026-09-10 04:06:16.597 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.45 implies 0.0042 lots (< min 0.01); trading min lot risks $12.95 (2.38% of balance)
+2026-09-10 04:06:16.599 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.58 implies 0.0040 lots (< min 0.01); trading min lot risks $14.00 (2.51% of balance)
+2026-09-10 04:06:16.599 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.44 implies 0.0028 lots (< min 0.01); trading min lot risks $19.68 (3.62% of balance)
+2026-09-10 04:06:16.601 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.81 implies 0.0050 lots (< min 0.01); trading min lot risks $11.70 (2.01% of balance)
+2026-09-10 04:06:16.601 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.90 implies 0.0048 lots (< min 0.01); trading min lot risks $12.19 (2.07% of balance)
+2026-09-10 04:06:16.601 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.03 implies 0.0041 lots (< min 0.01); trading min lot risks $14.81 (2.46% of balance)
+2026-09-10 04:06:16.603 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.88 implies 0.0040 lots (< min 0.01); trading min lot risks $14.69 (2.50% of balance)
+2026-09-10 04:06:16.603 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.74 implies 0.0033 lots (< min 0.01); trading min lot risks $17.42 (3.04% of balance)
+2026-09-10 04:06:16.603 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.82 implies 0.0049 lots (< min 0.01); trading min lot risks $11.90 (2.04% of balance)
+2026-09-10 04:06:16.605 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.91 implies 0.0030 lots (< min 0.01); trading min lot risks $19.75 (3.34% of balance)
+2026-09-10 04:06:16.605 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.91 implies 0.0035 lots (< min 0.01); trading min lot risks $16.80 (2.84% of balance)
+2026-09-10 04:06:16.618 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.01 implies 0.0036 lots (< min 0.01); trading min lot risks $16.54 (2.75% of balance)
+2026-09-10 04:06:16.618 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.06 implies 0.0035 lots (< min 0.01); trading min lot risks $17.40 (2.87% of balance)
+2026-09-10 04:06:16.620 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.39 implies 0.0042 lots (< min 0.01); trading min lot risks $15.09 (2.36% of balance)
+2026-09-10 04:06:16.620 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.67 implies 0.0040 lots (< min 0.01); trading min lot risks $16.75 (2.51% of balance)
+2026-09-10 04:06:16.620 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.50 implies 0.0041 lots (< min 0.01); trading min lot risks $15.86 (2.44% of balance)
+2026-09-10 04:06:16.624 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.35 implies 0.0058 lots (< min 0.01); trading min lot risks $11.00 (1.73% of balance)
+2026-09-10 04:06:16.626 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.40 implies 0.0035 lots (< min 0.01); trading min lot risks $18.42 (2.88% of balance)
+2026-09-10 04:06:16.626 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.40 implies 0.0049 lots (< min 0.01); trading min lot risks $13.06 (2.04% of balance)
+2026-09-10 04:06:16.628 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.27 implies 0.0047 lots (< min 0.01); trading min lot risks $13.42 (2.14% of balance)
+2026-09-10 04:06:16.628 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.14 implies 0.0038 lots (< min 0.01); trading min lot risks $16.27 (2.65% of balance)
+2026-09-10 04:06:16.628 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.97 implies 0.0057 lots (< min 0.01); trading min lot risks $10.56 (1.77% of balance)
+2026-09-10 04:06:16.630 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.01 implies 0.0078 lots (< min 0.01); trading min lot risks $7.73 (1.29% of balance)
+2026-09-10 04:06:16.630 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.01 implies 0.0058 lots (< min 0.01); trading min lot risks $10.38 (1.73% of balance)
+2026-09-10 04:06:16.632 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.01 implies 0.0042 lots (< min 0.01); trading min lot risks $14.25 (2.37% of balance)
+2026-09-10 04:06:16.632 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.87 implies 0.0038 lots (< min 0.01); trading min lot risks $15.55 (2.65% of balance)
+2026-09-10 04:06:16.632 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.87 implies 0.0049 lots (< min 0.01); trading min lot risks $11.96 (2.04% of balance)
+2026-09-10 04:06:16.634 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $5.98 implies 0.0030 lots (< min 0.01); trading min lot risks $19.86 (3.32% of balance)
+2026-09-10 04:06:16.634 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.35 implies 0.0043 lots (< min 0.01); trading min lot risks $14.61 (2.30% of balance)
+2026-09-10 04:06:16.636 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.21 implies 0.0055 lots (< min 0.01); trading min lot risks $11.25 (1.81% of balance)
+2026-09-10 04:06:16.636 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.35 implies 0.0050 lots (< min 0.01); trading min lot risks $12.81 (2.02% of balance)
+2026-09-10 04:06:16.638 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.39 implies 0.0056 lots (< min 0.01); trading min lot risks $11.35 (1.78% of balance)
+2026-09-10 04:06:16.638 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.39 implies 0.0049 lots (< min 0.01); trading min lot risks $13.09 (2.05% of balance)
+2026-09-10 04:06:16.678 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.26 implies 0.0048 lots (< min 0.01); trading min lot risks $13.18 (2.10% of balance)
+2026-09-10 04:06:16.678 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.26 implies 0.0035 lots (< min 0.01); trading min lot risks $17.74 (2.83% of balance)
+2026-09-10 04:06:16.680 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.59 implies 0.0042 lots (< min 0.01); trading min lot risks $15.57 (2.36% of balance)
+2026-09-10 04:06:16.680 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.73 implies 0.0047 lots (< min 0.01); trading min lot risks $14.29 (2.12% of balance)
+2026-09-10 04:06:16.682 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.58 implies 0.0066 lots (< min 0.01); trading min lot risks $10.01 (1.52% of balance)
+2026-09-10 04:06:16.682 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.48 implies 0.0073 lots (< min 0.01); trading min lot risks $8.92 (1.38% of balance)
+2026-09-10 04:06:16.682 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.65 implies 0.0047 lots (< min 0.01); trading min lot risks $14.11 (2.12% of balance)
+2026-09-10 04:06:16.684 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.74 implies 0.0044 lots (< min 0.01); trading min lot risks $15.29 (2.27% of balance)
+2026-09-10 04:06:16.685 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.92 implies 0.0035 lots (< min 0.01); trading min lot risks $19.67 (2.84% of balance)
+2026-09-10 04:06:16.685 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.92 implies 0.0059 lots (< min 0.01); trading min lot risks $11.65 (1.68% of balance)
+2026-09-10 04:06:16.687 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.80 implies 0.0052 lots (< min 0.01); trading min lot risks $13.03 (1.92% of balance)
+2026-09-10 04:06:16.687 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.05 implies 0.0065 lots (< min 0.01); trading min lot risks $10.81 (1.53% of balance)
+2026-09-10 04:06:16.687 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.09 implies 0.0057 lots (< min 0.01); trading min lot risks $12.37 (1.74% of balance)
+2026-09-10 04:06:16.689 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.14 implies 0.0037 lots (< min 0.01); trading min lot risks $19.24 (2.69% of balance)
+2026-09-10 04:06:16.689 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.95 implies 0.0034 lots (< min 0.01); trading min lot risks $20.66 (2.97% of balance)
+2026-09-10 04:06:16.689 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.04 implies 0.0034 lots (< min 0.01); trading min lot risks $20.53 (2.92% of balance)
+2026-09-10 04:06:16.691 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.83 implies 0.0035 lots (< min 0.01); trading min lot risks $19.70 (2.88% of balance)
+2026-09-10 04:06:16.693 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $6.90 implies 0.0040 lots (< min 0.01); trading min lot risks $17.16 (2.49% of balance)
+2026-09-10 04:06:16.693 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.22 implies 0.0031 lots (< min 0.01); trading min lot risks $23.19 (3.21% of balance)
+2026-09-10 04:06:16.693 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.37 implies 0.0029 lots (< min 0.01); trading min lot risks $25.62 (3.48% of balance)
+2026-09-10 04:06:16.695 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.56 implies 0.0044 lots (< min 0.01); trading min lot risks $17.37 (2.30% of balance)
+2026-09-10 04:06:16.695 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.56 implies 0.0034 lots (< min 0.01); trading min lot risks $22.36 (2.96% of balance)
+2026-09-10 04:06:16.697 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.34 implies 0.0033 lots (< min 0.01); trading min lot risks $22.19 (3.02% of balance)
+2026-09-10 04:06:16.697 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.54 implies 0.0057 lots (< min 0.01); trading min lot risks $13.19 (1.75% of balance)
+2026-09-10 04:06:16.699 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.79 implies 0.0063 lots (< min 0.01); trading min lot risks $12.36 (1.59% of balance)
+2026-09-10 04:06:16.699 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.84 implies 0.0073 lots (< min 0.01); trading min lot risks $10.76 (1.37% of balance)
+2026-09-10 04:06:16.723 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.88 implies 0.0092 lots (< min 0.01); trading min lot risks $8.58 (1.09% of balance)
+2026-09-10 04:06:16.725 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.88 implies 0.0082 lots (< min 0.01); trading min lot risks $9.67 (1.23% of balance)
+2026-09-10 04:06:16.725 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.78 implies 0.0064 lots (< min 0.01); trading min lot risks $12.15 (1.56% of balance)
+2026-09-10 04:06:16.727 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.66 implies 0.0043 lots (< min 0.01); trading min lot risks $17.82 (2.33% of balance)
+2026-09-10 04:06:16.727 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.74 implies 0.0055 lots (< min 0.01); trading min lot risks $13.96 (1.80% of balance)
+2026-09-10 04:06:16.729 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.82 implies 0.0050 lots (< min 0.01); trading min lot risks $15.53 (1.99% of balance)
+2026-09-10 04:06:16.729 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $7.97 implies 0.0068 lots (< min 0.01); trading min lot risks $11.64 (1.46% of balance)
+2026-09-10 04:06:16.731 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $8.19 implies 0.0054 lots (< min 0.01); trading min lot risks $15.10 (1.84% of balance)
+2026-09-10 04:06:16.731 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $8.47 implies 0.0049 lots (< min 0.01); trading min lot risks $17.45 (2.06% of balance)
+2026-09-10 04:06:16.751 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $8.80 implies 0.0032 lots (< min 0.01); trading min lot risks $27.28 (3.10% of balance)
+2026-09-10 04:06:16.753 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $8.98 implies 0.0049 lots (< min 0.01); trading min lot risks $18.28 (2.04% of balance)
+2026-09-10 04:06:16.753 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $8.80 implies 0.0037 lots (< min 0.01); trading min lot risks $23.78 (2.70% of balance)
+2026-09-10 04:06:16.755 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $8.88 implies 0.0044 lots (< min 0.01); trading min lot risks $20.17 (2.27% of balance)
+2026-09-10 04:06:16.755 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $8.68 implies 0.0056 lots (< min 0.01); trading min lot risks $15.50 (1.79% of balance)
+2026-09-10 04:06:16.757 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $8.84 implies 0.0056 lots (< min 0.01); trading min lot risks $15.79 (1.79% of balance)
+2026-09-10 04:06:16.757 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $8.94 implies 0.0060 lots (< min 0.01); trading min lot risks $14.94 (1.67% of balance)
+2026-09-10 04:06:16.759 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.22 implies 0.0051 lots (< min 0.01); trading min lot risks $18.26 (1.98% of balance)
+2026-09-10 04:06:16.759 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.32 implies 0.0085 lots (< min 0.01); trading min lot risks $10.95 (1.17% of balance)
+2026-09-10 04:06:16.761 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.52 implies 0.0055 lots (< min 0.01); trading min lot risks $17.45 (1.83% of balance)
+2026-09-10 04:06:16.761 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.63 implies 0.0094 lots (< min 0.01); trading min lot risks $10.20 (1.06% of balance)
+2026-09-10 04:06:16.763 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.76 implies 0.0074 lots (< min 0.01); trading min lot risks $13.14 (1.35% of balance)
+2026-09-10 04:06:16.763 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.83 implies 0.0068 lots (< min 0.01); trading min lot risks $14.52 (1.48% of balance)
+2026-09-10 04:06:16.782 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.69 implies 0.0047 lots (< min 0.01); trading min lot risks $20.70 (2.14% of balance)
+2026-09-10 04:06:16.784 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.48 implies 0.0075 lots (< min 0.01); trading min lot risks $12.59 (1.33% of balance)
+2026-09-10 04:06:16.784 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.71 implies 0.0079 lots (< min 0.01); trading min lot risks $12.36 (1.27% of balance)
+2026-09-10 04:06:16.786 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.76 implies 0.0095 lots (< min 0.01); trading min lot risks $10.30 (1.06% of balance)
+2026-09-10 04:06:16.786 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.81 implies 0.0075 lots (< min 0.01); trading min lot risks $13.02 (1.33% of balance)
+2026-09-10 04:06:16.786 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.68 implies 0.0057 lots (< min 0.01); trading min lot risks $16.93 (1.75% of balance)
+2026-09-10 04:06:16.788 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.51 implies 0.0083 lots (< min 0.01); trading min lot risks $11.45 (1.20% of balance)
+2026-09-10 04:06:16.788 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.56 implies 0.0083 lots (< min 0.01); trading min lot risks $11.53 (1.21% of balance)
+2026-09-10 04:06:16.790 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.45 implies 0.0075 lots (< min 0.01); trading min lot risks $12.59 (1.33% of balance)
+2026-09-10 04:06:16.790 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.32 implies 0.0059 lots (< min 0.01); trading min lot risks $15.91 (1.71% of balance)
+2026-09-10 04:06:16.815 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.16 implies 0.0058 lots (< min 0.01); trading min lot risks $15.82 (1.73% of balance)
+2026-09-10 04:06:16.815 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.36 implies 0.0049 lots (< min 0.01); trading min lot risks $19.16 (2.05% of balance)
+2026-09-10 04:06:16.817 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.47 implies 0.0071 lots (< min 0.01); trading min lot risks $13.40 (1.41% of balance)
+2026-09-10 04:06:16.817 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.54 implies 0.0063 lots (< min 0.01); trading min lot risks $15.19 (1.59% of balance)
+2026-09-10 04:06:16.819 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.61 implies 0.0084 lots (< min 0.01); trading min lot risks $11.45 (1.19% of balance)
+2026-09-10 04:06:16.819 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.54 implies 0.0081 lots (< min 0.01); trading min lot risks $11.75 (1.23% of balance)
+2026-09-10 04:06:16.821 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.60 implies 0.0054 lots (< min 0.01); trading min lot risks $17.70 (1.84% of balance)
+2026-09-10 04:06:16.821 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.43 implies 0.0055 lots (< min 0.01); trading min lot risks $17.04 (1.81% of balance)
+2026-09-10 04:06:16.821 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.54 implies 0.0063 lots (< min 0.01); trading min lot risks $15.05 (1.58% of balance)
+2026-09-10 04:06:16.823 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.60 implies 0.0070 lots (< min 0.01); trading min lot risks $13.77 (1.43% of balance)
+2026-09-10 04:06:16.823 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.86 implies 0.0096 lots (< min 0.01); trading min lot risks $10.32 (1.05% of balance)
+2026-09-10 04:06:16.825 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.86 implies 0.0085 lots (< min 0.01); trading min lot risks $11.62 (1.18% of balance)
+2026-09-10 04:06:16.847 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.65 implies 0.0097 lots (< min 0.01); trading min lot risks $9.95 (1.03% of balance)
+2026-09-10 04:06:16.847 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.55 implies 0.0077 lots (< min 0.01); trading min lot risks $12.48 (1.31% of balance)
+2026-09-10 04:06:16.849 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.79 implies 0.0049 lots (< min 0.01); trading min lot risks $20.06 (2.05% of balance)
+2026-09-10 04:06:16.849 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.91 implies 0.0096 lots (< min 0.01); trading min lot risks $10.30 (1.04% of balance)
+2026-09-10 04:06:16.851 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.10 implies 0.0091 lots (< min 0.01); trading min lot risks $11.05 (1.09% of balance)
+2026-09-10 04:06:16.851 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.14 implies 0.0091 lots (< min 0.01); trading min lot risks $11.09 (1.09% of balance)
+2026-09-10 04:06:16.853 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.94 implies 0.0081 lots (< min 0.01); trading min lot risks $12.32 (1.24% of balance)
+2026-09-10 04:06:16.853 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.04 implies 0.0098 lots (< min 0.01); trading min lot risks $10.25 (1.02% of balance)
+2026-09-10 04:06:16.877 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.17 implies 0.0092 lots (< min 0.01); trading min lot risks $11.11 (1.09% of balance)
+2026-09-10 04:06:16.879 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.21 implies 0.0079 lots (< min 0.01); trading min lot risks $12.92 (1.27% of balance)
+2026-09-10 04:06:16.881 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.06 implies 0.0083 lots (< min 0.01); trading min lot risks $12.16 (1.21% of balance)
+2026-09-10 04:06:16.881 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.94 implies 0.0049 lots (< min 0.01); trading min lot risks $20.19 (2.03% of balance)
+2026-09-10 04:06:16.881 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.73 implies 0.0065 lots (< min 0.01); trading min lot risks $15.01 (1.54% of balance)
+2026-09-10 04:06:16.883 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.87 implies 0.0046 lots (< min 0.01); trading min lot risks $21.61 (2.19% of balance)
+2026-09-10 04:06:16.883 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.00 implies 0.0086 lots (< min 0.01); trading min lot risks $11.57 (1.16% of balance)
+2026-09-10 04:06:16.885 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.89 implies 0.0094 lots (< min 0.01); trading min lot risks $10.55 (1.07% of balance)
+2026-09-10 04:06:16.885 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.93 implies 0.0084 lots (< min 0.01); trading min lot risks $11.87 (1.20% of balance)
+2026-09-10 04:06:16.887 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.03 implies 0.0084 lots (< min 0.01); trading min lot risks $11.98 (1.19% of balance)
+2026-09-10 04:06:16.887 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.13 implies 0.0084 lots (< min 0.01); trading min lot risks $12.02 (1.19% of balance)
+2026-09-10 04:06:16.889 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.26 implies 0.0065 lots (< min 0.01); trading min lot risks $15.88 (1.55% of balance)
+2026-09-10 04:06:16.913 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.31 implies 0.0054 lots (< min 0.01); trading min lot risks $18.94 (1.84% of balance)
+2026-09-10 04:06:16.913 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.31 implies 0.0071 lots (< min 0.01); trading min lot risks $14.57 (1.41% of balance)
+2026-09-10 04:06:16.915 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.38 implies 0.0072 lots (< min 0.01); trading min lot risks $14.45 (1.39% of balance)
+2026-09-10 04:06:16.915 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.65 implies 0.0075 lots (< min 0.01); trading min lot risks $14.21 (1.33% of balance)
+2026-09-10 04:06:16.917 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.51 implies 0.0083 lots (< min 0.01); trading min lot risks $12.61 (1.20% of balance)
+2026-09-10 04:06:16.917 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.51 implies 0.0071 lots (< min 0.01); trading min lot risks $14.87 (1.41% of balance)
+2026-09-10 04:06:16.919 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.36 implies 0.0088 lots (< min 0.01); trading min lot risks $11.73 (1.13% of balance)
+2026-09-10 04:06:16.919 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.36 implies 0.0097 lots (< min 0.01); trading min lot risks $10.67 (1.03% of balance)
+2026-09-10 04:06:16.946 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.25 implies 0.0087 lots (< min 0.01); trading min lot risks $11.82 (1.15% of balance)
+2026-09-10 04:06:16.948 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.14 implies 0.0048 lots (< min 0.01); trading min lot risks $21.21 (2.09% of balance)
+2026-09-10 04:06:16.948 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $9.92 implies 0.0086 lots (< min 0.01); trading min lot risks $11.47 (1.16% of balance)
+2026-09-10 04:06:16.950 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.08 implies 0.0094 lots (< min 0.01); trading min lot risks $10.77 (1.07% of balance)
+2026-09-10 04:06:16.950 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.18 implies 0.0069 lots (< min 0.01); trading min lot risks $14.66 (1.44% of balance)
+2026-09-10 04:06:16.978 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.23 implies 0.0078 lots (< min 0.01); trading min lot risks $13.11 (1.28% of balance)
+2026-09-10 04:06:16.978 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.32 implies 0.0070 lots (< min 0.01); trading min lot risks $14.70 (1.42% of balance)
+2026-09-10 04:06:16.982 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.34 implies 0.0076 lots (< min 0.01); trading min lot risks $13.63 (1.32% of balance)
+2026-09-10 04:06:17.011 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.43 implies 0.0079 lots (< min 0.01); trading min lot risks $13.28 (1.27% of balance)
+2026-09-10 04:06:17.011 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.50 implies 0.0063 lots (< min 0.01); trading min lot risks $16.60 (1.58% of balance)
+2026-09-10 04:06:17.011 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.59 implies 0.0052 lots (< min 0.01); trading min lot risks $20.17 (1.91% of balance)
+2026-09-10 04:06:17.013 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.97 implies 0.0069 lots (< min 0.01); trading min lot risks $15.82 (1.44% of balance)
+2026-09-10 04:06:17.013 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.81 implies 0.0047 lots (< min 0.01); trading min lot risks $23.06 (2.13% of balance)
+2026-09-10 04:06:17.036 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.88 implies 0.0058 lots (< min 0.01); trading min lot risks $18.68 (1.72% of balance)
+2026-09-10 04:06:17.036 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.69 implies 0.0057 lots (< min 0.01); trading min lot risks $18.90 (1.77% of balance)
+2026-09-10 04:06:17.038 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.87 implies 0.0052 lots (< min 0.01); trading min lot risks $21.07 (1.94% of balance)
+2026-09-10 04:06:17.040 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.76 implies 0.0090 lots (< min 0.01); trading min lot risks $12.02 (1.12% of balance)
+2026-09-10 04:06:17.040 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.81 implies 0.0064 lots (< min 0.01); trading min lot risks $16.97 (1.57% of balance)
+2026-09-10 04:06:17.040 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.87 implies 0.0087 lots (< min 0.01); trading min lot risks $12.44 (1.14% of balance)
+2026-09-10 04:06:17.042 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $10.96 implies 0.0048 lots (< min 0.01); trading min lot risks $22.68 (2.07% of balance)
+2026-09-10 04:06:17.044 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $11.26 implies 0.0047 lots (< min 0.01); trading min lot risks $23.72 (2.11% of balance)
+2026-09-10 04:06:17.068 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $11.26 implies 0.0088 lots (< min 0.01); trading min lot risks $12.81 (1.14% of balance)
+2026-09-10 04:06:17.072 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $11.26 implies 0.0092 lots (< min 0.01); trading min lot risks $12.25 (1.09% of balance)
+2026-09-10 04:06:17.072 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $11.41 implies 0.0093 lots (< min 0.01); trading min lot risks $12.23 (1.07% of balance)
+2026-09-10 04:06:17.072 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $11.46 implies 0.0065 lots (< min 0.01); trading min lot risks $17.60 (1.54% of balance)
+2026-09-10 04:06:17.074 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $11.64 implies 0.0083 lots (< min 0.01); trading min lot risks $14.04 (1.21% of balance)
+2026-09-10 04:06:17.074 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $11.50 implies 0.0073 lots (< min 0.01); trading min lot risks $15.79 (1.37% of balance)
+2026-09-10 04:06:17.076 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $11.69 implies 0.0062 lots (< min 0.01); trading min lot risks $18.81 (1.61% of balance)
+2026-09-10 04:06:17.096 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $11.92 implies 0.0095 lots (< min 0.01); trading min lot risks $12.52 (1.05% of balance)
+2026-09-10 04:06:17.098 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $12.03 implies 0.0095 lots (< min 0.01); trading min lot risks $12.66 (1.05% of balance)
+2026-09-10 04:06:17.098 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $12.15 implies 0.0093 lots (< min 0.01); trading min lot risks $13.12 (1.08% of balance)
+2026-09-10 04:06:17.100 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $12.25 implies 0.0083 lots (< min 0.01); trading min lot risks $14.83 (1.21% of balance)
+2026-09-10 04:06:17.100 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $12.10 implies 0.0074 lots (< min 0.01); trading min lot risks $16.30 (1.35% of balance)
+2026-09-10 04:06:17.102 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:264 - risk budget $12.05 implies 0.0096 lots (< min 0.01); trading min lot risks $12.52 (1.04% of balance)
+2026-09-10 04:06:17.104 | SUCCESS  | asyncio_0 | backtest.engine:run:578 - backtest done | 191 trades | net $676.48 | WR 69.6% | PF 1.83 | maxDD 12.06%
+2026-09-10 05:04:34.356 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 05:25:00.872 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 5 mins before High-Impact USD: Core PPI m/m
+2026-09-10 05:30:00.270 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 0 mins after Core PPI m/m (Volatility Cooldown)
+2026-09-10 06:04:34.745 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 07:04:35.224 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 07:15:01.206 | INFO     | MainThread | __main__:_on_new_closed_bar:831 - 🎯 سیگنال شناسایی شد: 2026-09-10 17:00:00 → SELL (Kijun pullback)
+2026-09-10 07:15:01.239 | WARNING  | MainThread | core.risk_manager:calculate_lot:264 - risk budget $5.08 implies 0.0024 lots (< min 0.01); trading min lot risks $21.38 (4.21% of balance)
+2026-09-10 07:15:01.445 | SUCCESS  | MainThread | core.mt5_client:send_market_order:642 - SELL 0.01 lots @ 4359.3 | sl=4380.83 tp=4319.37 ticket=104538413
+2026-09-10 07:15:01.467 | INFO     | MainThread | __main__:_on_new_closed_bar:861 - signal score 50/100 | ichimoku_m15|SELL|us|high
+2026-09-10 07:15:02.882 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:887 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-09-10 07:15:03.972 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:1197 - signal broadcast → VIP:2 FREE:0
+2026-09-10 07:33:33.361 | SUCCESS  | asyncio_0 | core.mt5_client:close_position:753 - closed position 104538413 (0.01 lots)
+2026-09-10 07:33:33.367 | SUCCESS  | asyncio_0 | __main__:_request_manual_close:623 - manual close #104538413 by admin (shadow armed)
+2026-09-10 07:33:33.875 | SUCCESS  | MainThread | __main__:_handle_closed_position:568 - position #104538413 closed | LOSS | $-5.46
+2026-09-10 08:04:35.635 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 09:04:36.028 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 10:04:36.409 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 11:04:36.766 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 12:02:48.548 | INFO     | MainThread | __main__:_check_shadows:666 - shadow verdict #104538413: WIN $39.93
+2026-09-10 12:04:37.144 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 13:04:37.544 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 14:04:37.920 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 15:04:38.318 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 16:04:38.699 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 17:00:01.967 | SUCCESS  | MainThread | __main__:_check_daily_digest:764 - daily digest for 2026-09-10 broadcast
+2026-09-10 17:00:03.133 | INFO     | telegram-loop | core.telegram_bot:_broadcast_daily_async:1241 - daily digest broadcast → 2 chats
+2026-09-10 17:04:39.203 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 18:04:39.881 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 18:30:00.983 | INFO     | MainThread | __main__:_on_new_closed_bar:831 - 🎯 سیگنال شناسایی شد: 2026-09-11 04:15:00 → SELL (Kijun pullback)
+2026-09-10 18:30:01.056 | WARNING  | MainThread | core.risk_manager:calculate_lot:264 - risk budget $5.02 implies 0.0038 lots (< min 0.01); trading min lot risks $13.39 (2.66% of balance)
+2026-09-10 18:30:01.231 | SUCCESS  | MainThread | core.mt5_client:send_market_order:642 - SELL 0.01 lots @ 4328.12 | sl=4341.51 tp=4303.02 ticket=104764360
+2026-09-10 18:30:01.263 | INFO     | MainThread | __main__:_on_new_closed_bar:861 - signal score 50/100 | ichimoku_m15|SELL|asia|high
+2026-09-10 18:30:02.849 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:887 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-09-10 18:30:04.246 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:1197 - signal broadcast → VIP:2 FREE:0
+2026-09-10 19:04:40.716 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 19:31:38.456 | INFO     | MainThread | core.mt5_client:modify_sltp:713 - SLTP updated | ticket=104764360 sl=4328.07 tp=4303.02
+2026-09-10 19:31:38.499 | SUCCESS  | MainThread | __main__:_manage_open_positions:699 - breakeven #104764360 SL 4341.51 -> 4328.07
+2026-09-10 19:36:40.810 | INFO     | MainThread | core.mt5_client:modify_sltp:713 - SLTP updated | ticket=104764360 sl=4323.89 tp=4303.02
+2026-09-10 19:36:40.818 | SUCCESS  | MainThread | __main__:_manage_open_positions:699 - trailing #104764360 SL 4328.07 -> 4323.89
+2026-09-10 19:40:57.725 | SUCCESS  | MainThread | __main__:_handle_closed_position:568 - position #104764360 closed | WIN | $4.17
+2026-09-10 20:04:41.229 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 20:30:01.073 | INFO     | MainThread | __main__:_on_new_closed_bar:831 - 🎯 سیگنال شناسایی شد: 2026-09-11 06:15:00 → SELL (Kijun pullback)
+2026-09-10 20:30:01.122 | WARNING  | MainThread | core.risk_manager:calculate_lot:264 - risk budget $5.07 implies 0.0033 lots (< min 0.01); trading min lot risks $15.21 (3.00% of balance)
+2026-09-10 20:30:01.254 | SUCCESS  | MainThread | core.mt5_client:send_market_order:642 - SELL 0.01 lots @ 4309.45 | sl=4324.66 tp=4280.94 ticket=104793407
+2026-09-10 20:30:01.286 | INFO     | MainThread | __main__:_on_new_closed_bar:861 - signal score 50/100 | ichimoku_m15|SELL|asia|high
+2026-09-10 20:30:02.351 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:887 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-09-10 20:30:03.540 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:1197 - signal broadcast → VIP:2 FREE:0
+2026-09-10 21:04:41.663 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 21:13:53.844 | SUCCESS  | MainThread | __main__:_handle_closed_position:568 - position #104793407 closed | LOSS | $-15.46
+2026-09-10 22:04:42.133 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-10 23:04:42.521 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 00:04:42.917 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 01:04:43.294 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 02:04:43.684 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 03:04:44.060 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 04:04:44.500 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 05:04:44.971 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 05:25:00.393 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 5 mins before High-Impact USD: Core CPI m/m
+2026-09-11 05:30:00.799 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 0 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 05:35:01.076 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 5 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 05:40:00.659 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 10 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 05:45:01.177 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 15 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 05:50:00.526 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 20 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 05:55:00.911 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 25 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 06:00:00.218 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 30 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 06:04:45.371 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 06:05:00.516 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 35 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 06:10:01.149 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 40 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 06:15:00.457 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 45 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 06:20:00.937 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 50 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 06:25:00.620 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 55 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 06:30:00.744 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 60 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 06:35:00.437 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 65 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 06:40:01.139 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 70 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 06:45:01.327 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 75 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 06:50:00.693 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 80 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 06:55:01.159 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 85 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 07:00:00.571 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 90 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 07:04:46.031 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 07:05:00.212 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 95 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 07:10:04.956 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 100 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 07:15:00.831 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 105 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 07:20:00.328 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 110 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 07:25:00.693 | INFO     | MainThread | __main__:_on_new_closed_bar:822 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 115 mins after Core CPI m/m (Volatility Cooldown)
+2026-09-11 08:04:46.441 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 09:04:46.831 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 10:04:47.225 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 11:04:47.608 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 12:04:47.981 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 13:04:48.356 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 14:04:48.731 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 15:04:49.097 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 16:04:49.444 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 17:04:50.175 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 18:04:50.702 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 19:04:51.175 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 20:04:51.576 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 21:04:52.065 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 22:04:52.493 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-11 22:15:55.641 | WARNING  | MainThread | core.mt5_client:reconnect:304 - reconnect attempt #1 starting
+2026-09-11 22:16:00.930 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:16:00.936 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 1/5 failed
+2026-09-11 22:16:10.947 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:16:10.951 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 2/5 failed
+2026-09-11 22:16:30.961 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:16:30.967 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 3/5 failed
+2026-09-11 22:17:10.977 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:17:10.983 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 4/5 failed
+2026-09-11 22:18:10.992 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:18:10.998 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 5/5 failed
+2026-09-11 22:18:11.002 | ERROR    | MainThread | core.mt5_client:reconnect:324 - reconnect exhausted backoff ladder; staying offline
+2026-09-11 22:18:11.008 | ERROR    | MainThread | __main__:run:1081 - offline; retrying in 10s
+2026-09-11 22:18:11.012 | ERROR    | mt5-heartbeat | core.mt5_client:_heartbeat_loop:353 - heartbeat: link LOST
+2026-09-11 22:18:21.027 | WARNING  | MainThread | core.mt5_client:reconnect:304 - reconnect attempt #2 starting
+2026-09-11 22:18:26.041 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:18:26.046 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 1/5 failed
+2026-09-11 22:18:36.058 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:18:36.064 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 2/5 failed
+2026-09-11 22:18:56.076 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:18:56.081 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 3/5 failed
+2026-09-11 22:19:36.093 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:19:36.101 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 4/5 failed
+2026-09-11 22:20:36.111 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:20:36.117 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 5/5 failed
+2026-09-11 22:20:36.123 | ERROR    | MainThread | core.mt5_client:reconnect:324 - reconnect exhausted backoff ladder; staying offline
+2026-09-11 22:20:36.129 | ERROR    | MainThread | __main__:run:1081 - offline; retrying in 10s
+2026-09-11 22:20:46.148 | WARNING  | MainThread | core.mt5_client:reconnect:304 - reconnect attempt #3 starting
+2026-09-11 22:20:51.162 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:20:51.168 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 1/5 failed
+2026-09-11 22:21:01.180 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:21:01.186 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 2/5 failed
+2026-09-11 22:21:21.198 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:21:21.202 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 3/5 failed
+2026-09-11 22:22:01.214 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-11 22:22:01.220 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 4/5 failed
+2026-09-11 22:23:01.255 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:281 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-11 22:23:01.282 | SUCCESS  | MainThread | core.mt5_client:connect:238 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=491.10 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-11 22:23:01.297 | SUCCESS  | MainThread | core.mt5_client:reconnect:319 - reconnected after 5 attempt(s)
+2026-09-11 22:23:01.315 | SUCCESS  | mt5-heartbeat | core.mt5_client:_heartbeat_loop:350 - heartbeat: link RESTORED
+2026-09-11 23:04:52.996 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-12 00:04:53.610 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-12 01:04:54.091 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-12 01:38:22.605 | WARNING  | MainThread | core.mt5_client:reconnect:304 - reconnect attempt #4 starting
+2026-09-12 01:38:27.659 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-12 01:38:27.663 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 1/5 failed
+2026-09-12 01:38:37.676 | ERROR    | MainThread | core.mt5_client:_capture_error:372 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-12 01:38:37.682 | WARNING  | MainThread | core.mt5_client:reconnect:323 - reconnect attempt 2/5 failed
+2026-09-12 01:38:57.743 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:281 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-12 01:38:57.754 | SUCCESS  | MainThread | core.mt5_client:connect:238 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=491.10 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-12 01:38:57.758 | SUCCESS  | MainThread | core.mt5_client:reconnect:319 - reconnected after 3 attempt(s)
+2026-09-12 01:38:58.043 | WARNING  | MainThread | core.mt5_client:reconnect:304 - reconnect attempt #5 starting
+2026-09-12 01:39:03.073 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:281 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-12 01:39:03.089 | SUCCESS  | MainThread | core.mt5_client:connect:238 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=491.10 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-12 01:39:03.099 | SUCCESS  | MainThread | core.mt5_client:reconnect:319 - reconnected after 1 attempt(s)
+2026-09-12 02:04:54.762 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)
+2026-09-12 03:04:55.497 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 6 high-impact USD events loaded (network)

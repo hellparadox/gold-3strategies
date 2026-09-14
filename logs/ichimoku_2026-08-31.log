@@ -1,0 +1,249 @@
+2026-08-31 06:39:40.689 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-08-31 06:39:41.443 | INFO     | MainThread | core.news_filter:start:106 - news filter cold-start: fetching calendar synchronously...
+2026-08-31 06:39:42.544 | SUCCESS  | MainThread | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 06:39:42.549 | SUCCESS  | MainThread | core.news_filter:start:110 - cold-start successful: calendar loaded
+2026-08-31 06:39:42.587 | INFO     | MainThread | core.news_filter:start:125 - news filter background refresh started (interval: 1.0h)
+2026-08-31 06:39:42.644 | INFO     | MainThread | __main__:run:688 - ========================================================================
+2026-08-31 06:39:42.648 | INFO     | MainThread | __main__:run:689 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-08-31 06:39:42.650 | INFO     | MainThread | __main__:run:690 - ========================================================================
+2026-08-31 06:39:42.678 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=675.32 USD | symbol=XAUUSD | algo_trading=True
+2026-08-31 06:39:42.678 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-31 06:39:42.680 | INFO     | MainThread | __main__:_sync_daily:490 - daily guard init | realized today=$0.00 | day-start balance=$675.32 | cap -10%/$67.53
+2026-08-31 06:39:42.695 | WARNING  | MainThread | __main__:_sync_daily:495 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-31 06:39:42.697 | WARNING  | MainThread | __main__:run:701 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-31 06:39:47.709 | WARNING  | MainThread | __main__:run:701 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-31 06:39:52.724 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-31 06:39:54.605 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @MatrixGolden_bot
+2026-08-31 06:39:54.615 | INFO     | MainThread | __main__:run:715 - entering main loop (1.0s cadence, 300s bars)
+2026-08-31 07:39:43.226 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 08:39:43.694 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 09:39:44.151 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 10:39:44.538 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 11:15:00.740 | INFO     | MainThread | __main__:_on_new_closed_bar:574 - 🎯 سیگنال شناسایی شد: 2026-08-31 21:00:00 → SELL (Kijun pullback)
+2026-08-31 11:15:00.795 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-31 11:15:00.801 | WARNING  | MainThread | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0049 lots (< min 0.01); trading min lot risks $13.78 (2.04% of balance)
+2026-08-31 11:15:00.941 | SUCCESS  | MainThread | core.mt5_client:send_market_order:607 - SELL 0.01 lots @ 4433.64 | sl=4447.42 tp=4407.8 ticket=10286131969
+2026-08-31 11:15:01.907 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:617 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-08-31 11:15:03.278 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:928 - signal broadcast → VIP:2 FREE:0
+2026-08-31 11:39:44.938 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 12:39:45.394 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 12:48:32.919 | SUCCESS  | MainThread | __main__:_handle_closed_position:413 - position #10286131969 closed | LOSS | $-13.78
+2026-08-31 13:39:45.813 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 14:06:50.006 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #1 starting
+2026-08-31 14:06:55.024 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-31 14:06:55.030 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-08-31 14:07:05.041 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-31 14:07:05.048 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-08-31 14:07:25.058 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=661.54 USD | symbol=XAUUSD | algo_trading=True
+2026-08-31 14:07:25.070 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 3 attempt(s)
+2026-08-31 14:07:59.434 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #2 starting
+2026-08-31 14:08:04.454 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=661.54 USD | symbol=XAUUSD | algo_trading=True
+2026-08-31 14:08:04.463 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-08-31 14:39:46.193 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 15:39:46.561 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 16:41:18.548 | WARNING  | news-filter-refresh | core.news_filter:update_calendar:173 - calendar fetch failed (HTTPSConnectionPool(host='nfs.faireconomy.media', port=443): Max retries exceeded with url: /ff_calendar_thisweek.json (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1006)')))); falling back to historical file
+2026-08-31 16:41:35.029 | INFO     | news-filter-refresh | core.news_filter:_load_historical:242 - loaded 162 matching events from historical calendar data\historical_news.json
+2026-08-31 16:41:35.572 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:182 - using local historical calendar data/historical_news.json (fallback after network failure)
+2026-08-31 16:41:35.621 | INFO     | news-filter-refresh | core.news_filter:_background_refresh:400 - news network refresh failed (1 consecutive); next try in 2s (historical fallback active in the meantime)
+2026-08-31 16:42:00.447 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 17:42:01.360 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 18:42:02.277 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 19:42:03.179 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 20:42:03.565 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 21:00:01.042 | INFO     | MainThread | __main__:_sync_daily:508 - daily guard reset | new server day 2026-09-01 | balance=$661.54
+2026-08-31 21:42:03.975 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 22:42:04.475 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 23:30:00.890 | INFO     | MainThread | __main__:_on_new_closed_bar:574 - 🎯 سیگنال شناسایی شد: 2026-09-01 09:15:00 → SELL (Tenkan momentum)
+2026-08-31 23:30:00.928 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-31 23:30:00.945 | WARNING  | MainThread | core.risk_manager:calculate_lot:262 - risk budget $6.62 implies 0.0051 lots (< min 0.01); trading min lot risks $13.07 (1.98% of balance)
+2026-08-31 23:30:01.186 | SUCCESS  | MainThread | core.mt5_client:send_market_order:607 - SELL 0.01 lots @ 4428.88 | sl=4441.98 tp=4404.41 ticket=10292513174
+2026-08-31 23:30:02.400 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:617 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-08-31 23:30:03.591 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:928 - signal broadcast → VIP:2 FREE:0
+2026-08-31 23:42:04.860 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-01 00:04:50.509 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #3 starting
+2026-09-01 00:04:57.873 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-01 00:04:57.878 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-01 00:05:07.964 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=661.54 USD | symbol=XAUUSD | algo_trading=True
+2026-09-01 00:05:07.976 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 2 attempt(s)
+2026-09-01 00:30:49.055 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10292513174 sl=4428.83 tp=4404.41
+2026-09-01 00:30:49.146 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - breakeven #10292513174 SL 4441.98 -> 4428.83
+2026-09-01 00:39:57.348 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10292513174 sl=4424.68 tp=4404.41
+2026-09-01 00:39:57.405 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10292513174 SL 4428.83 -> 4424.68
+2026-09-01 00:39:58.605 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10292513174 sl=4422.73 tp=4404.41
+2026-09-01 00:39:58.611 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10292513174 SL 4424.68 -> 4422.73
+2026-09-01 00:39:59.273 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10292513174 sl=4422.7 tp=4404.41
+2026-09-01 00:39:59.279 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10292513174 SL 4422.73 -> 4422.70
+2026-09-01 00:40:01.436 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10292513174 sl=4419.66 tp=4404.41
+2026-09-01 00:40:01.442 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10292513174 SL 4422.70 -> 4419.66
+2026-09-01 00:40:03.303 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10292513174 sl=4419.52 tp=4404.41
+2026-09-01 00:40:03.309 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10292513174 SL 4419.66 -> 4419.52
+2026-09-01 00:40:04.485 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10292513174 sl=4418.77 tp=4404.41
+2026-09-01 00:40:04.491 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10292513174 SL 4419.52 -> 4418.77
+2026-09-01 00:41:23.136 | SUCCESS  | MainThread | __main__:_handle_closed_position:413 - position #10292513174 closed | WIN | $10.11
+2026-09-01 00:42:05.588 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-01 01:15:00.431 | INFO     | MainThread | __main__:_on_new_closed_bar:574 - 🎯 سیگنال شناسایی شد: 2026-09-01 11:00:00 → SELL (Kijun pullback)
+2026-09-01 01:15:00.491 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-09-01 01:15:00.517 | WARNING  | MainThread | core.risk_manager:calculate_lot:262 - risk budget $6.60 implies 0.0042 lots (< min 0.01); trading min lot risks $15.86 (2.40% of balance)
+2026-09-01 01:15:00.637 | SUCCESS  | MainThread | core.mt5_client:send_market_order:607 - SELL 0.01 lots @ 4405.18 | sl=4421.09 tp=4375.49 ticket=10294426836
+2026-09-01 01:15:02.945 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:617 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-09-01 01:15:04.000 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:928 - signal broadcast → VIP:2 FREE:0
+2026-09-01 01:20:05.293 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4405.13 tp=4375.49
+2026-09-01 01:20:05.299 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - breakeven #10294426836 SL 4421.09 -> 4405.13
+2026-09-01 01:23:24.869 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4400.22 tp=4375.49
+2026-09-01 01:23:24.871 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4405.13 -> 4400.22
+2026-09-01 01:23:25.869 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4400.16 tp=4375.49
+2026-09-01 01:23:25.877 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4400.22 -> 4400.16
+2026-09-01 01:23:26.876 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4400.06 tp=4375.49
+2026-09-01 01:23:26.882 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4400.16 -> 4400.06
+2026-09-01 01:23:27.892 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4400.02 tp=4375.49
+2026-09-01 01:23:27.898 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4400.06 -> 4400.02
+2026-09-01 01:23:28.929 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4399.53 tp=4375.49
+2026-09-01 01:23:28.935 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4400.02 -> 4399.53
+2026-09-01 01:23:29.924 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4399.24 tp=4375.49
+2026-09-01 01:23:29.930 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4399.53 -> 4399.24
+2026-09-01 01:23:33.070 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4399.23 tp=4375.49
+2026-09-01 01:23:33.076 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4399.24 -> 4399.23
+2026-09-01 01:23:34.081 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4399.07 tp=4375.49
+2026-09-01 01:23:34.087 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4399.23 -> 4399.07
+2026-09-01 01:23:35.128 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4398.59 tp=4375.49
+2026-09-01 01:23:35.134 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4399.07 -> 4398.59
+2026-09-01 01:23:36.117 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4398.55 tp=4375.49
+2026-09-01 01:23:36.121 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4398.59 -> 4398.55
+2026-09-01 01:23:40.171 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4398.36 tp=4375.49
+2026-09-01 01:23:40.177 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4398.55 -> 4398.36
+2026-09-01 01:23:41.190 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4397.82 tp=4375.49
+2026-09-01 01:23:41.196 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4398.36 -> 4397.82
+2026-09-01 01:23:42.284 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4397.37 tp=4375.49
+2026-09-01 01:23:42.293 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4397.82 -> 4397.37
+2026-09-01 01:23:43.235 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4397.21 tp=4375.49
+2026-09-01 01:23:43.241 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4397.37 -> 4397.21
+2026-09-01 01:23:45.458 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4396.95 tp=4375.49
+2026-09-01 01:23:45.464 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4397.21 -> 4396.95
+2026-09-01 01:23:49.345 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4396.9 tp=4375.49
+2026-09-01 01:23:49.351 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4396.95 -> 4396.90
+2026-09-01 01:23:50.378 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4396.61 tp=4375.49
+2026-09-01 01:23:50.384 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4396.90 -> 4396.61
+2026-09-01 01:23:52.390 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4396.46 tp=4375.49
+2026-09-01 01:23:52.396 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4396.61 -> 4396.46
+2026-09-01 01:23:54.414 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4396.45 tp=4375.49
+2026-09-01 01:23:54.420 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4396.46 -> 4396.45
+2026-09-01 01:23:55.445 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4396.38 tp=4375.49
+2026-09-01 01:23:55.451 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4396.45 -> 4396.38
+2026-09-01 01:23:56.872 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4395.82 tp=4375.49
+2026-09-01 01:23:56.878 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4396.38 -> 4395.82
+2026-09-01 01:24:02.542 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4395.74 tp=4375.49
+2026-09-01 01:24:02.548 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4395.82 -> 4395.74
+2026-09-01 01:24:05.967 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4393.59 tp=4375.49
+2026-09-01 01:24:05.973 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4395.74 -> 4393.59
+2026-09-01 01:24:07.220 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4393.57 tp=4375.49
+2026-09-01 01:24:07.226 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4393.59 -> 4393.57
+2026-09-01 01:24:18.284 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4392.81 tp=4375.49
+2026-09-01 01:24:18.290 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4393.57 -> 4392.81
+2026-09-01 01:24:48.646 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4392.67 tp=4375.49
+2026-09-01 01:24:48.652 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4392.81 -> 4392.67
+2026-09-01 01:24:49.671 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4392.57 tp=4375.49
+2026-09-01 01:24:49.675 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4392.67 -> 4392.57
+2026-09-01 01:25:57.644 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4392.51 tp=4375.49
+2026-09-01 01:25:57.648 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4392.57 -> 4392.51
+2026-09-01 01:25:58.653 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4392.3 tp=4375.49
+2026-09-01 01:25:58.659 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4392.51 -> 4392.30
+2026-09-01 01:26:01.692 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4392.17 tp=4375.49
+2026-09-01 01:26:01.696 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4392.30 -> 4392.17
+2026-09-01 01:26:02.797 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4392.06 tp=4375.49
+2026-09-01 01:26:02.803 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4392.17 -> 4392.06
+2026-09-01 01:26:03.740 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4391.68 tp=4375.49
+2026-09-01 01:26:03.746 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4392.06 -> 4391.68
+2026-09-01 01:28:32.694 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4391.61 tp=4375.49
+2026-09-01 01:28:32.702 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4391.68 -> 4391.61
+2026-09-01 01:28:33.704 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4391.41 tp=4375.49
+2026-09-01 01:28:33.710 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4391.61 -> 4391.41
+2026-09-01 01:28:34.723 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4391.3 tp=4375.49
+2026-09-01 01:28:34.729 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4391.41 -> 4391.30
+2026-09-01 01:28:42.845 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4391.25 tp=4375.49
+2026-09-01 01:28:42.851 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4391.30 -> 4391.25
+2026-09-01 01:28:43.862 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4391.2 tp=4375.49
+2026-09-01 01:28:43.868 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4391.25 -> 4391.20
+2026-09-01 01:28:47.919 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4390.83 tp=4375.49
+2026-09-01 01:28:47.926 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4391.20 -> 4390.83
+2026-09-01 01:28:49.045 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4390.82 tp=4375.49
+2026-09-01 01:28:49.050 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4390.83 -> 4390.82
+2026-09-01 01:28:56.032 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4390.31 tp=4375.49
+2026-09-01 01:28:56.038 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4390.82 -> 4390.31
+2026-09-01 01:28:57.017 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4390.19 tp=4375.49
+2026-09-01 01:28:57.021 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4390.31 -> 4390.19
+2026-09-01 01:29:02.078 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4390.16 tp=4375.49
+2026-09-01 01:29:02.084 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4390.19 -> 4390.16
+2026-09-01 01:30:04.283 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4389.88 tp=4375.49
+2026-09-01 01:30:04.289 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4390.16 -> 4389.88
+2026-09-01 01:30:22.841 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4389.26 tp=4375.49
+2026-09-01 01:30:22.847 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4389.88 -> 4389.26
+2026-09-01 01:30:23.144 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4388.89 tp=4375.49
+2026-09-01 01:30:23.150 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4389.26 -> 4388.89
+2026-09-01 01:30:34.407 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4388.27 tp=4375.49
+2026-09-01 01:30:34.413 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4388.89 -> 4388.27
+2026-09-01 01:30:35.310 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4387.78 tp=4375.49
+2026-09-01 01:30:35.316 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4388.27 -> 4387.78
+2026-09-01 01:30:37.320 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4387.65 tp=4375.49
+2026-09-01 01:30:37.326 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4387.78 -> 4387.65
+2026-09-01 01:30:38.649 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4386.82 tp=4375.49
+2026-09-01 01:30:38.655 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4387.65 -> 4386.82
+2026-09-01 01:30:39.737 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4385.93 tp=4375.49
+2026-09-01 01:30:39.743 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4386.82 -> 4385.93
+2026-09-01 01:30:43.464 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4385.49 tp=4375.49
+2026-09-01 01:30:43.472 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4385.93 -> 4385.49
+2026-09-01 01:31:09.723 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4385.44 tp=4375.49
+2026-09-01 01:31:09.728 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4385.49 -> 4385.44
+2026-09-01 01:31:10.738 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4384.7 tp=4375.49
+2026-09-01 01:31:10.746 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4385.44 -> 4384.70
+2026-09-01 01:32:15.486 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4384.68 tp=4375.49
+2026-09-01 01:32:15.490 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4384.70 -> 4384.68
+2026-09-01 01:32:16.478 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4384.65 tp=4375.49
+2026-09-01 01:32:16.484 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4384.68 -> 4384.65
+2026-09-01 01:32:18.523 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4384.34 tp=4375.49
+2026-09-01 01:32:18.529 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4384.65 -> 4384.34
+2026-09-01 01:32:19.500 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10294426836 sl=4384.29 tp=4375.49
+2026-09-01 01:32:19.506 | SUCCESS  | MainThread | __main__:_manage_open_positions:456 - trailing #10294426836 SL 4384.34 -> 4384.29
+2026-09-01 01:32:20.517 | WARNING  | MainThread | core.mt5_client:modify_sltp:679 - SLTP rejected | ticket=10294426836 (10036) Position doesn't exist
+2026-09-01 01:32:20.526 | WARNING  | MainThread | __main__:_manage_open_positions:445 - SL move rejected for #10294426836: Position doesn't exist
+2026-09-01 01:32:21.442 | SUCCESS  | MainThread | __main__:_handle_closed_position:413 - position #10294426836 closed | WIN | $29.69
+2026-09-01 01:42:06.139 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-01 02:42:06.664 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-01 03:42:07.128 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-01 04:00:14.069 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #4 starting
+2026-09-01 04:00:19.173 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=690.12 USD | symbol=XAUUSD | algo_trading=True
+2026-09-01 04:00:19.183 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-09-01 04:00:39.480 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #5 starting
+2026-09-01 04:00:44.503 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=690.12 USD | symbol=XAUUSD | algo_trading=True
+2026-09-01 04:00:44.513 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-09-01 04:01:18.996 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #6 starting
+2026-09-01 04:01:24.052 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=690.12 USD | symbol=XAUUSD | algo_trading=True
+2026-09-01 04:01:24.061 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-09-01 04:01:44.402 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #7 starting
+2026-09-01 04:01:49.423 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-01 04:01:49.430 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-01 04:01:59.441 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=690.12 USD | symbol=XAUUSD | algo_trading=True
+2026-09-01 04:01:59.455 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 2 attempt(s)
+2026-09-01 04:02:10.677 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #8 starting
+2026-09-01 04:02:15.693 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-01 04:02:15.699 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-01 04:02:25.710 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=690.12 USD | symbol=XAUUSD | algo_trading=True
+2026-09-01 04:02:25.720 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 2 attempt(s)
+2026-09-01 04:02:26.795 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #9 starting
+2026-09-01 04:02:31.809 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-01 04:02:31.815 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-01 04:02:41.834 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=690.12 USD | symbol=XAUUSD | algo_trading=True
+2026-09-01 04:02:41.842 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 2 attempt(s)
+2026-09-01 04:42:08.218 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-01 05:42:09.315 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-01 06:42:10.240 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-01 06:55:00.766 | INFO     | MainThread | __main__:_on_new_closed_bar:565 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 5 mins before High-Impact USD: ISM Manufacturing PMI
+2026-09-01 07:00:00.608 | INFO     | MainThread | __main__:_on_new_closed_bar:565 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 0 mins after ISM Manufacturing PMI (Volatility Cooldown)
+2026-09-01 07:42:10.848 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-01 08:42:11.243 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-01 09:42:11.936 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-01 09:48:09.742 | WARNING  | MainThread | __main__:stop:752 - shutdown requested
+2026-09-01 09:48:09.770 | INFO     | MainThread | __main__:shutdown:756 - shutting down…
+2026-09-01 09:48:12.337 | INFO     | telegram-loop | core.telegram_bot:_thread_main:197 - telegram event loop closed
+2026-09-01 09:48:12.396 | INFO     | MainThread | core.telegram_bot:stop:176 - telegram controller stopped
+2026-09-01 09:48:12.453 | INFO     | MainThread | core.mt5_client:shutdown:292 - MT5 client shut down
+2026-09-01 09:48:12.668 | SUCCESS  | MainThread | __main__:shutdown:763 - clean shutdown complete

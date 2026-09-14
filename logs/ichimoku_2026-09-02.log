@@ -1,0 +1,216 @@
+2026-09-02 13:59:38.628 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-09-02 13:59:38.876 | INFO     | MainThread | core.news_filter:start:106 - news filter cold-start: fetching calendar synchronously...
+2026-09-02 13:59:39.294 | SUCCESS  | MainThread | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-02 13:59:39.300 | SUCCESS  | MainThread | core.news_filter:start:110 - cold-start successful: calendar loaded
+2026-09-02 13:59:39.302 | INFO     | MainThread | core.news_filter:start:125 - news filter background refresh started (interval: 1.0h)
+2026-09-02 13:59:39.302 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-02 13:59:39.318 | INFO     | MainThread | __main__:run:760 - ========================================================================
+2026-09-02 13:59:39.318 | INFO     | MainThread | __main__:run:761 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-09-02 13:59:39.318 | INFO     | MainThread | __main__:run:762 - ========================================================================
+2026-09-02 13:59:39.530 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=726.04 USD | symbol=XAUUSD | algo_trading=True
+2026-09-02 13:59:39.535 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-09-02 13:59:39.563 | INFO     | MainThread | __main__:_sync_daily:518 - daily guard init | realized today=$0.00 | day-start balance=$726.04 | cap -10%/$72.60
+2026-09-02 13:59:39.563 | WARNING  | MainThread | __main__:_sync_daily:523 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-09-02 13:59:39.563 | WARNING  | MainThread | __main__:run:773 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-09-02 13:59:44.565 | WARNING  | MainThread | __main__:run:773 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-09-02 13:59:49.570 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-09-02 13:59:49.584 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8081/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-02 13:59:51.267 | SUCCESS  | MainThread | core.telegram_bot:start:167 - telegram controller online as @MatrixGolden_bot
+2026-09-02 13:59:51.273 | INFO     | MainThread | __main__:run:790 - entering main loop (1.0s cadence, 300s bars)
+2026-09-02 14:59:39.688 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-02 15:59:40.058 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-02 16:59:40.523 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-02 17:00:03.970 | SUCCESS  | MainThread | __main__:_check_daily_digest:566 - daily digest for 2026-09-02 broadcast
+2026-09-02 17:00:04.900 | INFO     | telegram-loop | core.telegram_bot:_broadcast_daily_async:1025 - daily digest broadcast → 2 chats
+2026-09-02 17:59:40.941 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-02 18:59:41.512 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-02 19:59:41.903 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-02 20:59:42.482 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-02 21:00:00.762 | INFO     | MainThread | __main__:_sync_daily:536 - daily guard reset | new server day 2026-09-03 | balance=$726.04
+2026-09-02 21:59:42.847 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-02 22:59:43.333 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-02 23:59:43.794 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 00:59:44.268 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 01:30:01.209 | INFO     | MainThread | __main__:_on_new_closed_bar:633 - 🎯 سیگنال شناسایی شد: 2026-09-03 11:15:00 → BUY (Tenkan momentum)
+2026-09-03 01:30:01.252 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-09-03 01:30:01.268 | WARNING  | MainThread | core.risk_manager:calculate_lot:264 - risk budget $7.26 implies 0.0050 lots (< min 0.01); trading min lot risks $14.58 (2.01% of balance)
+2026-09-03 01:30:01.420 | SUCCESS  | MainThread | core.mt5_client:send_market_order:607 - BUY 0.01 lots @ 4438.22 | sl=4423.64 tp=4465.56 ticket=10337152916
+2026-09-03 01:30:01.507 | INFO     | MainThread | __main__:_on_new_closed_bar:663 - signal score 50/100 | ichimoku_m15|BUY|europe|high
+2026-09-03 01:30:03.081 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:689 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-09-03 01:30:04.300 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:981 - signal broadcast → VIP:2 FREE:0
+2026-09-03 01:59:44.907 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 02:59:45.401 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 03:11:17.025 | SUCCESS  | MainThread | __main__:_handle_closed_position:441 - position #10337152916 closed | LOSS | $-14.58
+2026-09-03 03:59:45.809 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 04:59:46.657 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 05:45:01.320 | INFO     | MainThread | __main__:_on_new_closed_bar:633 - 🎯 سیگنال شناسایی شد: 2026-09-03 15:30:00 → BUY (Kijun pullback)
+2026-09-03 05:45:01.515 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-09-03 05:45:01.630 | WARNING  | MainThread | core.risk_manager:calculate_lot:264 - risk budget $7.05 implies 0.0041 lots (< min 0.01); trading min lot risks $17.03 (2.41% of balance)
+2026-09-03 05:45:01.853 | SUCCESS  | MainThread | core.mt5_client:send_market_order:607 - BUY 0.01 lots @ 4468.34 | sl=4451.38 tp=4500.34 ticket=10342142781
+2026-09-03 05:45:01.928 | INFO     | MainThread | __main__:_on_new_closed_bar:663 - signal score 50/100 | ichimoku_m15|BUY|us|high
+2026-09-03 05:45:04.530 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:689 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-09-03 05:45:06.083 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:981 - signal broadcast → VIP:2 FREE:0
+2026-09-03 05:48:34.356 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10342142781 sl=4468.39 tp=4500.34
+2026-09-03 05:48:34.362 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - breakeven #10342142781 SL 4451.38 -> 4468.39
+2026-09-03 05:52:01.219 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10342142781 sl=4474.08 tp=4500.34
+2026-09-03 05:52:01.227 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10342142781 SL 4468.39 -> 4474.08
+2026-09-03 05:52:06.298 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10342142781 sl=4475.55 tp=4500.34
+2026-09-03 05:52:06.304 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10342142781 SL 4474.08 -> 4475.55
+2026-09-03 05:52:27.613 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10342142781 sl=4476.86 tp=4500.34
+2026-09-03 05:52:27.620 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10342142781 SL 4475.55 -> 4476.86
+2026-09-03 05:53:21.475 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10342142781 sl=4478.17 tp=4500.34
+2026-09-03 05:53:21.481 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10342142781 SL 4476.86 -> 4478.17
+2026-09-03 05:54:04.114 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10342142781 sl=4479.57 tp=4500.34
+2026-09-03 05:54:04.122 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10342142781 SL 4478.17 -> 4479.57
+2026-09-03 05:54:10.717 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10342142781 sl=4482.34 tp=4500.34
+2026-09-03 05:54:10.721 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10342142781 SL 4479.57 -> 4482.34
+2026-09-03 05:55:29.570 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10342142781 sl=4483.74 tp=4500.34
+2026-09-03 05:55:29.578 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10342142781 SL 4482.34 -> 4483.74
+2026-09-03 05:55:42.766 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10342142781 sl=4485.16 tp=4500.34
+2026-09-03 05:55:42.772 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10342142781 SL 4483.74 -> 4485.16
+2026-09-03 05:59:36.366 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10342142781 sl=4486.48 tp=4500.34
+2026-09-03 05:59:36.374 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10342142781 SL 4485.16 -> 4486.48
+2026-09-03 05:59:47.539 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 06:07:01.942 | SUCCESS  | MainThread | __main__:_handle_closed_position:441 - position #10342142781 closed | WIN | $18.14
+2026-09-03 06:59:48.647 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 07:30:00.994 | INFO     | MainThread | __main__:_on_new_closed_bar:633 - 🎯 سیگنال شناسایی شد: 2026-09-03 17:15:00 → BUY (Tenkan momentum)
+2026-09-03 07:30:01.102 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-09-03 07:30:01.122 | WARNING  | MainThread | core.risk_manager:calculate_lot:264 - risk budget $7.23 implies 0.0037 lots (< min 0.01); trading min lot risks $19.69 (2.72% of balance)
+2026-09-03 07:30:01.304 | SUCCESS  | MainThread | core.mt5_client:send_market_order:607 - BUY 0.01 lots @ 4477.88 | sl=4458.14 tp=4514.74 ticket=10345177295
+2026-09-03 07:30:01.419 | INFO     | MainThread | __main__:_on_new_closed_bar:663 - signal score 50/100 | ichimoku_m15|BUY|us|high
+2026-09-03 07:30:03.948 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:689 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-09-03 07:30:05.152 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:981 - signal broadcast → VIP:2 FREE:0
+2026-09-03 07:59:49.258 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 08:01:45.539 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10345177295 sl=4477.93 tp=4514.74
+2026-09-03 08:01:45.545 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - breakeven #10345177295 SL 4458.14 -> 4477.93
+2026-09-03 08:03:57.720 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10345177295 sl=4484.47 tp=4514.74
+2026-09-03 08:03:57.728 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10345177295 SL 4477.93 -> 4484.47
+2026-09-03 08:04:10.968 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10345177295 sl=4486.06 tp=4514.74
+2026-09-03 08:04:10.976 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10345177295 SL 4484.47 -> 4486.06
+2026-09-03 08:04:15.012 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10345177295 sl=4487.71 tp=4514.74
+2026-09-03 08:04:15.020 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10345177295 SL 4486.06 -> 4487.71
+2026-09-03 08:04:30.260 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10345177295 sl=4489.39 tp=4514.74
+2026-09-03 08:04:30.266 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10345177295 SL 4487.71 -> 4489.39
+2026-09-03 08:08:13.895 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10345177295 sl=4491.19 tp=4514.74
+2026-09-03 08:08:13.903 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10345177295 SL 4489.39 -> 4491.19
+2026-09-03 08:08:17.985 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10345177295 sl=4493.11 tp=4514.74
+2026-09-03 08:08:17.992 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10345177295 SL 4491.19 -> 4493.11
+2026-09-03 08:15:36.277 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10345177295 sl=4494.8 tp=4514.74
+2026-09-03 08:15:36.283 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10345177295 SL 4493.11 -> 4494.80
+2026-09-03 08:18:17.920 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10345177295 sl=4496.62 tp=4514.74
+2026-09-03 08:18:17.927 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10345177295 SL 4494.80 -> 4496.62
+2026-09-03 08:19:16.176 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10345177295 sl=4498.27 tp=4514.74
+2026-09-03 08:19:16.184 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10345177295 SL 4496.62 -> 4498.27
+2026-09-03 08:19:31.995 | INFO     | MainThread | core.mt5_client:modify_sltp:677 - SLTP updated | ticket=10345177295 sl=4499.96 tp=4514.74
+2026-09-03 08:19:32.001 | SUCCESS  | MainThread | __main__:_manage_open_positions:484 - trailing #10345177295 SL 4498.27 -> 4499.96
+2026-09-03 08:33:42.890 | SUCCESS  | MainThread | __main__:_handle_closed_position:441 - position #10345177295 closed | WIN | $22.08
+2026-09-03 08:59:49.742 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 09:59:50.388 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 10:59:50.812 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 11:45:00.704 | INFO     | MainThread | __main__:_on_new_closed_bar:633 - 🎯 سیگنال شناسایی شد: 2026-09-03 21:30:00 → BUY (Kijun pullback)
+2026-09-03 11:45:00.720 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-09-03 11:45:00.738 | WARNING  | MainThread | core.risk_manager:calculate_lot:264 - risk budget $7.45 implies 0.0050 lots (< min 0.01); trading min lot risks $15.02 (2.01% of balance)
+2026-09-03 11:45:00.907 | SUCCESS  | MainThread | core.mt5_client:send_market_order:607 - BUY 0.01 lots @ 4481.59 | sl=4466.6 tp=4509.78 ticket=10349878881
+2026-09-03 11:45:00.915 | INFO     | MainThread | __main__:_on_new_closed_bar:663 - signal score 50/100 | ichimoku_m15|BUY|late|high
+2026-09-03 11:45:03.860 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:689 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-09-03 11:45:05.130 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:981 - signal broadcast → VIP:2 FREE:0
+2026-09-03 11:59:51.257 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 12:35:55.034 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #1 starting
+2026-09-03 12:36:00.054 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 12:36:00.066 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-03 12:36:10.079 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 12:36:10.085 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-03 12:36:30.099 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 12:36:30.107 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-09-03 12:37:10.120 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 12:37:10.132 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-09-03 12:38:10.143 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 12:38:10.152 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 5/5 failed
+2026-09-03 12:38:10.158 | ERROR    | MainThread | core.mt5_client:reconnect:318 - reconnect exhausted backoff ladder; staying offline
+2026-09-03 12:38:10.158 | ERROR    | MainThread | __main__:run:797 - offline; retrying in 10s
+2026-09-03 12:38:10.158 | ERROR    | mt5-heartbeat | core.mt5_client:_heartbeat_loop:347 - heartbeat: link LOST
+2026-09-03 12:38:10.158 | ERROR    | Thread-1572 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 account_info failed: (-10004) No IPC connection
+2026-09-03 12:38:10.185 | WARNING  | Thread-1572 (process_request_thread) | core.mt5_client:reconnect:298 - reconnect attempt #2 starting
+2026-09-03 12:38:15.196 | ERROR    | Thread-1572 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 12:38:15.204 | WARNING  | Thread-1572 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-03 12:38:25.220 | ERROR    | Thread-1572 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 12:38:25.240 | WARNING  | Thread-1572 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-03 12:38:45.252 | ERROR    | Thread-1572 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 12:38:45.258 | WARNING  | Thread-1572 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-09-03 12:39:25.282 | ERROR    | Thread-1572 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 12:39:25.289 | WARNING  | Thread-1572 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-09-03 12:40:25.305 | SUCCESS  | Thread-1572 (process_request_thread) | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=745.41 USD | symbol=XAUUSD | algo_trading=True
+2026-09-03 12:40:25.320 | SUCCESS  | Thread-1572 (process_request_thread) | core.mt5_client:reconnect:313 - reconnected after 5 attempt(s)
+2026-09-03 12:40:25.347 | SUCCESS  | mt5-heartbeat | core.mt5_client:_heartbeat_loop:344 - heartbeat: link RESTORED
+2026-09-03 12:59:51.869 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 13:59:52.521 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 14:59:52.940 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 15:11:49.766 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #3 starting
+2026-09-03 15:11:54.800 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 15:11:54.809 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-03 15:12:04.818 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 15:12:04.824 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-03 15:12:24.835 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=745.41 USD | symbol=XAUUSD | algo_trading=True
+2026-09-03 15:12:24.848 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 3 attempt(s)
+2026-09-03 15:14:24.891 | ERROR    | mt5-heartbeat | core.mt5_client:_heartbeat_loop:347 - heartbeat: link LOST
+2026-09-03 15:14:24.897 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #4 starting
+2026-09-03 15:14:29.920 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=745.41 USD | symbol=XAUUSD | algo_trading=True
+2026-09-03 15:14:29.928 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-09-03 15:14:54.919 | SUCCESS  | mt5-heartbeat | core.mt5_client:_heartbeat_loop:344 - heartbeat: link RESTORED
+2026-09-03 15:52:06.198 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #5 starting
+2026-09-03 15:52:11.271 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 15:52:11.277 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-03 15:52:21.288 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 15:52:21.296 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-03 15:52:41.323 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-03 15:52:41.329 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-09-03 15:53:21.344 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=745.41 USD | symbol=XAUUSD | algo_trading=True
+2026-09-03 15:53:21.358 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 4 attempt(s)
+2026-09-03 15:55:16.530 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #6 starting
+2026-09-03 15:55:21.548 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=745.41 USD | symbol=XAUUSD | algo_trading=True
+2026-09-03 15:55:21.556 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-09-03 15:59:53.314 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 16:59:54.111 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 17:00:03.632 | SUCCESS  | MainThread | __main__:_check_daily_digest:566 - daily digest for 2026-09-03 broadcast
+2026-09-03 17:00:05.271 | INFO     | telegram-loop | core.telegram_bot:_broadcast_daily_async:1025 - daily digest broadcast → 2 chats
+2026-09-03 17:59:54.853 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 18:59:55.658 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 19:59:56.483 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 20:59:57.276 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 21:00:00.490 | INFO     | MainThread | __main__:_sync_daily:536 - daily guard reset | new server day 2026-09-04 | balance=$745.41
+2026-09-03 21:00:20.599 | SUCCESS  | MainThread | __main__:_handle_closed_position:441 - position #10349878881 closed | LOSS | $-15.12
+2026-09-03 21:59:58.013 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 22:59:58.562 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-03 23:59:59.149 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 00:59:59.589 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 02:00:00.406 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 02:33:41.923 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #7 starting
+2026-09-04 02:33:47.373 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 02:33:47.391 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-04 02:33:57.403 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 02:33:57.409 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-04 02:34:17.418 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 02:34:17.425 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-09-04 02:34:57.448 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 02:34:57.453 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-09-04 02:35:57.464 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 02:35:57.470 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 5/5 failed
+2026-09-04 02:35:57.476 | ERROR    | MainThread | core.mt5_client:reconnect:318 - reconnect exhausted backoff ladder; staying offline
+2026-09-04 02:35:57.480 | ERROR    | MainThread | __main__:run:797 - offline; retrying in 10s
+2026-09-04 02:35:57.480 | ERROR    | mt5-heartbeat | core.mt5_client:_heartbeat_loop:347 - heartbeat: link LOST
+2026-09-04 02:36:07.499 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #8 starting
+2026-09-04 02:36:12.515 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 02:36:12.521 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-04 02:36:22.533 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 02:36:22.538 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-04 02:36:42.550 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 02:36:42.558 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-09-04 02:37:22.576 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=730.29 USD | symbol=XAUUSD | algo_trading=True
+2026-09-04 02:37:22.607 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 4 attempt(s)
+2026-09-04 02:37:22.623 | SUCCESS  | mt5-heartbeat | core.mt5_client:_heartbeat_loop:344 - heartbeat: link RESTORED
+2026-09-04 03:00:01.252 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 04:00:02.051 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 05:00:02.859 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 05:25:00.669 | INFO     | MainThread | __main__:_on_new_closed_bar:624 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 5 mins before High-Impact USD: Average Hourly Earnings m/m
+2026-09-04 05:30:01.115 | INFO     | MainThread | __main__:_on_new_closed_bar:624 - 📰 بلاک خبری فعال — ورود جدید ممنوع | ⚠️ 0 mins after Average Hourly Earnings m/m (Volatility Cooldown)
+2026-09-04 06:00:03.560 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)

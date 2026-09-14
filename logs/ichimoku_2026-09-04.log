@@ -1,0 +1,208 @@
+2026-09-04 06:14:33.821 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-09-04 06:14:33.948 | INFO     | MainThread | core.news_filter:start:106 - news filter cold-start: fetching calendar synchronously...
+2026-09-04 06:14:34.302 | SUCCESS  | MainThread | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 06:14:34.307 | SUCCESS  | MainThread | core.news_filter:start:110 - cold-start successful: calendar loaded
+2026-09-04 06:14:34.309 | INFO     | MainThread | core.news_filter:start:125 - news filter background refresh started (interval: 1.0h)
+2026-09-04 06:14:34.309 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-04 06:14:34.322 | INFO     | MainThread | __main__:run:941 - ========================================================================
+2026-09-04 06:14:34.322 | INFO     | MainThread | __main__:run:942 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-09-04 06:14:34.322 | INFO     | MainThread | __main__:run:943 - ========================================================================
+2026-09-04 06:14:34.342 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=730.29 USD | symbol=XAUUSD | algo_trading=True
+2026-09-04 06:14:34.343 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-09-04 06:14:34.343 | INFO     | MainThread | __main__:_sync_daily:699 - daily guard init | realized today=$-15.12 | day-start balance=$745.41 | cap -10%/$74.54
+2026-09-04 06:14:34.345 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-09-04 06:14:34.349 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8081/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-04 06:14:35.611 | SUCCESS  | MainThread | core.telegram_bot:start:176 - telegram controller online as @MatrixGolden_bot
+2026-09-04 06:14:35.616 | INFO     | MainThread | __main__:run:971 - entering main loop (1.0s cadence, 300s bars)
+2026-09-04 06:24:33.711 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-09-04 06:24:33.890 | INFO     | MainThread | core.news_filter:start:106 - news filter cold-start: fetching calendar synchronously...
+2026-09-04 06:24:34.297 | SUCCESS  | MainThread | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 06:24:34.303 | SUCCESS  | MainThread | core.news_filter:start:110 - cold-start successful: calendar loaded
+2026-09-04 06:24:34.305 | INFO     | MainThread | core.news_filter:start:125 - news filter background refresh started (interval: 1.0h)
+2026-09-04 06:24:34.305 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-04 06:24:34.313 | INFO     | MainThread | __main__:run:941 - ========================================================================
+2026-09-04 06:24:34.313 | INFO     | MainThread | __main__:run:942 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-09-04 06:24:34.313 | INFO     | MainThread | __main__:run:943 - ========================================================================
+2026-09-04 06:24:34.336 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=730.29 USD | symbol=XAUUSD | algo_trading=True
+2026-09-04 06:24:34.336 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-09-04 06:24:34.338 | INFO     | MainThread | __main__:_sync_daily:699 - daily guard init | realized today=$-15.12 | day-start balance=$745.41 | cap -10%/$74.54
+2026-09-04 06:24:34.375 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-09-04 06:24:34.426 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8081/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-04 06:24:38.652 | SUCCESS  | MainThread | core.telegram_bot:start:176 - telegram controller online as @MatrixGolden_bot
+2026-09-04 06:24:38.658 | INFO     | MainThread | __main__:run:971 - entering main loop (1.0s cadence, 300s bars)
+2026-09-04 06:24:38.794 | WARNING  | telegram-loop | core.telegram_bot:_send_text:1001 - chat 84078462 blocked the bot; marking as blocked
+2026-09-04 06:24:38.981 | WARNING  | telegram-loop | core.telegram_bot:_send_text:1001 - chat 84078462 blocked the bot; marking as blocked
+2026-09-04 07:00:01.380 | INFO     | MainThread | __main__:_on_new_closed_bar:814 - 🎯 سیگنال شناسایی شد: 2026-09-04 16:45:00 → SELL (Tenkan momentum)
+2026-09-04 07:00:01.561 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-09-04 07:00:01.573 | WARNING  | MainThread | core.risk_manager:calculate_lot:264 - risk budget $7.30 implies 0.0028 lots (< min 0.01); trading min lot risks $26.13 (3.58% of balance)
+2026-09-04 07:00:02.998 | SUCCESS  | MainThread | core.mt5_client:send_market_order:607 - SELL 0.01 lots @ 4414.19 | sl=4439.61 tp=4364.48 ticket=10364496077
+2026-09-04 07:00:03.098 | INFO     | MainThread | __main__:_on_new_closed_bar:844 - signal score 50/100 | ichimoku_m15|SELL|us|high
+2026-09-04 07:00:05.038 | SUCCESS  | MainThread | __main__:_on_new_closed_bar:870 - 📱 سیگنال (سطوح واقعی سفارش) به همراه چارت به تلگرام مخابره شد.
+2026-09-04 07:00:06.131 | INFO     | telegram-loop | core.telegram_bot:_broadcast_signal_async:1136 - signal broadcast → VIP:2 FREE:0
+2026-09-04 07:24:34.826 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 07:32:25.542 | SUCCESS  | MainThread | __main__:_handle_closed_position:536 - position #10364496077 closed | LOSS | $-25.42
+2026-09-04 08:19:35.292 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-09-04 08:19:35.524 | INFO     | MainThread | core.news_filter:start:106 - news filter cold-start: fetching calendar synchronously...
+2026-09-04 08:19:35.986 | SUCCESS  | MainThread | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 08:19:35.990 | SUCCESS  | MainThread | core.news_filter:start:110 - cold-start successful: calendar loaded
+2026-09-04 08:19:35.992 | INFO     | MainThread | core.news_filter:start:125 - news filter background refresh started (interval: 1.0h)
+2026-09-04 08:19:35.994 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-04 08:19:36.019 | INFO     | MainThread | __main__:run:941 - ========================================================================
+2026-09-04 08:19:36.019 | INFO     | MainThread | __main__:run:942 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-09-04 08:19:36.019 | INFO     | MainThread | __main__:run:943 - ========================================================================
+2026-09-04 08:19:36.045 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=704.87 USD | symbol=XAUUSD | algo_trading=True
+2026-09-04 08:19:36.045 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-09-04 08:19:36.051 | INFO     | MainThread | __main__:_sync_daily:699 - daily guard init | realized today=$-40.54 | day-start balance=$745.41 | cap -10%/$74.54
+2026-09-04 08:19:36.055 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-09-04 08:19:36.080 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8081/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-04 08:19:37.544 | SUCCESS  | MainThread | core.telegram_bot:start:176 - telegram controller online as @MatrixGolden_bot
+2026-09-04 08:19:37.546 | INFO     | MainThread | __main__:run:971 - entering main loop (1.0s cadence, 300s bars)
+2026-09-04 08:24:34.155 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-09-04 08:24:34.307 | INFO     | MainThread | core.news_filter:start:113 - news filter cold-start: fetching calendar synchronously...
+2026-09-04 08:24:34.659 | SUCCESS  | MainThread | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 08:24:34.665 | SUCCESS  | MainThread | core.news_filter:start:117 - cold-start successful: calendar loaded
+2026-09-04 08:24:34.665 | INFO     | MainThread | core.news_filter:start:132 - news filter background refresh started (interval: 1.0h)
+2026-09-04 08:24:34.665 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-04 08:24:34.673 | INFO     | MainThread | __main__:run:950 - ========================================================================
+2026-09-04 08:24:34.673 | INFO     | MainThread | __main__:run:951 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-09-04 08:24:34.673 | INFO     | MainThread | __main__:run:952 - ========================================================================
+2026-09-04 08:24:34.685 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=704.87 USD | symbol=XAUUSD | algo_trading=True
+2026-09-04 08:24:34.687 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-09-04 08:24:34.687 | INFO     | MainThread | __main__:_sync_daily:708 - daily guard init | realized today=$-40.54 | day-start balance=$745.41 | cap -10%/$74.54
+2026-09-04 08:24:34.687 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-09-04 08:24:34.705 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8081/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-04 08:24:36.162 | SUCCESS  | telegram-loop | core.telegram_bot:_register_menu_commands:418 - telegram menu commands registered (6 public / 15 admin)
+2026-09-04 08:24:36.270 | SUCCESS  | MainThread | core.telegram_bot:start:182 - telegram controller online as @MatrixGolden_bot
+2026-09-04 08:24:36.276 | INFO     | MainThread | __main__:run:980 - entering main loop (1.0s cadence, 300s bars)
+2026-09-04 08:29:34.209 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions_ichimoku.db
+2026-09-04 08:29:34.383 | INFO     | MainThread | core.news_filter:start:113 - news filter cold-start: fetching calendar synchronously...
+2026-09-04 08:29:34.784 | SUCCESS  | MainThread | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 08:29:34.795 | SUCCESS  | MainThread | core.news_filter:start:117 - cold-start successful: calendar loaded
+2026-09-04 08:29:34.797 | INFO     | MainThread | core.news_filter:start:132 - news filter background refresh started (interval: 1.0h)
+2026-09-04 08:29:34.797 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-04 08:29:34.803 | INFO     | MainThread | __main__:run:950 - ========================================================================
+2026-09-04 08:29:34.805 | INFO     | MainThread | __main__:run:951 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.1 | SL/TP 1.6x/3.0xATR(14) | BE 1.0xATR+5pts | trail 1.3x/0.8xATR
+2026-09-04 08:29:34.805 | INFO     | MainThread | __main__:run:952 - ========================================================================
+2026-09-04 08:29:34.817 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=704.87 USD | symbol=XAUUSD | algo_trading=True
+2026-09-04 08:29:34.831 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-09-04 08:29:34.833 | INFO     | MainThread | __main__:_sync_daily:708 - daily guard init | realized today=$-40.54 | day-start balance=$745.41 | cap -10%/$74.54
+2026-09-04 08:29:34.833 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-09-04 08:29:34.839 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8081/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-04 08:29:36.314 | SUCCESS  | telegram-loop | core.telegram_bot:_register_menu_commands:418 - telegram menu commands registered (6 public / 15 admin)
+2026-09-04 08:29:36.409 | SUCCESS  | MainThread | core.telegram_bot:start:182 - telegram controller online as @MatrixGolden_bot
+2026-09-04 08:29:36.414 | INFO     | MainThread | __main__:run:980 - entering main loop (1.0s cadence, 300s bars)
+2026-09-04 08:34:14.046 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #1 starting
+2026-09-04 08:34:19.066 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=704.87 USD | symbol=XAUUSD | algo_trading=True
+2026-09-04 08:34:19.088 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-09-04 08:39:36.571 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #2 starting
+2026-09-04 08:39:41.736 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=704.87 USD | symbol=XAUUSD | algo_trading=True
+2026-09-04 08:39:41.744 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-09-04 09:05:39.978 | INFO     | telegram-loop | core.database:add_vip_days:268 - VIP +30 days for 1987156365 -> expires 2026-10-24 19:24:01
+2026-09-04 09:29:35.403 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 10:25:52.842 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #3 starting
+2026-09-04 10:27:04.782 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-10005) IPC timeout
+2026-09-04 10:27:04.791 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-04 10:28:22.053 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-10005) IPC timeout
+2026-09-04 10:28:22.095 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-04 10:29:49.036 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-10005) IPC timeout
+2026-09-04 10:29:49.049 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-09-04 10:29:49.383 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 10:30:29.056 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:30:29.063 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-09-04 10:31:29.072 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=704.87 USD | symbol=XAUUSD | algo_trading=False
+2026-09-04 10:31:29.079 | WARNING  | MainThread | core.mt5_client:connect:242 - Algo Trading is DISABLED in the terminal; orders will be rejected
+2026-09-04 10:31:29.088 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 5 attempt(s)
+2026-09-04 10:45:32.946 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #4 starting
+2026-09-04 10:45:37.972 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:45:37.978 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-04 10:45:47.985 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:45:47.991 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-04 10:46:08.002 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:46:08.009 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-09-04 10:46:48.015 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:46:48.022 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-09-04 10:47:48.029 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:47:48.035 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 5/5 failed
+2026-09-04 10:47:48.037 | ERROR    | MainThread | core.mt5_client:reconnect:318 - reconnect exhausted backoff ladder; staying offline
+2026-09-04 10:47:48.037 | ERROR    | MainThread | __main__:run:987 - offline; retrying in 10s
+2026-09-04 10:47:48.037 | ERROR    | mt5-heartbeat | core.mt5_client:_heartbeat_loop:347 - heartbeat: link LOST
+2026-09-04 10:47:48.037 | ERROR    | Thread-233 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 account_info failed: (-10004) No IPC connection
+2026-09-04 10:47:48.043 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:reconnect:298 - reconnect attempt #5 starting
+2026-09-04 10:47:53.052 | ERROR    | Thread-233 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:47:53.061 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-04 10:48:03.065 | ERROR    | Thread-233 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:48:03.071 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-04 10:48:23.078 | ERROR    | Thread-233 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:48:23.084 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-09-04 10:49:03.092 | ERROR    | Thread-233 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:49:03.100 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-09-04 10:50:03.106 | ERROR    | Thread-233 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:50:03.112 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 5/5 failed
+2026-09-04 10:50:03.112 | ERROR    | Thread-233 (process_request_thread) | core.mt5_client:reconnect:318 - reconnect exhausted backoff ladder; staying offline
+2026-09-04 10:50:03.114 | ERROR    | Thread-234 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 account_info failed: (-10004) No IPC connection
+2026-09-04 10:50:03.114 | WARNING  | Thread-234 (process_request_thread) | core.mt5_client:reconnect:298 - reconnect attempt #6 starting
+2026-09-04 10:50:08.126 | ERROR    | Thread-234 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:50:08.132 | WARNING  | Thread-234 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-04 10:50:18.138 | ERROR    | Thread-234 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:50:18.144 | WARNING  | Thread-234 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-04 10:50:38.151 | ERROR    | Thread-234 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:50:38.160 | WARNING  | Thread-234 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-09-04 10:51:18.165 | ERROR    | Thread-234 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:51:18.173 | WARNING  | Thread-234 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-09-04 10:52:18.179 | ERROR    | Thread-234 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:52:18.186 | WARNING  | Thread-234 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 5/5 failed
+2026-09-04 10:52:18.192 | ERROR    | Thread-234 (process_request_thread) | core.mt5_client:reconnect:318 - reconnect exhausted backoff ladder; staying offline
+2026-09-04 10:52:18.192 | ERROR    | Thread-235 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 account_info failed: (-10004) No IPC connection
+2026-09-04 10:52:18.194 | WARNING  | Thread-235 (process_request_thread) | core.mt5_client:reconnect:298 - reconnect attempt #7 starting
+2026-09-04 10:52:23.207 | ERROR    | Thread-235 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:52:23.213 | WARNING  | Thread-235 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-04 10:52:33.221 | ERROR    | Thread-235 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:52:33.227 | WARNING  | Thread-235 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-04 10:52:53.233 | ERROR    | Thread-235 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:52:53.239 | WARNING  | Thread-235 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-09-04 10:53:33.247 | ERROR    | Thread-235 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:53:33.256 | WARNING  | Thread-235 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-09-04 10:54:33.262 | ERROR    | Thread-235 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:54:33.270 | WARNING  | Thread-235 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 5/5 failed
+2026-09-04 10:54:33.270 | ERROR    | Thread-235 (process_request_thread) | core.mt5_client:reconnect:318 - reconnect exhausted backoff ladder; staying offline
+2026-09-04 10:54:33.270 | ERROR    | Thread-233 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 account_info failed: (-10004) No IPC connection
+2026-09-04 10:54:33.270 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:reconnect:298 - reconnect attempt #8 starting
+2026-09-04 10:54:38.285 | ERROR    | Thread-233 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:54:38.291 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-04 10:54:48.297 | ERROR    | Thread-233 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:54:48.303 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-04 10:55:08.310 | ERROR    | Thread-233 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:55:08.317 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-09-04 10:55:48.324 | ERROR    | Thread-233 (process_request_thread) | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 10:55:48.330 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-09-04 10:56:48.371 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:_resolve_symbol:275 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-04 10:56:48.378 | SUCCESS  | Thread-233 (process_request_thread) | core.mt5_client:connect:232 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=533.00 USD | symbol=XAUUSD@ | algo_trading=False
+2026-09-04 10:56:48.378 | WARNING  | Thread-233 (process_request_thread) | core.mt5_client:connect:242 - Algo Trading is DISABLED in the terminal; orders will be rejected
+2026-09-04 10:56:48.390 | SUCCESS  | Thread-233 (process_request_thread) | core.mt5_client:reconnect:313 - reconnected after 5 attempt(s)
+2026-09-04 10:56:48.421 | SUCCESS  | mt5-heartbeat | core.mt5_client:_heartbeat_loop:344 - heartbeat: link RESTORED
+2026-09-04 11:29:49.923 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 12:29:50.374 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 13:29:50.730 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 14:29:51.084 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 15:29:51.450 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 16:29:51.816 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 17:29:52.886 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 18:29:53.722 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 19:29:54.801 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 20:29:55.452 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 21:29:56.055 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 22:29:56.716 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-04 22:43:29.639 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #9 starting
+2026-09-04 22:43:34.855 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 22:43:34.862 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-09-04 22:43:44.872 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 22:43:44.878 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-09-04 22:44:04.884 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-09-04 22:44:04.892 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-09-04 22:44:44.947 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:275 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-04 22:44:44.961 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=533.00 USD | symbol=XAUUSD@ | algo_trading=False
+2026-09-04 22:44:44.961 | WARNING  | MainThread | core.mt5_client:connect:242 - Algo Trading is DISABLED in the terminal; orders will be rejected
+2026-09-04 22:44:44.961 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 4 attempt(s)
+2026-09-04 23:29:57.725 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 00:29:58.559 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-05 01:31:52.744 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)

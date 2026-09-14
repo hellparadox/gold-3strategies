@@ -1,0 +1,281 @@
+2026-08-25 05:17:15.258 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-25 05:17:15.600 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 05:17:15.602 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 3.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-25 05:17:15.602 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 05:17:15.724 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 05:17:15.730 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 05:17:15.732 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 05:17:15.732 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-25 05:17:15.732 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 05:17:20.748 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 05:17:25.755 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 05:17:29.044 | ERROR    | telegram-loop | core.telegram_bot:_thread_main:184 - telegram thread crashed: httpx.ConnectError: All connection attempts failed
+Traceback (most recent call last):
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_transports\default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpcore\_async\connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpcore\_async\connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpcore\_async\http_proxy.py", line 288, in handle_async_request
+    connect_response = await self._connection.handle_async_request(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpcore\_async\connection.py", line 101, in handle_async_request
+    raise exc
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpcore\_async\connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpcore\_async\connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpcore\_backends\auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpcore\_backends\anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\telegram\request\_httpxrequest.py", line 279, in do_request
+    res = await self._client.request(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_transports\default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1002, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+> File "C:\Users\Administrator\gold-3strategies\core\telegram_bot.py", line 182, in _thread_main
+    loop.run_until_complete(self._async_main())
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 654, in run_until_complete
+    return future.result()
+  File "C:\Users\Administrator\gold-3strategies\core\telegram_bot.py", line 222, in _async_main
+    await app.initialize()
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\telegram\ext\_application.py", line 489, in initialize
+    await self.bot.initialize()
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\telegram\ext\_extbot.py", line 324, in initialize
+    await super().initialize()
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\telegram\_bot.py", line 865, in initialize
+    await self.get_me()
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\telegram\ext\_extbot.py", line 2040, in get_me
+    return await super().get_me(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\telegram\_bot.py", line 1005, in get_me
+    result = await self._post(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\telegram\_bot.py", line 712, in _post
+    return await self._do_post(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\telegram\ext\_extbot.py", line 378, in _do_post
+    return await super()._do_post(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\telegram\_bot.py", line 741, in _do_post
+    result = await request.post(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\telegram\request\_baserequest.py", line 198, in post
+    result = await self._request_wrapper(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\telegram\request\_baserequest.py", line 305, in _request_wrapper
+    code, payload = await self.do_request(
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python311\Lib\site-packages\telegram\request\_httpxrequest.py", line 303, in do_request
+    raise NetworkError(f"httpx.{err.__class__.__name__}: {err}") from err
+telegram.error.NetworkError: httpx.ConnectError: All connection attempts failed
+2026-08-25 05:17:29.407 | INFO     | telegram-loop | core.telegram_bot:_thread_main:196 - telegram event loop closed
+2026-08-25 05:17:50.768 | ERROR    | MainThread | core.telegram_bot:start:166 - telegram controller failed to become ready in 25.0s
+2026-08-25 05:17:50.774 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 05:28:56.122 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-25 05:28:56.126 | INFO     | MainThread | __main__:shutdown:724 - shutting down…
+2026-08-25 05:28:56.243 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-25 05:28:56.382 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-25 05:28:57.129 | INFO     | MainThread | core.telegram_bot:stop:175 - telegram controller stopped
+2026-08-25 05:28:57.136 | INFO     | MainThread | core.mt5_client:shutdown:292 - MT5 client shut down
+2026-08-25 05:28:57.140 | SUCCESS  | MainThread | __main__:shutdown:731 - clean shutdown complete
+2026-08-25 05:30:02.139 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-25 05:30:02.373 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 05:30:02.375 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 3.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-25 05:30:02.375 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 05:30:02.401 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 05:30:02.411 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 05:30:02.411 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 05:30:02.420 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-25 05:30:02.422 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 05:30:07.423 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 05:30:12.430 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 05:30:13.922 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-25 05:30:13.940 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 05:30:28.091 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-25 05:30:28.095 | INFO     | MainThread | __main__:shutdown:724 - shutting down…
+2026-08-25 05:30:33.365 | INFO     | telegram-loop | core.telegram_bot:_thread_main:197 - telegram event loop closed
+2026-08-25 05:30:33.366 | INFO     | MainThread | core.telegram_bot:stop:176 - telegram controller stopped
+2026-08-25 05:30:33.368 | INFO     | MainThread | core.mt5_client:shutdown:292 - MT5 client shut down
+2026-08-25 05:30:33.370 | SUCCESS  | MainThread | __main__:shutdown:731 - clean shutdown complete
+2026-08-25 05:33:16.474 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-25 05:33:16.614 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 05:33:16.618 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 3.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-25 05:33:16.618 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 05:33:31.707 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 05:33:31.908 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 05:33:32.075 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 05:33:32.265 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-25 05:33:32.433 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 05:33:37.610 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 05:33:42.617 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 05:33:43.910 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-25 05:33:43.915 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 05:36:25.560 | INFO     | telegram-loop | core.database:add_vip_days:268 - VIP +30 days for 1987156365 -> expires 2026-09-24 12:36:25
+2026-08-25 06:02:10.260 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-25 06:02:10.270 | INFO     | MainThread | __main__:shutdown:724 - shutting down…
+2026-08-25 06:02:10.282 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-25 06:02:12.535 | INFO     | telegram-loop | core.telegram_bot:_thread_main:197 - telegram event loop closed
+2026-08-25 06:02:12.537 | INFO     | MainThread | core.telegram_bot:stop:176 - telegram controller stopped
+2026-08-25 06:02:12.537 | INFO     | MainThread | core.mt5_client:shutdown:292 - MT5 client shut down
+2026-08-25 06:02:12.541 | SUCCESS  | MainThread | __main__:shutdown:731 - clean shutdown complete
+2026-08-25 06:02:47.350 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-25 06:02:47.573 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 06:02:47.577 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 3.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-25 06:02:47.577 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 06:02:47.611 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 06:02:47.611 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 06:02:47.621 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 06:02:47.621 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-25 06:02:47.625 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 06:02:52.626 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 06:02:57.638 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 06:02:59.419 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-25 06:02:59.439 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 06:11:24.286 | WARNING  | telegram-loop | __main__:_hook_set_strategy:260 - strategy -> orb_gold persisted to settings.yaml; restarting…
+2026-08-25 06:11:25.799 | WARNING  | Thread-1 (_worker) | __main__:_worker:230 - RESTART requested -> shutting down and relaunching…
+2026-08-25 06:11:25.811 | INFO     | MainThread | __main__:shutdown:724 - shutting down…
+2026-08-25 06:11:31.114 | INFO     | telegram-loop | core.telegram_bot:_thread_main:197 - telegram event loop closed
+2026-08-25 06:11:31.118 | INFO     | MainThread | core.telegram_bot:stop:176 - telegram controller stopped
+2026-08-25 06:11:31.118 | INFO     | MainThread | core.mt5_client:shutdown:292 - MT5 client shut down
+2026-08-25 06:11:31.128 | SUCCESS  | MainThread | __main__:shutdown:731 - clean shutdown complete
+2026-08-25 06:12:44.513 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-25 06:12:44.715 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 06:12:44.724 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 3.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-25 06:12:44.726 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 06:12:44.756 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 06:12:44.758 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 06:12:44.758 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 06:12:44.758 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-25 06:12:44.758 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 06:12:49.760 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 06:12:54.766 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 06:12:57.130 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-25 06:12:57.150 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 06:20:05.000 | WARNING  | telegram-loop | __main__:_hook_set_risk:274 - risk switched -> 1.00%
+2026-08-25 06:37:53.584 | WARNING  | telegram-loop | __main__:_hook_set_risk:274 - risk switched -> 1.50%
+2026-08-25 06:38:01.014 | WARNING  | telegram-loop | __main__:_hook_set_risk:274 - risk switched -> 2.00%
+2026-08-25 11:56:58.499 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-25 11:56:58.622 | INFO     | MainThread | __main__:shutdown:724 - shutting down…
+2026-08-25 11:57:00.976 | INFO     | telegram-loop | core.telegram_bot:_thread_main:197 - telegram event loop closed
+2026-08-25 11:57:00.981 | INFO     | MainThread | core.telegram_bot:stop:176 - telegram controller stopped
+2026-08-25 11:57:00.981 | INFO     | MainThread | core.mt5_client:shutdown:292 - MT5 client shut down
+2026-08-25 11:57:01.064 | SUCCESS  | MainThread | __main__:shutdown:731 - clean shutdown complete
+2026-08-25 11:57:46.299 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-25 11:57:46.609 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 11:57:46.613 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 3.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-25 11:57:46.613 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 11:57:46.629 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 11:57:46.643 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 11:57:46.643 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 11:57:46.645 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-25 11:57:46.645 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 11:57:51.646 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 11:57:54.107 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-25 11:57:56.651 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 11:57:58.254 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-25 11:57:58.284 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 11:57:58.339 | INFO     | MainThread | __main__:shutdown:724 - shutting down…
+2026-08-25 11:58:03.668 | INFO     | telegram-loop | core.telegram_bot:_thread_main:197 - telegram event loop closed
+2026-08-25 11:58:03.678 | INFO     | MainThread | core.telegram_bot:stop:176 - telegram controller stopped
+2026-08-25 11:58:03.680 | INFO     | MainThread | core.mt5_client:shutdown:292 - MT5 client shut down
+2026-08-25 11:58:03.703 | SUCCESS  | MainThread | __main__:shutdown:731 - clean shutdown complete
+2026-08-25 12:02:41.870 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-25 12:02:42.991 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 12:02:42.991 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 3.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-25 12:02:42.991 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 12:02:43.019 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 12:02:43.019 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 12:02:43.019 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 12:02:43.021 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-25 12:02:43.021 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 12:02:48.022 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 12:02:53.027 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 12:02:54.311 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-25 12:02:54.321 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 12:07:41.721 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-25 12:07:41.879 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 12:07:41.883 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 3.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-25 12:07:41.883 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 12:07:41.910 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 12:07:41.910 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 12:07:41.912 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 12:07:41.912 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-25 12:07:41.912 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 12:07:46.914 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 12:07:51.927 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 12:07:53.207 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-25 12:07:53.217 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 15:17:04.270 | WARNING  | MainThread | __main__:stop:720 - shutdown requested
+2026-08-25 15:17:04.680 | INFO     | MainThread | __main__:shutdown:724 - shutting down…
+2026-08-25 15:17:07.399 | INFO     | telegram-loop | core.telegram_bot:_thread_main:197 - telegram event loop closed
+2026-08-25 15:17:07.421 | INFO     | MainThread | core.telegram_bot:stop:176 - telegram controller stopped
+2026-08-25 15:17:07.436 | INFO     | MainThread | core.mt5_client:shutdown:292 - MT5 client shut down
+2026-08-25 15:17:07.492 | SUCCESS  | MainThread | __main__:shutdown:731 - clean shutdown complete
+2026-08-25 15:17:41.721 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-25 15:17:41.857 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 15:17:41.861 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 3.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-25 15:17:41.861 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 15:17:41.879 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 15:17:41.879 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 15:17:41.879 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 15:17:41.881 | WARNING  | MainThread | __main__:_sync_daily:480 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-25 15:17:41.881 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 15:17:46.882 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 15:17:51.888 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 15:17:53.067 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-25 15:17:53.080 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 21:00:00.775 | INFO     | MainThread | __main__:_sync_daily:493 - daily guard reset | new server day 2026-08-26 | balance=$694.91
+2026-08-25 21:42:42.363 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-25 21:42:42.560 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 21:42:42.564 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 3.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-25 21:42:42.564 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 21:42:42.586 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 21:42:42.586 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 21:42:42.588 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 21:42:42.588 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 21:42:47.589 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 21:42:52.594 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 21:42:53.803 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-25 21:42:53.813 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)
+2026-08-25 21:57:42.847 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-25 21:57:43.011 | INFO     | MainThread | __main__:run:656 - ========================================================================
+2026-08-25 21:57:43.020 | INFO     | MainThread | __main__:run:657 - GOLD M5 BOT starting | risk 3.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-25 21:57:43.020 | INFO     | MainThread | __main__:run:658 - ========================================================================
+2026-08-25 21:57:43.034 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=694.91 USD | symbol=XAUUSD | algo_trading=True
+2026-08-25 21:57:43.034 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-25 21:57:43.034 | INFO     | MainThread | __main__:_sync_daily:475 - daily guard init | realized today=$0.00 | day-start balance=$694.91 | cap -10%/$69.49
+2026-08-25 21:57:43.034 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-25 21:57:48.036 | WARNING  | MainThread | __main__:run:669 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-25 21:57:53.041 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-25 21:57:54.272 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-25 21:57:54.282 | INFO     | MainThread | __main__:run:683 - entering main loop (1.0s cadence, 300s bars)

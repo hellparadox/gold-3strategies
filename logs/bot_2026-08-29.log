@@ -1,0 +1,809 @@
+2026-08-29 04:37:46.171 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-29 04:37:46.431 | INFO     | MainThread | core.news_filter:start:98 - news filter disabled in config
+2026-08-29 04:37:46.437 | INFO     | MainThread | __main__:run:687 - ========================================================================
+2026-08-29 04:37:46.439 | INFO     | MainThread | __main__:run:688 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-29 04:37:46.439 | INFO     | MainThread | __main__:run:689 - ========================================================================
+2026-08-29 04:37:46.581 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=675.32 USD | symbol=XAUUSD | algo_trading=True
+2026-08-29 04:37:46.583 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-29 04:37:46.587 | INFO     | MainThread | __main__:_sync_daily:489 - daily guard init | realized today=$0.00 | day-start balance=$675.32 | cap -10%/$67.53
+2026-08-29 04:37:46.587 | WARNING  | MainThread | __main__:_sync_daily:494 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-29 04:37:46.587 | WARNING  | MainThread | __main__:run:700 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-29 04:37:51.589 | WARNING  | MainThread | __main__:run:700 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-29 04:37:56.590 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-29 04:37:57.752 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-29 04:37:57.756 | INFO     | MainThread | __main__:run:714 - entering main loop (1.0s cadence, 300s bars)
+2026-08-29 04:52:42.139 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-29 04:52:42.261 | INFO     | MainThread | core.news_filter:start:98 - news filter disabled in config
+2026-08-29 04:52:42.269 | INFO     | MainThread | __main__:run:687 - ========================================================================
+2026-08-29 04:52:42.269 | INFO     | MainThread | __main__:run:688 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-29 04:52:42.269 | INFO     | MainThread | __main__:run:689 - ========================================================================
+2026-08-29 04:52:42.292 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=675.32 USD | symbol=XAUUSD | algo_trading=True
+2026-08-29 04:52:42.292 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-29 04:52:42.297 | INFO     | MainThread | __main__:_sync_daily:489 - daily guard init | realized today=$0.00 | day-start balance=$675.32 | cap -10%/$67.53
+2026-08-29 04:52:42.297 | WARNING  | MainThread | __main__:_sync_daily:494 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-29 04:52:42.297 | WARNING  | MainThread | __main__:run:700 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-29 04:52:47.298 | WARNING  | MainThread | __main__:run:700 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-29 04:52:52.299 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-29 04:52:53.414 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-29 04:52:53.418 | INFO     | MainThread | __main__:run:714 - entering main loop (1.0s cadence, 300s bars)
+2026-08-29 04:53:48.807 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-29 04:53:48.934 | INFO     | MainThread | core.news_filter:start:98 - news filter disabled in config
+2026-08-29 04:53:48.953 | INFO     | MainThread | __main__:run:687 - ========================================================================
+2026-08-29 04:53:48.955 | INFO     | MainThread | __main__:run:688 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-29 04:53:48.955 | INFO     | MainThread | __main__:run:689 - ========================================================================
+2026-08-29 04:53:48.985 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=675.32 USD | symbol=XAUUSD | algo_trading=True
+2026-08-29 04:53:48.991 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-29 04:53:48.994 | INFO     | MainThread | __main__:_sync_daily:489 - daily guard init | realized today=$0.00 | day-start balance=$675.32 | cap -10%/$67.53
+2026-08-29 04:53:48.998 | WARNING  | MainThread | __main__:_sync_daily:494 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-29 04:53:49.006 | WARNING  | MainThread | __main__:run:700 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-29 04:53:54.009 | WARNING  | MainThread | __main__:run:700 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-29 04:53:59.012 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-29 04:54:00.194 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-29 04:54:00.202 | INFO     | MainThread | __main__:run:714 - entering main loop (1.0s cadence, 300s bars)
+2026-08-29 04:57:41.369 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-29 04:57:41.476 | INFO     | MainThread | core.news_filter:start:98 - news filter disabled in config
+2026-08-29 04:57:41.484 | INFO     | MainThread | __main__:run:687 - ========================================================================
+2026-08-29 04:57:41.484 | INFO     | MainThread | __main__:run:688 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-29 04:57:41.484 | INFO     | MainThread | __main__:run:689 - ========================================================================
+2026-08-29 04:57:41.505 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=675.32 USD | symbol=XAUUSD | algo_trading=True
+2026-08-29 04:57:41.509 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-29 04:57:41.509 | INFO     | MainThread | __main__:_sync_daily:489 - daily guard init | realized today=$0.00 | day-start balance=$675.32 | cap -10%/$67.53
+2026-08-29 04:57:41.509 | WARNING  | MainThread | __main__:_sync_daily:494 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-29 04:57:41.509 | WARNING  | MainThread | __main__:run:700 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-29 04:57:46.511 | WARNING  | MainThread | __main__:run:700 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-29 04:57:51.512 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-29 04:57:52.629 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-29 04:57:52.632 | INFO     | MainThread | __main__:run:714 - entering main loop (1.0s cadence, 300s bars)
+2026-08-29 05:02:01.402 | WARNING  | MainThread | __main__:stop:751 - shutdown requested
+2026-08-29 05:02:01.404 | INFO     | MainThread | __main__:shutdown:755 - shutting down…
+2026-08-29 05:02:01.452 | WARNING  | MainThread | __main__:stop:751 - shutdown requested
+2026-08-29 05:02:01.584 | WARNING  | MainThread | __main__:stop:751 - shutdown requested
+2026-08-29 05:02:17.419 | INFO     | MainThread | core.telegram_bot:stop:176 - telegram controller stopped
+2026-08-29 05:02:17.425 | INFO     | MainThread | core.mt5_client:shutdown:292 - MT5 client shut down
+2026-08-29 05:02:17.429 | SUCCESS  | MainThread | __main__:shutdown:762 - clean shutdown complete
+2026-08-29 05:22:44.353 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-29 05:22:44.459 | INFO     | MainThread | core.news_filter:start:98 - news filter disabled in config
+2026-08-29 05:22:44.467 | INFO     | MainThread | __main__:run:687 - ========================================================================
+2026-08-29 05:22:44.467 | INFO     | MainThread | __main__:run:688 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-29 05:22:44.467 | INFO     | MainThread | __main__:run:689 - ========================================================================
+2026-08-29 05:22:44.478 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=675.32 USD | symbol=XAUUSD | algo_trading=True
+2026-08-29 05:22:44.478 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-29 05:22:44.480 | INFO     | MainThread | __main__:_sync_daily:489 - daily guard init | realized today=$0.00 | day-start balance=$675.32 | cap -10%/$67.53
+2026-08-29 05:22:44.480 | WARNING  | MainThread | __main__:_sync_daily:494 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-29 05:22:44.480 | WARNING  | MainThread | __main__:run:700 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-29 05:22:49.481 | WARNING  | MainThread | __main__:run:700 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-29 05:22:54.482 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-29 05:22:55.604 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-29 05:22:55.606 | INFO     | MainThread | __main__:run:714 - entering main loop (1.0s cadence, 300s bars)
+2026-08-29 05:57:44.248 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-29 05:57:44.364 | INFO     | MainThread | core.news_filter:start:101 - news filter cold-start: fetching calendar synchronously...
+2026-08-29 05:57:44.675 | SUCCESS  | MainThread | core.news_filter:update_calendar:160 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 05:57:44.677 | SUCCESS  | MainThread | core.news_filter:start:105 - cold-start successful: calendar loaded
+2026-08-29 05:57:44.677 | INFO     | MainThread | core.news_filter:start:120 - news filter background refresh started (interval: 1.0h)
+2026-08-29 05:57:44.684 | INFO     | MainThread | __main__:run:687 - ========================================================================
+2026-08-29 05:57:44.684 | INFO     | MainThread | __main__:run:688 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-29 05:57:44.684 | INFO     | MainThread | __main__:run:689 - ========================================================================
+2026-08-29 05:57:44.698 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=675.32 USD | symbol=XAUUSD | algo_trading=True
+2026-08-29 05:57:44.698 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-29 05:57:44.700 | INFO     | MainThread | __main__:_sync_daily:489 - daily guard init | realized today=$0.00 | day-start balance=$675.32 | cap -10%/$67.53
+2026-08-29 05:57:44.700 | WARNING  | MainThread | __main__:_sync_daily:494 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-29 05:57:44.700 | WARNING  | MainThread | __main__:run:700 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-29 05:57:49.701 | WARNING  | MainThread | __main__:run:700 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-29 05:57:54.702 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-29 05:57:55.811 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-29 05:57:55.815 | INFO     | MainThread | __main__:run:714 - entering main loop (1.0s cadence, 300s bars)
+2026-08-29 06:35:39.876 | INFO     | asyncio_0 | backtest.engine:__init__:84 - loaded 162 historical news events for backtesting blackout
+2026-08-29 06:35:39.971 | INFO     | asyncio_0 | backtest.engine:run:359 - backtest start | strategy=orb_gold bars=75000 spread=8.0pts commission=$0.0/lot news_filter=True
+2026-08-29 06:35:40.831 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.71 implies 0.0097 lots (< min 0.01); trading min lot risks $5.87 (1.03% of balance)
+2026-08-29 06:35:40.851 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.63 implies 0.0072 lots (< min 0.01); trading min lot risks $7.86 (1.40% of balance)
+2026-08-29 06:35:40.859 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.77 implies 0.0087 lots (< min 0.01); trading min lot risks $6.67 (1.16% of balance)
+2026-08-29 06:35:40.863 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.77 implies 0.0063 lots (< min 0.01); trading min lot risks $9.15 (1.59% of balance)
+2026-08-29 06:35:40.871 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.68 implies 0.0089 lots (< min 0.01); trading min lot risks $6.39 (1.12% of balance)
+2026-08-29 06:35:40.881 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.92 implies 0.0080 lots (< min 0.01); trading min lot risks $7.41 (1.25% of balance)
+2026-08-29 06:35:40.891 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.97 implies 0.0091 lots (< min 0.01); trading min lot risks $6.55 (1.10% of balance)
+2026-08-29 06:35:40.893 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.22 implies 0.0077 lots (< min 0.01); trading min lot risks $8.10 (1.30% of balance)
+2026-08-29 06:35:40.904 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.13 implies 0.0069 lots (< min 0.01); trading min lot risks $8.87 (1.45% of balance)
+2026-08-29 06:35:40.910 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.09 implies 0.0079 lots (< min 0.01); trading min lot risks $7.67 (1.26% of balance)
+2026-08-29 06:35:40.914 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.39 implies 0.0086 lots (< min 0.01); trading min lot risks $7.45 (1.17% of balance)
+2026-08-29 06:35:40.916 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.28 implies 0.0062 lots (< min 0.01); trading min lot risks $10.09 (1.61% of balance)
+2026-08-29 06:35:40.918 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.52 implies 0.0091 lots (< min 0.01); trading min lot risks $7.19 (1.10% of balance)
+2026-08-29 06:35:40.920 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.44 implies 0.0098 lots (< min 0.01); trading min lot risks $6.59 (1.02% of balance)
+2026-08-29 06:35:40.932 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0034 lots (< min 0.01); trading min lot risks $19.57 (2.98% of balance)
+2026-08-29 06:35:40.934 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.02 implies 0.0100 lots (< min 0.01); trading min lot risks $7.04 (1.00% of balance)
+2026-08-29 06:35:40.938 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.10 implies 0.0054 lots (< min 0.01); trading min lot risks $13.02 (1.83% of balance)
+2026-08-29 06:35:40.940 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.97 implies 0.0083 lots (< min 0.01); trading min lot risks $8.40 (1.21% of balance)
+2026-08-29 06:35:40.944 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.97 implies 0.0100 lots (< min 0.01); trading min lot risks $6.99 (1.00% of balance)
+2026-08-29 06:35:40.946 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.90 implies 0.0085 lots (< min 0.01); trading min lot risks $8.10 (1.17% of balance)
+2026-08-29 06:35:40.948 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.90 implies 0.0085 lots (< min 0.01); trading min lot risks $8.10 (1.17% of balance)
+2026-08-29 06:35:40.950 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.90 implies 0.0092 lots (< min 0.01); trading min lot risks $7.52 (1.09% of balance)
+2026-08-29 06:35:40.952 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.82 implies 0.0038 lots (< min 0.01); trading min lot risks $17.99 (2.64% of balance)
+2026-08-29 06:35:40.954 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.64 implies 0.0074 lots (< min 0.01); trading min lot risks $9.00 (1.35% of balance)
+2026-08-29 06:35:40.958 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.85 implies 0.0058 lots (< min 0.01); trading min lot risks $11.74 (1.71% of balance)
+2026-08-29 06:35:40.960 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.74 implies 0.0081 lots (< min 0.01); trading min lot risks $8.27 (1.23% of balance)
+2026-08-29 06:35:40.961 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.65 implies 0.0099 lots (< min 0.01); trading min lot risks $6.73 (1.01% of balance)
+2026-08-29 06:35:40.963 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.65 implies 0.0089 lots (< min 0.01); trading min lot risks $7.47 (1.12% of balance)
+2026-08-29 06:35:40.973 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.54 implies 0.0078 lots (< min 0.01); trading min lot risks $8.40 (1.28% of balance)
+2026-08-29 06:35:40.975 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.54 implies 0.0072 lots (< min 0.01); trading min lot risks $9.04 (1.38% of balance)
+2026-08-29 06:35:40.977 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.88 implies 0.0064 lots (< min 0.01); trading min lot risks $10.68 (1.55% of balance)
+2026-08-29 06:35:40.979 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.88 implies 0.0090 lots (< min 0.01); trading min lot risks $7.62 (1.11% of balance)
+2026-08-29 06:35:40.981 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.88 implies 0.0079 lots (< min 0.01); trading min lot risks $8.66 (1.26% of balance)
+2026-08-29 06:35:40.985 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.08 implies 0.0076 lots (< min 0.01); trading min lot risks $9.27 (1.31% of balance)
+2026-08-29 06:35:40.989 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.23 implies 0.0076 lots (< min 0.01); trading min lot risks $9.57 (1.32% of balance)
+2026-08-29 06:35:40.992 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.13 implies 0.0072 lots (< min 0.01); trading min lot risks $9.86 (1.38% of balance)
+2026-08-29 06:35:40.999 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.14 implies 0.0078 lots (< min 0.01); trading min lot risks $9.13 (1.28% of balance)
+2026-08-29 06:35:41.013 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.77 implies 0.0083 lots (< min 0.01); trading min lot risks $8.19 (1.21% of balance)
+2026-08-29 06:35:41.019 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0080 lots (< min 0.01); trading min lot risks $8.43 (1.25% of balance)
+2026-08-29 06:35:41.021 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0078 lots (< min 0.01); trading min lot risks $8.62 (1.28% of balance)
+2026-08-29 06:35:41.023 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.66 implies 0.0095 lots (< min 0.01); trading min lot risks $6.99 (1.05% of balance)
+2026-08-29 06:35:41.023 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.59 implies 0.0049 lots (< min 0.01); trading min lot risks $13.39 (2.03% of balance)
+2026-08-29 06:35:41.025 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.46 implies 0.0072 lots (< min 0.01); trading min lot risks $8.94 (1.38% of balance)
+2026-08-29 06:35:41.029 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0037 lots (< min 0.01); trading min lot risks $18.34 (2.71% of balance)
+2026-08-29 06:35:41.031 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0059 lots (< min 0.01); trading min lot risks $11.07 (1.68% of balance)
+2026-08-29 06:35:41.033 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0089 lots (< min 0.01); trading min lot risks $7.37 (1.12% of balance)
+2026-08-29 06:35:41.037 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.74 implies 0.0099 lots (< min 0.01); trading min lot risks $6.80 (1.01% of balance)
+2026-08-29 06:35:41.045 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.55 implies 0.0061 lots (< min 0.01); trading min lot risks $10.72 (1.64% of balance)
+2026-08-29 06:35:41.047 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0068 lots (< min 0.01); trading min lot risks $9.95 (1.47% of balance)
+2026-08-29 06:35:41.049 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.65 implies 0.0093 lots (< min 0.01); trading min lot risks $7.17 (1.08% of balance)
+2026-08-29 06:35:41.051 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0066 lots (< min 0.01); trading min lot risks $10.01 (1.52% of balance)
+2026-08-29 06:35:41.055 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.81 implies 0.0074 lots (< min 0.01); trading min lot risks $9.17 (1.35% of balance)
+2026-08-29 06:35:41.062 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.95 implies 0.0088 lots (< min 0.01); trading min lot risks $7.91 (1.14% of balance)
+2026-08-29 06:35:41.070 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0076 lots (< min 0.01); trading min lot risks $9.33 (1.32% of balance)
+2026-08-29 06:35:41.074 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.38 implies 0.0097 lots (< min 0.01); trading min lot risks $7.62 (1.03% of balance)
+2026-08-29 06:35:41.088 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.36 implies 0.0036 lots (< min 0.01); trading min lot risks $20.46 (2.78% of balance)
+2026-08-29 06:35:41.092 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0079 lots (< min 0.01); trading min lot risks $9.01 (1.27% of balance)
+2026-08-29 06:35:41.092 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0062 lots (< min 0.01); trading min lot risks $11.43 (1.61% of balance)
+2026-08-29 06:35:41.094 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0057 lots (< min 0.01); trading min lot risks $12.37 (1.75% of balance)
+2026-08-29 06:35:41.096 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.96 implies 0.0034 lots (< min 0.01); trading min lot risks $20.60 (2.96% of balance)
+2026-08-29 06:35:41.098 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.76 implies 0.0048 lots (< min 0.01); trading min lot risks $14.22 (2.10% of balance)
+2026-08-29 06:35:41.102 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.61 implies 0.0043 lots (< min 0.01); trading min lot risks $15.33 (2.32% of balance)
+2026-08-29 06:35:41.104 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.46 implies 0.0018 lots (< min 0.01); trading min lot risks $35.63 (5.52% of balance)
+2026-08-29 06:35:41.106 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.29 implies 0.0017 lots (< min 0.01); trading min lot risks $41.94 (5.75% of balance)
+2026-08-29 06:35:41.108 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.87 implies 0.0015 lots (< min 0.01); trading min lot risks $46.10 (6.71% of balance)
+2026-08-29 06:35:41.109 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.95 implies 0.0037 lots (< min 0.01); trading min lot risks $21.74 (2.74% of balance)
+2026-08-29 06:35:41.114 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.46 implies 0.0023 lots (< min 0.01); trading min lot risks $37.15 (4.39% of balance)
+2026-08-29 06:35:41.117 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.08 implies 0.0034 lots (< min 0.01); trading min lot risks $23.57 (2.92% of balance)
+2026-08-29 06:35:41.117 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.85 implies 0.0050 lots (< min 0.01); trading min lot risks $15.68 (2.00% of balance)
+2026-08-29 06:35:41.121 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0053 lots (< min 0.01); trading min lot risks $14.59 (1.90% of balance)
+2026-08-29 06:35:41.123 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0061 lots (< min 0.01); trading min lot risks $12.54 (1.63% of balance)
+2026-08-29 06:35:41.127 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.57 implies 0.0057 lots (< min 0.01); trading min lot risks $13.29 (1.76% of balance)
+2026-08-29 06:35:41.129 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.43 implies 0.0053 lots (< min 0.01); trading min lot risks $14.01 (1.88% of balance)
+2026-08-29 06:35:41.133 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.29 implies 0.0060 lots (< min 0.01); trading min lot risks $12.06 (1.65% of balance)
+2026-08-29 06:35:41.137 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.58 implies 0.0094 lots (< min 0.01); trading min lot risks $8.02 (1.06% of balance)
+2026-08-29 06:35:41.141 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.90 implies 0.0083 lots (< min 0.01); trading min lot risks $9.47 (1.20% of balance)
+2026-08-29 06:35:41.145 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.90 implies 0.0087 lots (< min 0.01); trading min lot risks $9.12 (1.15% of balance)
+2026-08-29 06:35:41.147 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.90 implies 0.0084 lots (< min 0.01); trading min lot risks $9.39 (1.19% of balance)
+2026-08-29 06:35:41.148 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.81 implies 0.0077 lots (< min 0.01); trading min lot risks $10.16 (1.30% of balance)
+2026-08-29 06:35:41.152 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.71 implies 0.0067 lots (< min 0.01); trading min lot risks $11.49 (1.49% of balance)
+2026-08-29 06:35:41.156 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.92 implies 0.0076 lots (< min 0.01); trading min lot risks $10.42 (1.32% of balance)
+2026-08-29 06:35:41.156 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.92 implies 0.0027 lots (< min 0.01); trading min lot risks $29.87 (3.77% of balance)
+2026-08-29 06:35:41.158 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.62 implies 0.0051 lots (< min 0.01); trading min lot risks $15.06 (1.98% of balance)
+2026-08-29 06:35:41.160 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.97 implies 0.0068 lots (< min 0.01); trading min lot risks $11.65 (1.46% of balance)
+2026-08-29 06:35:41.164 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.85 implies 0.0048 lots (< min 0.01); trading min lot risks $16.41 (2.09% of balance)
+2026-08-29 06:35:41.166 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0064 lots (< min 0.01); trading min lot risks $11.97 (1.56% of balance)
+2026-08-29 06:35:41.166 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.57 implies 0.0032 lots (< min 0.01); trading min lot risks $23.43 (3.10% of balance)
+2026-08-29 06:35:41.168 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.57 implies 0.0050 lots (< min 0.01); trading min lot risks $15.12 (2.00% of balance)
+2026-08-29 06:35:41.172 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.42 implies 0.0091 lots (< min 0.01); trading min lot risks $8.15 (1.10% of balance)
+2026-08-29 06:35:41.174 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.42 implies 0.0098 lots (< min 0.01); trading min lot risks $7.57 (1.02% of balance)
+2026-08-29 06:35:41.176 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.34 implies 0.0052 lots (< min 0.01); trading min lot risks $14.26 (1.94% of balance)
+2026-08-29 06:35:41.182 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.85 implies 0.0096 lots (< min 0.01); trading min lot risks $8.18 (1.04% of balance)
+2026-08-29 06:35:41.184 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.77 implies 0.0092 lots (< min 0.01); trading min lot risks $8.41 (1.08% of balance)
+2026-08-29 06:35:41.188 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0053 lots (< min 0.01); trading min lot risks $14.56 (1.89% of balance)
+2026-08-29 06:35:41.190 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0096 lots (< min 0.01); trading min lot risks $7.99 (1.04% of balance)
+2026-08-29 06:35:41.192 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.61 implies 0.0036 lots (< min 0.01); trading min lot risks $20.92 (2.75% of balance)
+2026-08-29 06:35:41.196 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.10 implies 0.0041 lots (< min 0.01); trading min lot risks $19.80 (2.45% of balance)
+2026-08-29 06:35:41.196 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.56 implies 0.0022 lots (< min 0.01); trading min lot risks $39.72 (4.64% of balance)
+2026-08-29 06:35:41.200 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.16 implies 0.0047 lots (< min 0.01); trading min lot risks $17.34 (2.12% of balance)
+2026-08-29 06:35:41.204 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.57 implies 0.0086 lots (< min 0.01); trading min lot risks $10.01 (1.17% of balance)
+2026-08-29 06:35:41.208 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.80 implies 0.0051 lots (< min 0.01); trading min lot risks $17.16 (1.95% of balance)
+2026-08-29 06:35:41.208 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.20 implies 0.0056 lots (< min 0.01); trading min lot risks $16.45 (1.79% of balance)
+2026-08-29 06:35:41.213 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.03 implies 0.0054 lots (< min 0.01); trading min lot risks $16.82 (1.86% of balance)
+2026-08-29 06:35:41.215 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.87 implies 0.0077 lots (< min 0.01); trading min lot risks $11.54 (1.30% of balance)
+2026-08-29 06:35:41.218 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.87 implies 0.0060 lots (< min 0.01); trading min lot risks $14.67 (1.65% of balance)
+2026-08-29 06:35:41.222 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.21 implies 0.0068 lots (< min 0.01); trading min lot risks $13.57 (1.47% of balance)
+2026-08-29 06:35:41.224 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.07 implies 0.0054 lots (< min 0.01); trading min lot risks $16.72 (1.84% of balance)
+2026-08-29 06:35:41.226 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.91 implies 0.0071 lots (< min 0.01); trading min lot risks $12.49 (1.40% of balance)
+2026-08-29 06:35:41.228 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.78 implies 0.0087 lots (< min 0.01); trading min lot risks $10.12 (1.15% of balance)
+2026-08-29 06:35:41.240 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.89 implies 0.0078 lots (< min 0.01); trading min lot risks $11.34 (1.28% of balance)
+2026-08-29 06:35:41.252 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.86 implies 0.0088 lots (< min 0.01); trading min lot risks $10.10 (1.14% of balance)
+2026-08-29 06:35:41.256 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.76 implies 0.0092 lots (< min 0.01); trading min lot risks $9.52 (1.09% of balance)
+2026-08-29 06:35:41.266 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.99 implies 0.0069 lots (< min 0.01); trading min lot risks $12.96 (1.44% of balance)
+2026-08-29 06:35:41.279 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.30 implies 0.0096 lots (< min 0.01); trading min lot risks $9.68 (1.04% of balance)
+2026-08-29 06:35:41.285 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.38 implies 0.0087 lots (< min 0.01); trading min lot risks $10.75 (1.15% of balance)
+2026-08-29 06:35:41.287 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.28 implies 0.0071 lots (< min 0.01); trading min lot risks $13.08 (1.41% of balance)
+2026-08-29 06:35:41.289 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.28 implies 0.0089 lots (< min 0.01); trading min lot risks $10.41 (1.12% of balance)
+2026-08-29 06:35:41.295 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.09 implies 0.0076 lots (< min 0.01); trading min lot risks $12.03 (1.32% of balance)
+2026-08-29 06:35:41.308 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.18 implies 0.0058 lots (< min 0.01); trading min lot risks $15.78 (1.72% of balance)
+2026-08-29 06:35:41.320 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.60 implies 0.0085 lots (< min 0.01); trading min lot risks $11.36 (1.18% of balance)
+2026-08-29 06:35:41.322 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.60 implies 0.0096 lots (< min 0.01); trading min lot risks $10.05 (1.05% of balance)
+2026-08-29 06:35:41.324 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.61 implies 0.0091 lots (< min 0.01); trading min lot risks $10.51 (1.09% of balance)
+2026-08-29 06:35:41.326 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.50 implies 0.0073 lots (< min 0.01); trading min lot risks $13.05 (1.37% of balance)
+2026-08-29 06:35:41.326 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.80 implies 0.0088 lots (< min 0.01); trading min lot risks $11.10 (1.13% of balance)
+2026-08-29 06:35:41.330 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.69 implies 0.0060 lots (< min 0.01); trading min lot risks $16.24 (1.68% of balance)
+2026-08-29 06:35:41.350 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.50 implies 0.0077 lots (< min 0.01); trading min lot risks $12.27 (1.29% of balance)
+2026-08-29 06:35:41.352 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.50 implies 0.0100 lots (< min 0.01); trading min lot risks $9.54 (1.00% of balance)
+2026-08-29 06:35:41.356 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.32 implies 0.0078 lots (< min 0.01); trading min lot risks $11.95 (1.28% of balance)
+2026-08-29 06:35:41.362 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.31 implies 0.0069 lots (< min 0.01); trading min lot risks $13.52 (1.45% of balance)
+2026-08-29 06:35:41.370 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.29 implies 0.0090 lots (< min 0.01); trading min lot risks $10.33 (1.11% of balance)
+2026-08-29 06:35:41.386 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.39 implies 0.0077 lots (< min 0.01); trading min lot risks $12.13 (1.29% of balance)
+2026-08-29 06:35:41.409 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.48 implies 0.0072 lots (< min 0.01); trading min lot risks $13.21 (1.39% of balance)
+2026-08-29 06:35:41.419 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.63 implies 0.0093 lots (< min 0.01); trading min lot risks $10.38 (1.08% of balance)
+2026-08-29 06:35:41.434 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.53 implies 0.0079 lots (< min 0.01); trading min lot risks $12.12 (1.27% of balance)
+2026-08-29 06:35:41.438 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.41 implies 0.0097 lots (< min 0.01); trading min lot risks $9.71 (1.03% of balance)
+2026-08-29 06:35:41.445 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.48 implies 0.0076 lots (< min 0.01); trading min lot risks $12.53 (1.32% of balance)
+2026-08-29 06:35:41.447 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.35 implies 0.0082 lots (< min 0.01); trading min lot risks $11.41 (1.22% of balance)
+2026-08-29 06:35:41.465 | SUCCESS  | asyncio_0 | backtest.engine:run:523 - backtest done | 288 trades | net $392.61 | WR 50.7% | PF 1.29 | maxDD 13.74%
+2026-08-29 06:45:12.067 | INFO     | asyncio_0 | backtest.engine:__init__:84 - loaded 162 historical news events for backtesting blackout
+2026-08-29 06:45:12.069 | INFO     | asyncio_0 | backtest.engine:run:359 - backtest start | strategy=orb_gold bars=75000 spread=8.0pts commission=$0.0/lot news_filter=True
+2026-08-29 06:45:12.309 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.71 implies 0.0097 lots (< min 0.01); trading min lot risks $5.87 (1.03% of balance)
+2026-08-29 06:45:12.327 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.63 implies 0.0072 lots (< min 0.01); trading min lot risks $7.86 (1.40% of balance)
+2026-08-29 06:45:12.332 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.77 implies 0.0087 lots (< min 0.01); trading min lot risks $6.67 (1.16% of balance)
+2026-08-29 06:45:12.338 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.77 implies 0.0063 lots (< min 0.01); trading min lot risks $9.15 (1.59% of balance)
+2026-08-29 06:45:12.342 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.68 implies 0.0089 lots (< min 0.01); trading min lot risks $6.39 (1.12% of balance)
+2026-08-29 06:45:12.362 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.92 implies 0.0080 lots (< min 0.01); trading min lot risks $7.41 (1.25% of balance)
+2026-08-29 06:45:12.373 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.97 implies 0.0091 lots (< min 0.01); trading min lot risks $6.55 (1.10% of balance)
+2026-08-29 06:45:12.376 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.22 implies 0.0077 lots (< min 0.01); trading min lot risks $8.10 (1.30% of balance)
+2026-08-29 06:45:12.387 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.13 implies 0.0069 lots (< min 0.01); trading min lot risks $8.87 (1.45% of balance)
+2026-08-29 06:45:12.392 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.09 implies 0.0079 lots (< min 0.01); trading min lot risks $7.67 (1.26% of balance)
+2026-08-29 06:45:12.397 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.39 implies 0.0086 lots (< min 0.01); trading min lot risks $7.45 (1.17% of balance)
+2026-08-29 06:45:12.399 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.28 implies 0.0062 lots (< min 0.01); trading min lot risks $10.09 (1.61% of balance)
+2026-08-29 06:45:12.401 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.52 implies 0.0091 lots (< min 0.01); trading min lot risks $7.19 (1.10% of balance)
+2026-08-29 06:45:12.401 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.44 implies 0.0098 lots (< min 0.01); trading min lot risks $6.59 (1.02% of balance)
+2026-08-29 06:45:12.413 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0034 lots (< min 0.01); trading min lot risks $19.57 (2.98% of balance)
+2026-08-29 06:45:12.415 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.02 implies 0.0100 lots (< min 0.01); trading min lot risks $7.04 (1.00% of balance)
+2026-08-29 06:45:12.419 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.10 implies 0.0054 lots (< min 0.01); trading min lot risks $13.02 (1.83% of balance)
+2026-08-29 06:45:12.422 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.97 implies 0.0083 lots (< min 0.01); trading min lot risks $8.40 (1.21% of balance)
+2026-08-29 06:45:12.424 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.97 implies 0.0100 lots (< min 0.01); trading min lot risks $6.99 (1.00% of balance)
+2026-08-29 06:45:12.427 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.90 implies 0.0085 lots (< min 0.01); trading min lot risks $8.10 (1.17% of balance)
+2026-08-29 06:45:12.429 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.90 implies 0.0085 lots (< min 0.01); trading min lot risks $8.10 (1.17% of balance)
+2026-08-29 06:45:12.432 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.90 implies 0.0092 lots (< min 0.01); trading min lot risks $7.52 (1.09% of balance)
+2026-08-29 06:45:12.433 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.82 implies 0.0038 lots (< min 0.01); trading min lot risks $17.99 (2.64% of balance)
+2026-08-29 06:45:12.435 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.64 implies 0.0074 lots (< min 0.01); trading min lot risks $9.00 (1.35% of balance)
+2026-08-29 06:45:12.438 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.85 implies 0.0058 lots (< min 0.01); trading min lot risks $11.74 (1.71% of balance)
+2026-08-29 06:45:12.440 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.74 implies 0.0081 lots (< min 0.01); trading min lot risks $8.27 (1.23% of balance)
+2026-08-29 06:45:12.442 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.65 implies 0.0099 lots (< min 0.01); trading min lot risks $6.73 (1.01% of balance)
+2026-08-29 06:45:12.446 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.65 implies 0.0089 lots (< min 0.01); trading min lot risks $7.47 (1.12% of balance)
+2026-08-29 06:45:12.462 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.54 implies 0.0078 lots (< min 0.01); trading min lot risks $8.40 (1.28% of balance)
+2026-08-29 06:45:12.464 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.54 implies 0.0072 lots (< min 0.01); trading min lot risks $9.04 (1.38% of balance)
+2026-08-29 06:45:12.468 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.88 implies 0.0064 lots (< min 0.01); trading min lot risks $10.68 (1.55% of balance)
+2026-08-29 06:45:12.470 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.88 implies 0.0090 lots (< min 0.01); trading min lot risks $7.62 (1.11% of balance)
+2026-08-29 06:45:12.472 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.88 implies 0.0079 lots (< min 0.01); trading min lot risks $8.66 (1.26% of balance)
+2026-08-29 06:45:12.474 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.08 implies 0.0076 lots (< min 0.01); trading min lot risks $9.27 (1.31% of balance)
+2026-08-29 06:45:12.480 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.23 implies 0.0076 lots (< min 0.01); trading min lot risks $9.57 (1.32% of balance)
+2026-08-29 06:45:12.482 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.13 implies 0.0072 lots (< min 0.01); trading min lot risks $9.86 (1.38% of balance)
+2026-08-29 06:45:12.487 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.14 implies 0.0078 lots (< min 0.01); trading min lot risks $9.13 (1.28% of balance)
+2026-08-29 06:45:12.503 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.77 implies 0.0083 lots (< min 0.01); trading min lot risks $8.19 (1.21% of balance)
+2026-08-29 06:45:12.507 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0080 lots (< min 0.01); trading min lot risks $8.43 (1.25% of balance)
+2026-08-29 06:45:12.509 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0078 lots (< min 0.01); trading min lot risks $8.62 (1.28% of balance)
+2026-08-29 06:45:12.513 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.66 implies 0.0095 lots (< min 0.01); trading min lot risks $6.99 (1.05% of balance)
+2026-08-29 06:45:12.513 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.59 implies 0.0049 lots (< min 0.01); trading min lot risks $13.39 (2.03% of balance)
+2026-08-29 06:45:12.515 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.46 implies 0.0072 lots (< min 0.01); trading min lot risks $8.94 (1.38% of balance)
+2026-08-29 06:45:12.519 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0037 lots (< min 0.01); trading min lot risks $18.34 (2.71% of balance)
+2026-08-29 06:45:12.521 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0059 lots (< min 0.01); trading min lot risks $11.07 (1.68% of balance)
+2026-08-29 06:45:12.523 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0089 lots (< min 0.01); trading min lot risks $7.37 (1.12% of balance)
+2026-08-29 06:45:12.525 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.74 implies 0.0099 lots (< min 0.01); trading min lot risks $6.80 (1.01% of balance)
+2026-08-29 06:45:12.534 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.55 implies 0.0061 lots (< min 0.01); trading min lot risks $10.72 (1.64% of balance)
+2026-08-29 06:45:12.536 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0068 lots (< min 0.01); trading min lot risks $9.95 (1.47% of balance)
+2026-08-29 06:45:12.538 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.65 implies 0.0093 lots (< min 0.01); trading min lot risks $7.17 (1.08% of balance)
+2026-08-29 06:45:12.540 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0066 lots (< min 0.01); trading min lot risks $10.01 (1.52% of balance)
+2026-08-29 06:45:12.544 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.81 implies 0.0074 lots (< min 0.01); trading min lot risks $9.17 (1.35% of balance)
+2026-08-29 06:45:12.552 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.95 implies 0.0088 lots (< min 0.01); trading min lot risks $7.91 (1.14% of balance)
+2026-08-29 06:45:12.570 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0076 lots (< min 0.01); trading min lot risks $9.33 (1.32% of balance)
+2026-08-29 06:45:12.574 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.38 implies 0.0097 lots (< min 0.01); trading min lot risks $7.62 (1.03% of balance)
+2026-08-29 06:45:12.588 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.36 implies 0.0036 lots (< min 0.01); trading min lot risks $20.46 (2.78% of balance)
+2026-08-29 06:45:12.592 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0079 lots (< min 0.01); trading min lot risks $9.01 (1.27% of balance)
+2026-08-29 06:45:12.592 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0062 lots (< min 0.01); trading min lot risks $11.43 (1.61% of balance)
+2026-08-29 06:45:12.594 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0057 lots (< min 0.01); trading min lot risks $12.37 (1.75% of balance)
+2026-08-29 06:45:12.596 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.96 implies 0.0034 lots (< min 0.01); trading min lot risks $20.60 (2.96% of balance)
+2026-08-29 06:45:12.598 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.76 implies 0.0048 lots (< min 0.01); trading min lot risks $14.22 (2.10% of balance)
+2026-08-29 06:45:12.600 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.61 implies 0.0043 lots (< min 0.01); trading min lot risks $15.33 (2.32% of balance)
+2026-08-29 06:45:12.602 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.46 implies 0.0018 lots (< min 0.01); trading min lot risks $35.63 (5.52% of balance)
+2026-08-29 06:45:12.604 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.29 implies 0.0017 lots (< min 0.01); trading min lot risks $41.94 (5.75% of balance)
+2026-08-29 06:45:12.606 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.87 implies 0.0015 lots (< min 0.01); trading min lot risks $46.10 (6.71% of balance)
+2026-08-29 06:45:12.610 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.95 implies 0.0037 lots (< min 0.01); trading min lot risks $21.74 (2.74% of balance)
+2026-08-29 06:45:12.614 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.46 implies 0.0023 lots (< min 0.01); trading min lot risks $37.15 (4.39% of balance)
+2026-08-29 06:45:12.616 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.08 implies 0.0034 lots (< min 0.01); trading min lot risks $23.57 (2.92% of balance)
+2026-08-29 06:45:12.618 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.85 implies 0.0050 lots (< min 0.01); trading min lot risks $15.68 (2.00% of balance)
+2026-08-29 06:45:12.620 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0053 lots (< min 0.01); trading min lot risks $14.59 (1.90% of balance)
+2026-08-29 06:45:12.622 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0061 lots (< min 0.01); trading min lot risks $12.54 (1.63% of balance)
+2026-08-29 06:45:12.628 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.57 implies 0.0057 lots (< min 0.01); trading min lot risks $13.29 (1.76% of balance)
+2026-08-29 06:45:12.630 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.43 implies 0.0053 lots (< min 0.01); trading min lot risks $14.01 (1.88% of balance)
+2026-08-29 06:45:12.634 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.29 implies 0.0060 lots (< min 0.01); trading min lot risks $12.06 (1.65% of balance)
+2026-08-29 06:45:12.636 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.58 implies 0.0094 lots (< min 0.01); trading min lot risks $8.02 (1.06% of balance)
+2026-08-29 06:45:12.641 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.90 implies 0.0083 lots (< min 0.01); trading min lot risks $9.47 (1.20% of balance)
+2026-08-29 06:45:12.643 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.90 implies 0.0087 lots (< min 0.01); trading min lot risks $9.12 (1.15% of balance)
+2026-08-29 06:45:12.645 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.90 implies 0.0084 lots (< min 0.01); trading min lot risks $9.39 (1.19% of balance)
+2026-08-29 06:45:12.649 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.81 implies 0.0077 lots (< min 0.01); trading min lot risks $10.16 (1.30% of balance)
+2026-08-29 06:45:12.651 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.71 implies 0.0067 lots (< min 0.01); trading min lot risks $11.49 (1.49% of balance)
+2026-08-29 06:45:12.655 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.92 implies 0.0076 lots (< min 0.01); trading min lot risks $10.42 (1.32% of balance)
+2026-08-29 06:45:12.657 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.92 implies 0.0027 lots (< min 0.01); trading min lot risks $29.87 (3.77% of balance)
+2026-08-29 06:45:12.659 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.62 implies 0.0051 lots (< min 0.01); trading min lot risks $15.06 (1.98% of balance)
+2026-08-29 06:45:12.661 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.97 implies 0.0068 lots (< min 0.01); trading min lot risks $11.65 (1.46% of balance)
+2026-08-29 06:45:12.663 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.85 implies 0.0048 lots (< min 0.01); trading min lot risks $16.41 (2.09% of balance)
+2026-08-29 06:45:12.667 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0064 lots (< min 0.01); trading min lot risks $11.97 (1.56% of balance)
+2026-08-29 06:45:12.667 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.57 implies 0.0032 lots (< min 0.01); trading min lot risks $23.43 (3.10% of balance)
+2026-08-29 06:45:12.669 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.57 implies 0.0050 lots (< min 0.01); trading min lot risks $15.12 (2.00% of balance)
+2026-08-29 06:45:12.671 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.42 implies 0.0091 lots (< min 0.01); trading min lot risks $8.15 (1.10% of balance)
+2026-08-29 06:45:12.677 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.42 implies 0.0098 lots (< min 0.01); trading min lot risks $7.57 (1.02% of balance)
+2026-08-29 06:45:12.681 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.34 implies 0.0052 lots (< min 0.01); trading min lot risks $14.26 (1.94% of balance)
+2026-08-29 06:45:12.685 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.85 implies 0.0096 lots (< min 0.01); trading min lot risks $8.18 (1.04% of balance)
+2026-08-29 06:45:12.686 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.77 implies 0.0092 lots (< min 0.01); trading min lot risks $8.41 (1.08% of balance)
+2026-08-29 06:45:12.690 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0053 lots (< min 0.01); trading min lot risks $14.56 (1.89% of balance)
+2026-08-29 06:45:12.692 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0096 lots (< min 0.01); trading min lot risks $7.99 (1.04% of balance)
+2026-08-29 06:45:12.694 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.61 implies 0.0036 lots (< min 0.01); trading min lot risks $20.92 (2.75% of balance)
+2026-08-29 06:45:12.696 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.10 implies 0.0041 lots (< min 0.01); trading min lot risks $19.80 (2.45% of balance)
+2026-08-29 06:45:12.698 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.56 implies 0.0022 lots (< min 0.01); trading min lot risks $39.72 (4.64% of balance)
+2026-08-29 06:45:12.700 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.16 implies 0.0047 lots (< min 0.01); trading min lot risks $17.34 (2.12% of balance)
+2026-08-29 06:45:12.708 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.57 implies 0.0086 lots (< min 0.01); trading min lot risks $10.01 (1.17% of balance)
+2026-08-29 06:45:12.711 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.80 implies 0.0051 lots (< min 0.01); trading min lot risks $17.16 (1.95% of balance)
+2026-08-29 06:45:12.712 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.20 implies 0.0056 lots (< min 0.01); trading min lot risks $16.45 (1.79% of balance)
+2026-08-29 06:45:12.716 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.03 implies 0.0054 lots (< min 0.01); trading min lot risks $16.82 (1.86% of balance)
+2026-08-29 06:45:12.717 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.87 implies 0.0077 lots (< min 0.01); trading min lot risks $11.54 (1.30% of balance)
+2026-08-29 06:45:12.720 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.87 implies 0.0060 lots (< min 0.01); trading min lot risks $14.67 (1.65% of balance)
+2026-08-29 06:45:12.725 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.21 implies 0.0068 lots (< min 0.01); trading min lot risks $13.57 (1.47% of balance)
+2026-08-29 06:45:12.726 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.07 implies 0.0054 lots (< min 0.01); trading min lot risks $16.72 (1.84% of balance)
+2026-08-29 06:45:12.728 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.91 implies 0.0071 lots (< min 0.01); trading min lot risks $12.49 (1.40% of balance)
+2026-08-29 06:45:12.730 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.78 implies 0.0087 lots (< min 0.01); trading min lot risks $10.12 (1.15% of balance)
+2026-08-29 06:45:12.741 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.89 implies 0.0078 lots (< min 0.01); trading min lot risks $11.34 (1.28% of balance)
+2026-08-29 06:45:12.753 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.86 implies 0.0088 lots (< min 0.01); trading min lot risks $10.10 (1.14% of balance)
+2026-08-29 06:45:12.755 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.76 implies 0.0092 lots (< min 0.01); trading min lot risks $9.52 (1.09% of balance)
+2026-08-29 06:45:12.765 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.99 implies 0.0069 lots (< min 0.01); trading min lot risks $12.96 (1.44% of balance)
+2026-08-29 06:45:12.777 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.30 implies 0.0096 lots (< min 0.01); trading min lot risks $9.68 (1.04% of balance)
+2026-08-29 06:45:12.785 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.38 implies 0.0087 lots (< min 0.01); trading min lot risks $10.75 (1.15% of balance)
+2026-08-29 06:45:12.787 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.28 implies 0.0071 lots (< min 0.01); trading min lot risks $13.08 (1.41% of balance)
+2026-08-29 06:45:12.789 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.28 implies 0.0089 lots (< min 0.01); trading min lot risks $10.41 (1.12% of balance)
+2026-08-29 06:45:12.793 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.09 implies 0.0076 lots (< min 0.01); trading min lot risks $12.03 (1.32% of balance)
+2026-08-29 06:45:12.806 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.18 implies 0.0058 lots (< min 0.01); trading min lot risks $15.78 (1.72% of balance)
+2026-08-29 06:45:12.818 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.60 implies 0.0085 lots (< min 0.01); trading min lot risks $11.36 (1.18% of balance)
+2026-08-29 06:45:12.820 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.60 implies 0.0096 lots (< min 0.01); trading min lot risks $10.05 (1.05% of balance)
+2026-08-29 06:45:12.822 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.61 implies 0.0091 lots (< min 0.01); trading min lot risks $10.51 (1.09% of balance)
+2026-08-29 06:45:12.824 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.50 implies 0.0073 lots (< min 0.01); trading min lot risks $13.05 (1.37% of balance)
+2026-08-29 06:45:12.826 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.80 implies 0.0088 lots (< min 0.01); trading min lot risks $11.10 (1.13% of balance)
+2026-08-29 06:45:12.828 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.69 implies 0.0060 lots (< min 0.01); trading min lot risks $16.24 (1.68% of balance)
+2026-08-29 06:45:12.850 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.50 implies 0.0077 lots (< min 0.01); trading min lot risks $12.27 (1.29% of balance)
+2026-08-29 06:45:12.850 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.50 implies 0.0100 lots (< min 0.01); trading min lot risks $9.54 (1.00% of balance)
+2026-08-29 06:45:12.856 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.32 implies 0.0078 lots (< min 0.01); trading min lot risks $11.95 (1.28% of balance)
+2026-08-29 06:45:12.870 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.31 implies 0.0069 lots (< min 0.01); trading min lot risks $13.52 (1.45% of balance)
+2026-08-29 06:45:12.879 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.29 implies 0.0090 lots (< min 0.01); trading min lot risks $10.33 (1.11% of balance)
+2026-08-29 06:45:12.895 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.39 implies 0.0077 lots (< min 0.01); trading min lot risks $12.13 (1.29% of balance)
+2026-08-29 06:45:12.914 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.48 implies 0.0072 lots (< min 0.01); trading min lot risks $13.21 (1.39% of balance)
+2026-08-29 06:45:12.935 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.63 implies 0.0093 lots (< min 0.01); trading min lot risks $10.38 (1.08% of balance)
+2026-08-29 06:45:12.946 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.53 implies 0.0079 lots (< min 0.01); trading min lot risks $12.12 (1.27% of balance)
+2026-08-29 06:45:12.951 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.41 implies 0.0097 lots (< min 0.01); trading min lot risks $9.71 (1.03% of balance)
+2026-08-29 06:45:12.958 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.48 implies 0.0076 lots (< min 0.01); trading min lot risks $12.53 (1.32% of balance)
+2026-08-29 06:45:12.960 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.35 implies 0.0082 lots (< min 0.01); trading min lot risks $11.41 (1.22% of balance)
+2026-08-29 06:45:12.972 | SUCCESS  | asyncio_0 | backtest.engine:run:523 - backtest done | 288 trades | net $392.61 | WR 50.7% | PF 1.29 | maxDD 13.74%
+2026-08-29 06:57:45.059 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:160 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 07:17:41.082 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-29 07:17:41.274 | INFO     | MainThread | core.news_filter:start:106 - news filter cold-start: fetching calendar synchronously...
+2026-08-29 07:17:41.699 | SUCCESS  | MainThread | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 07:17:41.701 | SUCCESS  | MainThread | core.news_filter:start:110 - cold-start successful: calendar loaded
+2026-08-29 07:17:41.703 | INFO     | MainThread | core.news_filter:start:125 - news filter background refresh started (interval: 1.0h)
+2026-08-29 07:17:41.717 | INFO     | MainThread | __main__:run:688 - ========================================================================
+2026-08-29 07:17:41.717 | INFO     | MainThread | __main__:run:689 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-29 07:17:41.717 | INFO     | MainThread | __main__:run:690 - ========================================================================
+2026-08-29 07:17:41.735 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=675.32 USD | symbol=XAUUSD | algo_trading=True
+2026-08-29 07:17:41.735 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-29 07:17:41.737 | INFO     | MainThread | __main__:_sync_daily:490 - daily guard init | realized today=$0.00 | day-start balance=$675.32 | cap -10%/$67.53
+2026-08-29 07:17:41.737 | WARNING  | MainThread | __main__:_sync_daily:495 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-29 07:17:41.737 | WARNING  | MainThread | __main__:run:701 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-29 07:17:46.738 | WARNING  | MainThread | __main__:run:701 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-29 07:17:51.739 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-29 07:17:52.887 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-29 07:17:52.893 | INFO     | MainThread | __main__:run:715 - entering main loop (1.0s cadence, 300s bars)
+2026-08-29 07:19:34.230 | INFO     | asyncio_0 | backtest.engine:__init__:89 - loaded 162 historical news events for backtesting blackout
+2026-08-29 07:19:34.232 | INFO     | asyncio_0 | backtest.engine:run:374 - backtest start | strategy=orb_gold bars=75000 spread=8.0pts commission=$0.0/lot news_filter=True
+2026-08-29 07:19:34.718 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.71 implies 0.0097 lots (< min 0.01); trading min lot risks $5.87 (1.03% of balance)
+2026-08-29 07:19:34.734 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.63 implies 0.0072 lots (< min 0.01); trading min lot risks $7.86 (1.40% of balance)
+2026-08-29 07:19:34.740 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.77 implies 0.0087 lots (< min 0.01); trading min lot risks $6.67 (1.16% of balance)
+2026-08-29 07:19:34.778 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.77 implies 0.0063 lots (< min 0.01); trading min lot risks $9.15 (1.59% of balance)
+2026-08-29 07:19:34.821 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.68 implies 0.0089 lots (< min 0.01); trading min lot risks $6.39 (1.12% of balance)
+2026-08-29 07:19:34.840 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.97 implies 0.0091 lots (< min 0.01); trading min lot risks $6.55 (1.10% of balance)
+2026-08-29 07:19:34.842 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.22 implies 0.0077 lots (< min 0.01); trading min lot risks $8.10 (1.30% of balance)
+2026-08-29 07:19:34.856 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.13 implies 0.0069 lots (< min 0.01); trading min lot risks $8.87 (1.45% of balance)
+2026-08-29 07:19:34.872 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.09 implies 0.0079 lots (< min 0.01); trading min lot risks $7.67 (1.26% of balance)
+2026-08-29 07:19:34.878 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.39 implies 0.0086 lots (< min 0.01); trading min lot risks $7.45 (1.17% of balance)
+2026-08-29 07:19:34.880 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.28 implies 0.0062 lots (< min 0.01); trading min lot risks $10.09 (1.61% of balance)
+2026-08-29 07:19:34.882 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.51 implies 0.0091 lots (< min 0.01); trading min lot risks $7.19 (1.10% of balance)
+2026-08-29 07:19:34.882 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.44 implies 0.0098 lots (< min 0.01); trading min lot risks $6.59 (1.02% of balance)
+2026-08-29 07:19:34.892 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0034 lots (< min 0.01); trading min lot risks $19.57 (2.98% of balance)
+2026-08-29 07:19:34.896 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.02 implies 0.0100 lots (< min 0.01); trading min lot risks $7.04 (1.00% of balance)
+2026-08-29 07:19:34.901 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.10 implies 0.0054 lots (< min 0.01); trading min lot risks $13.02 (1.84% of balance)
+2026-08-29 07:19:34.905 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.97 implies 0.0083 lots (< min 0.01); trading min lot risks $8.40 (1.21% of balance)
+2026-08-29 07:19:34.907 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.97 implies 0.0100 lots (< min 0.01); trading min lot risks $6.99 (1.00% of balance)
+2026-08-29 07:19:34.909 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.90 implies 0.0085 lots (< min 0.01); trading min lot risks $8.10 (1.17% of balance)
+2026-08-29 07:19:34.911 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.90 implies 0.0085 lots (< min 0.01); trading min lot risks $8.10 (1.17% of balance)
+2026-08-29 07:19:34.913 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.90 implies 0.0092 lots (< min 0.01); trading min lot risks $7.52 (1.09% of balance)
+2026-08-29 07:19:34.915 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.82 implies 0.0038 lots (< min 0.01); trading min lot risks $17.99 (2.64% of balance)
+2026-08-29 07:19:34.917 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.64 implies 0.0074 lots (< min 0.01); trading min lot risks $9.00 (1.35% of balance)
+2026-08-29 07:19:34.921 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.85 implies 0.0058 lots (< min 0.01); trading min lot risks $11.74 (1.71% of balance)
+2026-08-29 07:19:34.923 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.74 implies 0.0081 lots (< min 0.01); trading min lot risks $8.27 (1.23% of balance)
+2026-08-29 07:19:34.923 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.65 implies 0.0099 lots (< min 0.01); trading min lot risks $6.73 (1.01% of balance)
+2026-08-29 07:19:34.927 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.65 implies 0.0089 lots (< min 0.01); trading min lot risks $7.47 (1.12% of balance)
+2026-08-29 07:19:34.936 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.54 implies 0.0078 lots (< min 0.01); trading min lot risks $8.40 (1.28% of balance)
+2026-08-29 07:19:34.938 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.54 implies 0.0072 lots (< min 0.01); trading min lot risks $9.04 (1.38% of balance)
+2026-08-29 07:19:34.942 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.88 implies 0.0064 lots (< min 0.01); trading min lot risks $10.68 (1.55% of balance)
+2026-08-29 07:19:34.942 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.88 implies 0.0090 lots (< min 0.01); trading min lot risks $7.62 (1.11% of balance)
+2026-08-29 07:19:34.944 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.88 implies 0.0079 lots (< min 0.01); trading min lot risks $8.66 (1.26% of balance)
+2026-08-29 07:19:34.948 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.08 implies 0.0076 lots (< min 0.01); trading min lot risks $9.27 (1.31% of balance)
+2026-08-29 07:19:34.952 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.23 implies 0.0076 lots (< min 0.01); trading min lot risks $9.57 (1.32% of balance)
+2026-08-29 07:19:34.956 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.13 implies 0.0072 lots (< min 0.01); trading min lot risks $9.86 (1.38% of balance)
+2026-08-29 07:19:34.960 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.14 implies 0.0078 lots (< min 0.01); trading min lot risks $9.13 (1.28% of balance)
+2026-08-29 07:19:34.978 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.77 implies 0.0083 lots (< min 0.01); trading min lot risks $8.19 (1.21% of balance)
+2026-08-29 07:19:34.982 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0080 lots (< min 0.01); trading min lot risks $8.43 (1.25% of balance)
+2026-08-29 07:19:34.984 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0078 lots (< min 0.01); trading min lot risks $8.62 (1.28% of balance)
+2026-08-29 07:19:34.988 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.66 implies 0.0095 lots (< min 0.01); trading min lot risks $6.99 (1.05% of balance)
+2026-08-29 07:19:34.988 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.59 implies 0.0049 lots (< min 0.01); trading min lot risks $13.39 (2.03% of balance)
+2026-08-29 07:19:34.990 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.46 implies 0.0072 lots (< min 0.01); trading min lot risks $8.94 (1.38% of balance)
+2026-08-29 07:19:34.992 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0037 lots (< min 0.01); trading min lot risks $18.34 (2.71% of balance)
+2026-08-29 07:19:34.995 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0059 lots (< min 0.01); trading min lot risks $11.07 (1.68% of balance)
+2026-08-29 07:19:34.997 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0089 lots (< min 0.01); trading min lot risks $7.37 (1.12% of balance)
+2026-08-29 07:19:34.999 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.74 implies 0.0099 lots (< min 0.01); trading min lot risks $6.80 (1.01% of balance)
+2026-08-29 07:19:35.009 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.55 implies 0.0061 lots (< min 0.01); trading min lot risks $10.72 (1.64% of balance)
+2026-08-29 07:19:35.011 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.74 implies 0.0068 lots (< min 0.01); trading min lot risks $9.95 (1.47% of balance)
+2026-08-29 07:19:35.013 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.65 implies 0.0093 lots (< min 0.01); trading min lot risks $7.17 (1.08% of balance)
+2026-08-29 07:19:35.015 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0066 lots (< min 0.01); trading min lot risks $10.01 (1.52% of balance)
+2026-08-29 07:19:35.019 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.81 implies 0.0074 lots (< min 0.01); trading min lot risks $9.17 (1.35% of balance)
+2026-08-29 07:19:35.026 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.95 implies 0.0088 lots (< min 0.01); trading min lot risks $7.91 (1.14% of balance)
+2026-08-29 07:19:35.034 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0076 lots (< min 0.01); trading min lot risks $9.33 (1.32% of balance)
+2026-08-29 07:19:35.038 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.38 implies 0.0097 lots (< min 0.01); trading min lot risks $7.62 (1.03% of balance)
+2026-08-29 07:19:35.051 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.36 implies 0.0036 lots (< min 0.01); trading min lot risks $20.46 (2.78% of balance)
+2026-08-29 07:19:35.055 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.08 implies 0.0079 lots (< min 0.01); trading min lot risks $9.01 (1.27% of balance)
+2026-08-29 07:19:35.057 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0062 lots (< min 0.01); trading min lot risks $11.43 (1.61% of balance)
+2026-08-29 07:19:35.063 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0057 lots (< min 0.01); trading min lot risks $12.37 (1.75% of balance)
+2026-08-29 07:19:35.063 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.96 implies 0.0034 lots (< min 0.01); trading min lot risks $20.60 (2.96% of balance)
+2026-08-29 07:19:35.065 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.76 implies 0.0048 lots (< min 0.01); trading min lot risks $14.22 (2.10% of balance)
+2026-08-29 07:19:35.069 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.61 implies 0.0043 lots (< min 0.01); trading min lot risks $15.33 (2.32% of balance)
+2026-08-29 07:19:35.071 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.46 implies 0.0018 lots (< min 0.01); trading min lot risks $35.63 (5.52% of balance)
+2026-08-29 07:19:35.073 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.29 implies 0.0017 lots (< min 0.01); trading min lot risks $41.94 (5.75% of balance)
+2026-08-29 07:19:35.075 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.87 implies 0.0015 lots (< min 0.01); trading min lot risks $46.10 (6.71% of balance)
+2026-08-29 07:19:35.077 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.95 implies 0.0037 lots (< min 0.01); trading min lot risks $21.74 (2.74% of balance)
+2026-08-29 07:19:35.081 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.46 implies 0.0023 lots (< min 0.01); trading min lot risks $37.15 (4.39% of balance)
+2026-08-29 07:19:35.083 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.08 implies 0.0034 lots (< min 0.01); trading min lot risks $23.57 (2.92% of balance)
+2026-08-29 07:19:35.085 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.85 implies 0.0050 lots (< min 0.01); trading min lot risks $15.68 (2.00% of balance)
+2026-08-29 07:19:35.088 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0053 lots (< min 0.01); trading min lot risks $14.59 (1.90% of balance)
+2026-08-29 07:19:35.090 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0061 lots (< min 0.01); trading min lot risks $12.54 (1.63% of balance)
+2026-08-29 07:19:35.094 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.57 implies 0.0057 lots (< min 0.01); trading min lot risks $13.29 (1.76% of balance)
+2026-08-29 07:19:35.098 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.43 implies 0.0053 lots (< min 0.01); trading min lot risks $14.01 (1.88% of balance)
+2026-08-29 07:19:35.100 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.29 implies 0.0060 lots (< min 0.01); trading min lot risks $12.06 (1.65% of balance)
+2026-08-29 07:19:35.104 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.58 implies 0.0094 lots (< min 0.01); trading min lot risks $8.02 (1.06% of balance)
+2026-08-29 07:19:35.108 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.90 implies 0.0083 lots (< min 0.01); trading min lot risks $9.47 (1.20% of balance)
+2026-08-29 07:19:35.112 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.90 implies 0.0087 lots (< min 0.01); trading min lot risks $9.12 (1.15% of balance)
+2026-08-29 07:19:35.114 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.90 implies 0.0084 lots (< min 0.01); trading min lot risks $9.39 (1.19% of balance)
+2026-08-29 07:19:35.116 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.81 implies 0.0077 lots (< min 0.01); trading min lot risks $10.16 (1.30% of balance)
+2026-08-29 07:19:35.126 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.65 implies 0.0073 lots (< min 0.01); trading min lot risks $10.42 (1.36% of balance)
+2026-08-29 07:19:35.128 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.65 implies 0.0026 lots (< min 0.01); trading min lot risks $29.87 (3.91% of balance)
+2026-08-29 07:19:35.130 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.35 implies 0.0049 lots (< min 0.01); trading min lot risks $15.06 (2.05% of balance)
+2026-08-29 07:19:35.132 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.70 implies 0.0066 lots (< min 0.01); trading min lot risks $11.65 (1.51% of balance)
+2026-08-29 07:19:35.135 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.58 implies 0.0046 lots (< min 0.01); trading min lot risks $16.41 (2.16% of balance)
+2026-08-29 07:19:35.137 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.42 implies 0.0062 lots (< min 0.01); trading min lot risks $11.97 (1.61% of balance)
+2026-08-29 07:19:35.137 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.30 implies 0.0031 lots (< min 0.01); trading min lot risks $23.43 (3.21% of balance)
+2026-08-29 07:19:35.139 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.30 implies 0.0048 lots (< min 0.01); trading min lot risks $15.12 (2.07% of balance)
+2026-08-29 07:19:35.147 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.15 implies 0.0088 lots (< min 0.01); trading min lot risks $8.15 (1.14% of balance)
+2026-08-29 07:19:35.149 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.15 implies 0.0094 lots (< min 0.01); trading min lot risks $7.57 (1.06% of balance)
+2026-08-29 07:19:35.155 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.08 implies 0.0050 lots (< min 0.01); trading min lot risks $14.26 (2.02% of balance)
+2026-08-29 07:19:35.157 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.41 implies 0.0098 lots (< min 0.01); trading min lot risks $7.59 (1.02% of balance)
+2026-08-29 07:19:35.161 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.58 implies 0.0093 lots (< min 0.01); trading min lot risks $8.18 (1.08% of balance)
+2026-08-29 07:19:35.163 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.50 implies 0.0089 lots (< min 0.01); trading min lot risks $8.41 (1.12% of balance)
+2026-08-29 07:19:35.167 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.42 implies 0.0051 lots (< min 0.01); trading min lot risks $14.56 (1.96% of balance)
+2026-08-29 07:19:35.167 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.42 implies 0.0093 lots (< min 0.01); trading min lot risks $7.99 (1.08% of balance)
+2026-08-29 07:19:35.171 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.34 implies 0.0035 lots (< min 0.01); trading min lot risks $20.92 (2.85% of balance)
+2026-08-29 07:19:35.173 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.83 implies 0.0040 lots (< min 0.01); trading min lot risks $19.80 (2.53% of balance)
+2026-08-29 07:19:35.173 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.29 implies 0.0021 lots (< min 0.01); trading min lot risks $39.72 (4.79% of balance)
+2026-08-29 07:19:35.177 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.89 implies 0.0046 lots (< min 0.01); trading min lot risks $17.34 (2.20% of balance)
+2026-08-29 07:19:35.179 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.30 implies 0.0083 lots (< min 0.01); trading min lot risks $10.01 (1.21% of balance)
+2026-08-29 07:19:35.182 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.53 implies 0.0050 lots (< min 0.01); trading min lot risks $17.16 (2.01% of balance)
+2026-08-29 07:19:35.184 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.93 implies 0.0054 lots (< min 0.01); trading min lot risks $16.45 (1.84% of balance)
+2026-08-29 07:19:35.188 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.77 implies 0.0052 lots (< min 0.01); trading min lot risks $16.82 (1.92% of balance)
+2026-08-29 07:19:35.190 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.60 implies 0.0075 lots (< min 0.01); trading min lot risks $11.54 (1.34% of balance)
+2026-08-29 07:19:35.192 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.60 implies 0.0059 lots (< min 0.01); trading min lot risks $14.67 (1.71% of balance)
+2026-08-29 07:19:35.196 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.94 implies 0.0066 lots (< min 0.01); trading min lot risks $13.57 (1.52% of balance)
+2026-08-29 07:19:35.198 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.81 implies 0.0053 lots (< min 0.01); trading min lot risks $16.72 (1.90% of balance)
+2026-08-29 07:19:35.200 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.64 implies 0.0069 lots (< min 0.01); trading min lot risks $12.49 (1.45% of balance)
+2026-08-29 07:19:35.202 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.51 implies 0.0084 lots (< min 0.01); trading min lot risks $10.12 (1.19% of balance)
+2026-08-29 07:19:35.204 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.67 implies 0.0099 lots (< min 0.01); trading min lot risks $8.76 (1.01% of balance)
+2026-08-29 07:19:35.214 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.62 implies 0.0076 lots (< min 0.01); trading min lot risks $11.34 (1.32% of balance)
+2026-08-29 07:19:35.222 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.50 implies 0.0098 lots (< min 0.01); trading min lot risks $8.70 (1.02% of balance)
+2026-08-29 07:19:35.231 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.63 implies 0.0086 lots (< min 0.01); trading min lot risks $10.10 (1.17% of balance)
+2026-08-29 07:19:35.235 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.53 implies 0.0090 lots (< min 0.01); trading min lot risks $9.52 (1.12% of balance)
+2026-08-29 07:19:35.243 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.77 implies 0.0068 lots (< min 0.01); trading min lot risks $12.96 (1.48% of balance)
+2026-08-29 07:19:35.256 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.07 implies 0.0094 lots (< min 0.01); trading min lot risks $9.68 (1.07% of balance)
+2026-08-29 07:19:35.263 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.16 implies 0.0085 lots (< min 0.01); trading min lot risks $10.75 (1.17% of balance)
+2026-08-29 07:19:35.265 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.05 implies 0.0069 lots (< min 0.01); trading min lot risks $13.08 (1.44% of balance)
+2026-08-29 07:19:35.267 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.05 implies 0.0087 lots (< min 0.01); trading min lot risks $10.41 (1.15% of balance)
+2026-08-29 07:19:35.271 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.87 implies 0.0074 lots (< min 0.01); trading min lot risks $12.03 (1.36% of balance)
+2026-08-29 07:19:35.283 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.96 implies 0.0057 lots (< min 0.01); trading min lot risks $15.78 (1.76% of balance)
+2026-08-29 07:19:35.295 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.38 implies 0.0083 lots (< min 0.01); trading min lot risks $11.36 (1.21% of balance)
+2026-08-29 07:19:35.297 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.38 implies 0.0093 lots (< min 0.01); trading min lot risks $10.05 (1.07% of balance)
+2026-08-29 07:19:35.301 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.38 implies 0.0089 lots (< min 0.01); trading min lot risks $10.51 (1.12% of balance)
+2026-08-29 07:19:35.301 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.28 implies 0.0071 lots (< min 0.01); trading min lot risks $13.05 (1.41% of balance)
+2026-08-29 07:19:35.303 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.58 implies 0.0086 lots (< min 0.01); trading min lot risks $11.10 (1.16% of balance)
+2026-08-29 07:19:35.305 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.47 implies 0.0058 lots (< min 0.01); trading min lot risks $16.24 (1.72% of balance)
+2026-08-29 07:19:35.423 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.28 implies 0.0076 lots (< min 0.01); trading min lot risks $12.27 (1.32% of balance)
+2026-08-29 07:19:35.425 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.28 implies 0.0097 lots (< min 0.01); trading min lot risks $9.54 (1.03% of balance)
+2026-08-29 07:19:35.431 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.10 implies 0.0076 lots (< min 0.01); trading min lot risks $11.95 (1.31% of balance)
+2026-08-29 07:19:35.437 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.09 implies 0.0067 lots (< min 0.01); trading min lot risks $13.52 (1.49% of balance)
+2026-08-29 07:19:35.443 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.06 implies 0.0088 lots (< min 0.01); trading min lot risks $10.33 (1.14% of balance)
+2026-08-29 07:19:35.495 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.17 implies 0.0076 lots (< min 0.01); trading min lot risks $12.13 (1.32% of balance)
+2026-08-29 07:19:35.514 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.25 implies 0.0070 lots (< min 0.01); trading min lot risks $13.21 (1.43% of balance)
+2026-08-29 07:19:35.532 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.41 implies 0.0091 lots (< min 0.01); trading min lot risks $10.38 (1.10% of balance)
+2026-08-29 07:19:35.542 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.30 implies 0.0077 lots (< min 0.01); trading min lot risks $12.12 (1.30% of balance)
+2026-08-29 07:19:35.546 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.18 implies 0.0095 lots (< min 0.01); trading min lot risks $9.71 (1.06% of balance)
+2026-08-29 07:19:35.550 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.18 implies 0.0098 lots (< min 0.01); trading min lot risks $9.35 (1.02% of balance)
+2026-08-29 07:19:35.554 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.25 implies 0.0074 lots (< min 0.01); trading min lot risks $12.53 (1.35% of balance)
+2026-08-29 07:19:35.556 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.13 implies 0.0080 lots (< min 0.01); trading min lot risks $11.41 (1.25% of balance)
+2026-08-29 07:19:35.579 | SUCCESS  | asyncio_0 | backtest.engine:run:538 - backtest done | 286 trades | net $370.20 | WR 50.3% | PF 1.28 | maxDD 16.34%
+2026-08-29 08:17:42.227 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 08:42:44.178 | INFO     | MainThread | core.database:__init__:159 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-08-29 08:42:44.291 | INFO     | MainThread | core.news_filter:start:106 - news filter cold-start: fetching calendar synchronously...
+2026-08-29 08:42:44.595 | SUCCESS  | MainThread | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 08:42:44.597 | SUCCESS  | MainThread | core.news_filter:start:110 - cold-start successful: calendar loaded
+2026-08-29 08:42:44.597 | INFO     | MainThread | core.news_filter:start:125 - news filter background refresh started (interval: 1.0h)
+2026-08-29 08:42:44.605 | INFO     | MainThread | __main__:run:688 - ========================================================================
+2026-08-29 08:42:44.605 | INFO     | MainThread | __main__:run:689 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 1.5x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-08-29 08:42:44.605 | INFO     | MainThread | __main__:run:690 - ========================================================================
+2026-08-29 08:42:44.619 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=675.32 USD | symbol=XAUUSD | algo_trading=True
+2026-08-29 08:42:44.619 | WARNING  | MainThread | core.risk_manager:from_mt5:58 - broker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)
+2026-08-29 08:42:44.619 | INFO     | MainThread | __main__:_sync_daily:490 - daily guard init | realized today=$0.00 | day-start balance=$675.32 | cap -10%/$67.53
+2026-08-29 08:42:44.619 | WARNING  | MainThread | __main__:_sync_daily:495 - daily guard init found 0 closed deals for a day >4h old; terminal history may not be synced yet
+2026-08-29 08:42:44.619 | WARNING  | MainThread | __main__:run:701 - daily guard init attempt 1 returned no deals; retrying in 5s
+2026-08-29 08:42:49.621 | WARNING  | MainThread | __main__:run:701 - daily guard init attempt 2 returned no deals; retrying in 5s
+2026-08-29 08:42:54.622 | INFO     | MainThread | core.mt5_client:start_heartbeat:336 - heartbeat thread started (30s)
+2026-08-29 08:42:55.667 | SUCCESS  | MainThread | core.telegram_bot:start:165 - telegram controller online as @GoldForgepro_bot
+2026-08-29 08:42:55.671 | INFO     | MainThread | __main__:run:715 - entering main loop (1.0s cadence, 300s bars)
+2026-08-29 08:47:29.537 | INFO     | asyncio_0 | backtest.engine:__init__:89 - loaded 162 historical news events for backtesting blackout
+2026-08-29 08:47:29.537 | INFO     | asyncio_0 | backtest.engine:run:374 - backtest start | strategy=orb_gold bars=75000 spread=8.0pts commission=$0.0/lot news_filter=True
+2026-08-29 08:47:29.787 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.71 implies 0.0097 lots (< min 0.01); trading min lot risks $5.87 (1.03% of balance)
+2026-08-29 08:47:29.803 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.63 implies 0.0072 lots (< min 0.01); trading min lot risks $7.86 (1.40% of balance)
+2026-08-29 08:47:29.809 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.77 implies 0.0087 lots (< min 0.01); trading min lot risks $6.67 (1.16% of balance)
+2026-08-29 08:47:29.815 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.77 implies 0.0063 lots (< min 0.01); trading min lot risks $9.15 (1.59% of balance)
+2026-08-29 08:47:29.819 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.68 implies 0.0089 lots (< min 0.01); trading min lot risks $6.39 (1.12% of balance)
+2026-08-29 08:47:29.840 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $5.97 implies 0.0091 lots (< min 0.01); trading min lot risks $6.55 (1.10% of balance)
+2026-08-29 08:47:29.842 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.22 implies 0.0077 lots (< min 0.01); trading min lot risks $8.10 (1.30% of balance)
+2026-08-29 08:47:29.854 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.13 implies 0.0069 lots (< min 0.01); trading min lot risks $8.87 (1.45% of balance)
+2026-08-29 08:47:29.860 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.09 implies 0.0079 lots (< min 0.01); trading min lot risks $7.67 (1.26% of balance)
+2026-08-29 08:47:29.864 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.39 implies 0.0086 lots (< min 0.01); trading min lot risks $7.45 (1.17% of balance)
+2026-08-29 08:47:29.868 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.28 implies 0.0062 lots (< min 0.01); trading min lot risks $10.09 (1.61% of balance)
+2026-08-29 08:47:29.868 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.51 implies 0.0091 lots (< min 0.01); trading min lot risks $7.19 (1.10% of balance)
+2026-08-29 08:47:29.870 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.44 implies 0.0098 lots (< min 0.01); trading min lot risks $6.59 (1.02% of balance)
+2026-08-29 08:47:29.881 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0034 lots (< min 0.01); trading min lot risks $19.57 (2.98% of balance)
+2026-08-29 08:47:29.884 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.02 implies 0.0100 lots (< min 0.01); trading min lot risks $7.04 (1.00% of balance)
+2026-08-29 08:47:29.888 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.10 implies 0.0054 lots (< min 0.01); trading min lot risks $13.02 (1.84% of balance)
+2026-08-29 08:47:29.890 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.97 implies 0.0083 lots (< min 0.01); trading min lot risks $8.40 (1.21% of balance)
+2026-08-29 08:47:29.894 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.97 implies 0.0100 lots (< min 0.01); trading min lot risks $6.99 (1.00% of balance)
+2026-08-29 08:47:29.896 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.90 implies 0.0085 lots (< min 0.01); trading min lot risks $8.10 (1.17% of balance)
+2026-08-29 08:47:29.898 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.90 implies 0.0085 lots (< min 0.01); trading min lot risks $8.10 (1.17% of balance)
+2026-08-29 08:47:29.902 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.90 implies 0.0092 lots (< min 0.01); trading min lot risks $7.52 (1.09% of balance)
+2026-08-29 08:47:29.902 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.82 implies 0.0038 lots (< min 0.01); trading min lot risks $17.99 (2.64% of balance)
+2026-08-29 08:47:29.906 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.64 implies 0.0074 lots (< min 0.01); trading min lot risks $9.00 (1.35% of balance)
+2026-08-29 08:47:29.910 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.85 implies 0.0058 lots (< min 0.01); trading min lot risks $11.74 (1.71% of balance)
+2026-08-29 08:47:29.912 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.74 implies 0.0081 lots (< min 0.01); trading min lot risks $8.27 (1.23% of balance)
+2026-08-29 08:47:29.914 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.65 implies 0.0099 lots (< min 0.01); trading min lot risks $6.73 (1.01% of balance)
+2026-08-29 08:47:29.918 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.65 implies 0.0089 lots (< min 0.01); trading min lot risks $7.47 (1.12% of balance)
+2026-08-29 08:47:29.926 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.54 implies 0.0078 lots (< min 0.01); trading min lot risks $8.40 (1.28% of balance)
+2026-08-29 08:47:29.930 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.54 implies 0.0072 lots (< min 0.01); trading min lot risks $9.04 (1.38% of balance)
+2026-08-29 08:47:29.932 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.88 implies 0.0064 lots (< min 0.01); trading min lot risks $10.68 (1.55% of balance)
+2026-08-29 08:47:29.934 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.88 implies 0.0090 lots (< min 0.01); trading min lot risks $7.62 (1.11% of balance)
+2026-08-29 08:47:29.936 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.88 implies 0.0079 lots (< min 0.01); trading min lot risks $8.66 (1.26% of balance)
+2026-08-29 08:47:29.939 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.08 implies 0.0076 lots (< min 0.01); trading min lot risks $9.27 (1.31% of balance)
+2026-08-29 08:47:29.943 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.23 implies 0.0076 lots (< min 0.01); trading min lot risks $9.57 (1.32% of balance)
+2026-08-29 08:47:29.947 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.13 implies 0.0072 lots (< min 0.01); trading min lot risks $9.86 (1.38% of balance)
+2026-08-29 08:47:29.951 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.14 implies 0.0078 lots (< min 0.01); trading min lot risks $9.13 (1.28% of balance)
+2026-08-29 08:47:29.967 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.77 implies 0.0083 lots (< min 0.01); trading min lot risks $8.19 (1.21% of balance)
+2026-08-29 08:47:29.973 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0080 lots (< min 0.01); trading min lot risks $8.43 (1.25% of balance)
+2026-08-29 08:47:29.975 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0078 lots (< min 0.01); trading min lot risks $8.62 (1.28% of balance)
+2026-08-29 08:47:29.977 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.66 implies 0.0095 lots (< min 0.01); trading min lot risks $6.99 (1.05% of balance)
+2026-08-29 08:47:29.979 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.59 implies 0.0049 lots (< min 0.01); trading min lot risks $13.39 (2.03% of balance)
+2026-08-29 08:47:29.981 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.46 implies 0.0072 lots (< min 0.01); trading min lot risks $8.94 (1.38% of balance)
+2026-08-29 08:47:29.983 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.75 implies 0.0037 lots (< min 0.01); trading min lot risks $18.34 (2.71% of balance)
+2026-08-29 08:47:29.985 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0059 lots (< min 0.01); trading min lot risks $11.07 (1.68% of balance)
+2026-08-29 08:47:29.987 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0089 lots (< min 0.01); trading min lot risks $7.37 (1.12% of balance)
+2026-08-29 08:47:29.991 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.74 implies 0.0099 lots (< min 0.01); trading min lot risks $6.80 (1.01% of balance)
+2026-08-29 08:47:29.998 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.55 implies 0.0061 lots (< min 0.01); trading min lot risks $10.72 (1.64% of balance)
+2026-08-29 08:47:30.002 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.74 implies 0.0068 lots (< min 0.01); trading min lot risks $9.95 (1.47% of balance)
+2026-08-29 08:47:30.004 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.65 implies 0.0093 lots (< min 0.01); trading min lot risks $7.17 (1.08% of balance)
+2026-08-29 08:47:30.006 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.57 implies 0.0066 lots (< min 0.01); trading min lot risks $10.01 (1.52% of balance)
+2026-08-29 08:47:30.010 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.81 implies 0.0074 lots (< min 0.01); trading min lot risks $9.17 (1.35% of balance)
+2026-08-29 08:47:30.016 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.95 implies 0.0088 lots (< min 0.01); trading min lot risks $7.91 (1.14% of balance)
+2026-08-29 08:47:30.024 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0076 lots (< min 0.01); trading min lot risks $9.33 (1.32% of balance)
+2026-08-29 08:47:30.030 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.38 implies 0.0097 lots (< min 0.01); trading min lot risks $7.62 (1.03% of balance)
+2026-08-29 08:47:30.041 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.36 implies 0.0036 lots (< min 0.01); trading min lot risks $20.46 (2.78% of balance)
+2026-08-29 08:47:30.045 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.08 implies 0.0079 lots (< min 0.01); trading min lot risks $9.01 (1.27% of balance)
+2026-08-29 08:47:30.047 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0062 lots (< min 0.01); trading min lot risks $11.43 (1.61% of balance)
+2026-08-29 08:47:30.049 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.09 implies 0.0057 lots (< min 0.01); trading min lot risks $12.37 (1.75% of balance)
+2026-08-29 08:47:30.049 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.96 implies 0.0034 lots (< min 0.01); trading min lot risks $20.60 (2.96% of balance)
+2026-08-29 08:47:30.051 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.76 implies 0.0048 lots (< min 0.01); trading min lot risks $14.22 (2.10% of balance)
+2026-08-29 08:47:30.057 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.61 implies 0.0043 lots (< min 0.01); trading min lot risks $15.33 (2.32% of balance)
+2026-08-29 08:47:30.059 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.46 implies 0.0018 lots (< min 0.01); trading min lot risks $35.63 (5.52% of balance)
+2026-08-29 08:47:30.061 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.29 implies 0.0017 lots (< min 0.01); trading min lot risks $41.94 (5.75% of balance)
+2026-08-29 08:47:30.063 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $6.87 implies 0.0015 lots (< min 0.01); trading min lot risks $46.10 (6.71% of balance)
+2026-08-29 08:47:30.067 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.95 implies 0.0037 lots (< min 0.01); trading min lot risks $21.74 (2.74% of balance)
+2026-08-29 08:47:30.069 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.46 implies 0.0023 lots (< min 0.01); trading min lot risks $37.15 (4.39% of balance)
+2026-08-29 08:47:30.073 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.08 implies 0.0034 lots (< min 0.01); trading min lot risks $23.57 (2.92% of balance)
+2026-08-29 08:47:30.075 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.85 implies 0.0050 lots (< min 0.01); trading min lot risks $15.68 (2.00% of balance)
+2026-08-29 08:47:30.077 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0053 lots (< min 0.01); trading min lot risks $14.59 (1.90% of balance)
+2026-08-29 08:47:30.079 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.69 implies 0.0061 lots (< min 0.01); trading min lot risks $12.54 (1.63% of balance)
+2026-08-29 08:47:30.085 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.57 implies 0.0057 lots (< min 0.01); trading min lot risks $13.29 (1.76% of balance)
+2026-08-29 08:47:30.087 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.43 implies 0.0053 lots (< min 0.01); trading min lot risks $14.01 (1.88% of balance)
+2026-08-29 08:47:30.091 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.29 implies 0.0060 lots (< min 0.01); trading min lot risks $12.06 (1.65% of balance)
+2026-08-29 08:47:30.093 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.58 implies 0.0094 lots (< min 0.01); trading min lot risks $8.02 (1.06% of balance)
+2026-08-29 08:47:30.099 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.90 implies 0.0083 lots (< min 0.01); trading min lot risks $9.47 (1.20% of balance)
+2026-08-29 08:47:30.101 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.90 implies 0.0087 lots (< min 0.01); trading min lot risks $9.12 (1.15% of balance)
+2026-08-29 08:47:30.103 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.90 implies 0.0084 lots (< min 0.01); trading min lot risks $9.39 (1.19% of balance)
+2026-08-29 08:47:30.107 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.81 implies 0.0077 lots (< min 0.01); trading min lot risks $10.16 (1.30% of balance)
+2026-08-29 08:47:30.113 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.65 implies 0.0073 lots (< min 0.01); trading min lot risks $10.42 (1.36% of balance)
+2026-08-29 08:47:30.115 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.65 implies 0.0026 lots (< min 0.01); trading min lot risks $29.87 (3.91% of balance)
+2026-08-29 08:47:30.115 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.35 implies 0.0049 lots (< min 0.01); trading min lot risks $15.06 (2.05% of balance)
+2026-08-29 08:47:30.119 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.70 implies 0.0066 lots (< min 0.01); trading min lot risks $11.65 (1.51% of balance)
+2026-08-29 08:47:30.120 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.58 implies 0.0046 lots (< min 0.01); trading min lot risks $16.41 (2.16% of balance)
+2026-08-29 08:47:30.124 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.42 implies 0.0062 lots (< min 0.01); trading min lot risks $11.97 (1.61% of balance)
+2026-08-29 08:47:30.124 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.30 implies 0.0031 lots (< min 0.01); trading min lot risks $23.43 (3.21% of balance)
+2026-08-29 08:47:30.126 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.30 implies 0.0048 lots (< min 0.01); trading min lot risks $15.12 (2.07% of balance)
+2026-08-29 08:47:30.128 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.15 implies 0.0088 lots (< min 0.01); trading min lot risks $8.15 (1.14% of balance)
+2026-08-29 08:47:30.130 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.15 implies 0.0094 lots (< min 0.01); trading min lot risks $7.57 (1.06% of balance)
+2026-08-29 08:47:30.134 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.08 implies 0.0050 lots (< min 0.01); trading min lot risks $14.26 (2.02% of balance)
+2026-08-29 08:47:30.136 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.41 implies 0.0098 lots (< min 0.01); trading min lot risks $7.59 (1.02% of balance)
+2026-08-29 08:47:30.138 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.58 implies 0.0093 lots (< min 0.01); trading min lot risks $8.18 (1.08% of balance)
+2026-08-29 08:47:30.142 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.50 implies 0.0089 lots (< min 0.01); trading min lot risks $8.41 (1.12% of balance)
+2026-08-29 08:47:30.146 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.42 implies 0.0051 lots (< min 0.01); trading min lot risks $14.56 (1.96% of balance)
+2026-08-29 08:47:30.146 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.42 implies 0.0093 lots (< min 0.01); trading min lot risks $7.99 (1.08% of balance)
+2026-08-29 08:47:30.150 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.34 implies 0.0035 lots (< min 0.01); trading min lot risks $20.92 (2.85% of balance)
+2026-08-29 08:47:30.152 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.83 implies 0.0040 lots (< min 0.01); trading min lot risks $19.80 (2.53% of balance)
+2026-08-29 08:47:30.152 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.29 implies 0.0021 lots (< min 0.01); trading min lot risks $39.72 (4.79% of balance)
+2026-08-29 08:47:30.156 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $7.89 implies 0.0046 lots (< min 0.01); trading min lot risks $17.34 (2.20% of balance)
+2026-08-29 08:47:30.158 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.30 implies 0.0083 lots (< min 0.01); trading min lot risks $10.01 (1.21% of balance)
+2026-08-29 08:47:30.162 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.53 implies 0.0050 lots (< min 0.01); trading min lot risks $17.16 (2.01% of balance)
+2026-08-29 08:47:30.164 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.93 implies 0.0054 lots (< min 0.01); trading min lot risks $16.45 (1.84% of balance)
+2026-08-29 08:47:30.170 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.77 implies 0.0052 lots (< min 0.01); trading min lot risks $16.82 (1.92% of balance)
+2026-08-29 08:47:30.172 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.60 implies 0.0075 lots (< min 0.01); trading min lot risks $11.54 (1.34% of balance)
+2026-08-29 08:47:30.174 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.60 implies 0.0059 lots (< min 0.01); trading min lot risks $14.67 (1.71% of balance)
+2026-08-29 08:47:30.178 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.94 implies 0.0066 lots (< min 0.01); trading min lot risks $13.57 (1.52% of balance)
+2026-08-29 08:47:30.180 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.81 implies 0.0053 lots (< min 0.01); trading min lot risks $16.72 (1.90% of balance)
+2026-08-29 08:47:30.182 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.64 implies 0.0069 lots (< min 0.01); trading min lot risks $12.49 (1.45% of balance)
+2026-08-29 08:47:30.184 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.51 implies 0.0084 lots (< min 0.01); trading min lot risks $10.12 (1.19% of balance)
+2026-08-29 08:47:30.188 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.67 implies 0.0099 lots (< min 0.01); trading min lot risks $8.76 (1.01% of balance)
+2026-08-29 08:47:30.197 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.62 implies 0.0076 lots (< min 0.01); trading min lot risks $11.34 (1.32% of balance)
+2026-08-29 08:47:30.205 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.50 implies 0.0098 lots (< min 0.01); trading min lot risks $8.70 (1.02% of balance)
+2026-08-29 08:47:30.211 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.63 implies 0.0086 lots (< min 0.01); trading min lot risks $10.10 (1.17% of balance)
+2026-08-29 08:47:30.215 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.53 implies 0.0090 lots (< min 0.01); trading min lot risks $9.52 (1.12% of balance)
+2026-08-29 08:47:30.224 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.77 implies 0.0068 lots (< min 0.01); trading min lot risks $12.96 (1.48% of balance)
+2026-08-29 08:47:30.236 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.07 implies 0.0094 lots (< min 0.01); trading min lot risks $9.68 (1.07% of balance)
+2026-08-29 08:47:30.243 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.16 implies 0.0085 lots (< min 0.01); trading min lot risks $10.75 (1.17% of balance)
+2026-08-29 08:47:30.245 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.05 implies 0.0069 lots (< min 0.01); trading min lot risks $13.08 (1.44% of balance)
+2026-08-29 08:47:30.246 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.05 implies 0.0087 lots (< min 0.01); trading min lot risks $10.41 (1.15% of balance)
+2026-08-29 08:47:30.252 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.87 implies 0.0074 lots (< min 0.01); trading min lot risks $12.03 (1.36% of balance)
+2026-08-29 08:47:30.264 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $8.96 implies 0.0057 lots (< min 0.01); trading min lot risks $15.78 (1.76% of balance)
+2026-08-29 08:47:30.278 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.38 implies 0.0083 lots (< min 0.01); trading min lot risks $11.36 (1.21% of balance)
+2026-08-29 08:47:30.280 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.38 implies 0.0093 lots (< min 0.01); trading min lot risks $10.05 (1.07% of balance)
+2026-08-29 08:47:30.283 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.38 implies 0.0089 lots (< min 0.01); trading min lot risks $10.51 (1.12% of balance)
+2026-08-29 08:47:30.283 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.28 implies 0.0071 lots (< min 0.01); trading min lot risks $13.05 (1.41% of balance)
+2026-08-29 08:47:30.285 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.58 implies 0.0086 lots (< min 0.01); trading min lot risks $11.10 (1.16% of balance)
+2026-08-29 08:47:30.287 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.47 implies 0.0058 lots (< min 0.01); trading min lot risks $16.24 (1.72% of balance)
+2026-08-29 08:47:30.307 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.28 implies 0.0076 lots (< min 0.01); trading min lot risks $12.27 (1.32% of balance)
+2026-08-29 08:47:30.309 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.28 implies 0.0097 lots (< min 0.01); trading min lot risks $9.54 (1.03% of balance)
+2026-08-29 08:47:30.314 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.10 implies 0.0076 lots (< min 0.01); trading min lot risks $11.95 (1.31% of balance)
+2026-08-29 08:47:30.320 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.09 implies 0.0067 lots (< min 0.01); trading min lot risks $13.52 (1.49% of balance)
+2026-08-29 08:47:30.328 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.06 implies 0.0088 lots (< min 0.01); trading min lot risks $10.33 (1.14% of balance)
+2026-08-29 08:47:30.342 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.17 implies 0.0076 lots (< min 0.01); trading min lot risks $12.13 (1.32% of balance)
+2026-08-29 08:47:30.374 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.25 implies 0.0070 lots (< min 0.01); trading min lot risks $13.21 (1.43% of balance)
+2026-08-29 08:47:30.385 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.41 implies 0.0091 lots (< min 0.01); trading min lot risks $10.38 (1.10% of balance)
+2026-08-29 08:47:30.396 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.30 implies 0.0077 lots (< min 0.01); trading min lot risks $12.12 (1.30% of balance)
+2026-08-29 08:47:30.400 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.18 implies 0.0095 lots (< min 0.01); trading min lot risks $9.71 (1.06% of balance)
+2026-08-29 08:47:30.402 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.18 implies 0.0098 lots (< min 0.01); trading min lot risks $9.35 (1.02% of balance)
+2026-08-29 08:47:30.408 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.25 implies 0.0074 lots (< min 0.01); trading min lot risks $12.53 (1.35% of balance)
+2026-08-29 08:47:30.410 | WARNING  | asyncio_0 | core.risk_manager:calculate_lot:262 - risk budget $9.13 implies 0.0080 lots (< min 0.01); trading min lot risks $11.41 (1.25% of balance)
+2026-08-29 08:47:30.422 | SUCCESS  | asyncio_0 | backtest.engine:run:538 - backtest done | 286 trades | net $370.20 | WR 50.3% | PF 1.28 | maxDD 16.34%
+2026-08-29 09:42:44.972 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 10:42:45.319 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 11:42:45.659 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 12:42:46.396 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 13:42:46.928 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 14:42:47.280 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 15:42:48.753 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 16:42:49.150 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 17:42:49.500 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 18:42:49.845 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 19:42:50.201 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 20:42:50.571 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 20:51:20.809 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #1 starting
+2026-08-29 20:51:26.060 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:51:26.062 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-08-29 20:51:36.067 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:51:36.068 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-08-29 20:51:56.079 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:51:56.079 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-08-29 20:52:36.086 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:52:36.086 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-08-29 20:53:36.093 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:53:36.094 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 5/5 failed
+2026-08-29 20:53:36.094 | ERROR    | MainThread | core.mt5_client:reconnect:318 - reconnect exhausted backoff ladder; staying offline
+2026-08-29 20:53:36.097 | ERROR    | MainThread | __main__:run:722 - offline; retrying in 10s
+2026-08-29 20:53:36.097 | ERROR    | mt5-heartbeat | core.mt5_client:_heartbeat_loop:347 - heartbeat: link LOST
+2026-08-29 20:53:46.105 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #2 starting
+2026-08-29 20:53:51.116 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:53:51.118 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-08-29 20:54:01.123 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:54:01.123 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-08-29 20:54:21.130 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:54:21.130 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-08-29 20:55:01.137 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:55:01.137 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-08-29 20:56:01.144 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:56:01.146 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 5/5 failed
+2026-08-29 20:56:01.146 | ERROR    | MainThread | core.mt5_client:reconnect:318 - reconnect exhausted backoff ladder; staying offline
+2026-08-29 20:56:01.146 | ERROR    | MainThread | __main__:run:722 - offline; retrying in 10s
+2026-08-29 20:56:11.156 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #3 starting
+2026-08-29 20:56:16.171 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:56:16.171 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-08-29 20:56:26.177 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:56:26.177 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-08-29 20:56:46.192 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:56:46.192 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-08-29 20:57:26.199 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-29 20:57:26.201 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-08-29 20:58:26.211 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=675.32 USD | symbol=XAUUSD | algo_trading=True
+2026-08-29 20:58:26.215 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 5 attempt(s)
+2026-08-29 20:58:26.219 | SUCCESS  | mt5-heartbeat | core.mt5_client:_heartbeat_loop:344 - heartbeat: link RESTORED
+2026-08-29 21:00:26.446 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #4 starting
+2026-08-29 21:00:31.478 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=675.32 USD | symbol=XAUUSD | algo_trading=True
+2026-08-29 21:00:31.480 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-08-29 21:42:50.930 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 22:09:03.537 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #5 starting
+2026-08-29 22:09:08.552 | SUCCESS  | MainThread | core.mt5_client:connect:232 - MT5 connected | login=111468044 server=MetaQuotes-Demo balance=675.32 USD | symbol=XAUUSD | algo_trading=True
+2026-08-29 22:09:08.555 | SUCCESS  | MainThread | core.mt5_client:reconnect:313 - reconnected after 1 attempt(s)
+2026-08-29 22:42:51.273 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-29 23:42:51.627 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 00:42:51.993 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 01:42:52.336 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 02:42:52.683 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 03:42:53.036 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 04:42:53.387 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 05:42:53.740 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 06:42:54.094 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 07:42:54.448 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 08:42:54.813 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 09:42:55.182 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 10:42:55.533 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 11:42:55.892 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 12:42:56.232 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 13:42:56.586 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 14:42:56.986 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 15:00:11.618 | INFO     | MainThread | __main__:_sync_daily:508 - daily guard reset | new server day 2026-08-30 | balance=$675.32
+2026-08-30 15:42:57.370 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 16:42:58.091 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 17:42:58.998 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 18:42:59.700 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 19:43:00.314 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 20:43:01.034 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 21:00:00.278 | INFO     | MainThread | __main__:_sync_daily:508 - daily guard reset | new server day 2026-08-31 | balance=$675.32
+2026-08-30 21:43:01.616 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 22:43:02.823 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-30 23:43:03.902 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 00:43:04.329 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 01:43:05.555 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 02:43:06.265 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 03:43:07.293 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 04:43:08.353 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 05:43:09.943 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:165 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-08-31 06:23:14.341 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #6 starting
+2026-08-31 06:23:19.655 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-31 06:23:19.657 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-08-31 06:23:29.665 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-31 06:23:29.667 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-08-31 06:23:49.674 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-31 06:23:49.675 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-08-31 06:24:29.685 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-31 06:24:29.685 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed
+2026-08-31 06:25:29.695 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-31 06:25:29.696 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 5/5 failed
+2026-08-31 06:25:29.697 | ERROR    | MainThread | core.mt5_client:reconnect:318 - reconnect exhausted backoff ladder; staying offline
+2026-08-31 06:25:29.701 | ERROR    | MainThread | __main__:run:722 - offline; retrying in 10s
+2026-08-31 06:25:29.702 | ERROR    | mt5-heartbeat | core.mt5_client:_heartbeat_loop:347 - heartbeat: link LOST
+2026-08-31 06:25:39.708 | WARNING  | MainThread | core.mt5_client:reconnect:298 - reconnect attempt #7 starting
+2026-08-31 06:25:44.718 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-31 06:25:44.720 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 1/5 failed
+2026-08-31 06:25:54.725 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-31 06:25:54.727 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 2/5 failed
+2026-08-31 06:26:14.732 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-31 06:26:14.734 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 3/5 failed
+2026-08-31 06:26:54.741 | ERROR    | MainThread | core.mt5_client:_capture_error:366 - MT5 initialize failed: (-6) Terminal: Authorization failed
+2026-08-31 06:26:54.741 | WARNING  | MainThread | core.mt5_client:reconnect:317 - reconnect attempt 4/5 failed

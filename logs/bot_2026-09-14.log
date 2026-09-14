@@ -1,0 +1,33 @@
+2026-09-14 11:42:45.993 | INFO     | MainThread | core.database:__init__:168 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-09-14 11:42:46.275 | INFO     | MainThread | core.news_filter:start:113 - news filter cold-start: fetching calendar synchronously...
+2026-09-14 11:42:46.674 | SUCCESS  | MainThread | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-14 11:42:46.676 | SUCCESS  | MainThread | core.news_filter:start:117 - cold-start successful: calendar loaded
+2026-09-14 11:42:46.678 | INFO     | MainThread | core.news_filter:start:132 - news filter background refresh started (interval: 1.0h)
+2026-09-14 11:42:46.678 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-14 11:42:46.692 | INFO     | MainThread | __main__:run:1027 - ========================================================================
+2026-09-14 11:42:46.692 | INFO     | MainThread | __main__:run:1028 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 2.0x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-09-14 11:42:46.692 | INFO     | MainThread | __main__:run:1029 - ========================================================================
+2026-09-14 11:42:46.880 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:281 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-14 11:42:46.883 | SUCCESS  | MainThread | core.mt5_client:connect:238 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=482.53 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-14 11:42:46.885 | INFO     | MainThread | core.mt5_client:start_heartbeat:342 - heartbeat thread started (30s)
+2026-09-14 11:42:46.932 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8080/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-14 11:42:48.416 | SUCCESS  | telegram-loop | core.telegram_bot:_register_menu_commands:418 - telegram menu commands registered (6 public / 15 admin)
+2026-09-14 11:42:48.504 | SUCCESS  | MainThread | core.telegram_bot:start:182 - telegram controller online as @GoldForgepro_bot
+2026-09-14 11:42:48.509 | INFO     | MainThread | __main__:run:1074 - entering main loop (1.0s cadence, 300s bars)
+2026-09-14 12:42:47.152 | SUCCESS  | news-filter-refresh | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-14 13:02:42.744 | INFO     | MainThread | core.database:__init__:168 - subscription database ready at C:\Users\Administrator\gold-3strategies\subscriptions.db
+2026-09-14 13:02:42.908 | INFO     | MainThread | core.news_filter:start:113 - news filter cold-start: fetching calendar synchronously...
+2026-09-14 13:02:43.326 | SUCCESS  | MainThread | core.news_filter:update_calendar:172 - calendar refreshed: 4 high-impact USD events loaded (network)
+2026-09-14 13:02:43.328 | SUCCESS  | MainThread | core.news_filter:start:117 - cold-start successful: calendar loaded
+2026-09-14 13:02:43.330 | INFO     | MainThread | core.news_filter:start:132 - news filter background refresh started (interval: 1.0h)
+2026-09-14 13:02:43.330 | INFO     | MainThread | core.signal_score:_warn_missing:91 - no signal score stats at 'data\signal_scores.json' — scores default to neutral 50. Run: python tools/precompute_scores.py
+2026-09-14 13:02:43.336 | INFO     | MainThread | __main__:run:1027 - ========================================================================
+2026-09-14 13:02:43.336 | INFO     | MainThread | __main__:run:1028 - GOLD M5 BOT starting | risk 1.00% | lots 0.01-0.05 | SL/TP 2.0x/3.5xATR(14) | BE 1.8xATR+5pts | trail 99.0x/1.5xATR
+2026-09-14 13:02:43.336 | INFO     | MainThread | __main__:run:1029 - ========================================================================
+2026-09-14 13:02:43.419 | WARNING  | MainThread | core.mt5_client:_resolve_symbol:281 - fuzzy-matched gold symbol -> 'XAUUSD@'
+2026-09-14 13:02:43.421 | SUCCESS  | MainThread | core.mt5_client:connect:238 - MT5 connected | login=20277252 server=WMMarkets-Demo balance=482.53 USD | symbol=XAUUSD@ | algo_trading=True
+2026-09-14 13:02:43.431 | INFO     | MainThread | core.mt5_client:start_heartbeat:342 - heartbeat thread started (30s)
+2026-09-14 13:02:43.441 | SUCCESS  | MainThread | core.dashboard:start:95 - 📊 dashboard online → http://0.0.0.0:8080/?token=CKO1HpUH5HKiF-v0Xegx53k5wZx26Bto
+2026-09-14 13:02:45.183 | SUCCESS  | telegram-loop | core.telegram_bot:_register_menu_commands:418 - telegram menu commands registered (6 public / 15 admin)
+2026-09-14 13:02:45.272 | SUCCESS  | MainThread | core.telegram_bot:start:182 - telegram controller online as @GoldForgepro_bot
+2026-09-14 13:02:45.276 | INFO     | MainThread | __main__:run:1074 - entering main loop (1.0s cadence, 300s bars)
