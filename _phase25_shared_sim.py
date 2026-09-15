@@ -17,6 +17,7 @@ Variants (each compared separately, no stacking without reporting):
   V3  V2 + pessimistic gap-through-SL (fill at open when open is beyond SL)
 """
 import json, math, pickle
+from dataclasses import replace
 import numpy as np
 import pandas as pd
 
@@ -76,6 +77,9 @@ class Pos:
 
 def sim(guard_on, order, variant):
     guard = 3.0 if guard_on else 0.0
+    # per-run risk configs with the guard flag ACTUALLY applied
+    orb_rc = replace(ORB_RC, max_forced_risk_percent=guard)
+    ichi_rc = replace(ICHI_RC, max_forced_risk_percent=guard)
     balance = INIT
     positions = {}
     trades = []
@@ -87,7 +91,8 @@ def sim(guard_on, order, variant):
     margin_shortfalls = 0
     guard_blocks = 0
     ichi_last_used = None
-    risk_mgr = {"orb": RiskManager(ORB_RC, SPEC), "ichi": RiskManager(ICHI_RC, SPEC)}
+    exited_this_bar = set()
+    risk_mgr = {"orb": RiskManager(orb_rc, SPEC), "ichi": RiskManager(ichi_rc, SPEC)}
 
     def spread_at(i):
         if variant in ("V2", "V3"):
@@ -134,6 +139,7 @@ def sim(guard_on, order, variant):
     for i in range(300, n):
         t = M5I[i]
         sp = spread_at(i)
+        exited_this_bar = set()
         # ---------------- manage open positions (SL-first, pessimistic) -------
         for key in list(positions.keys()):
             p = positions[key]
@@ -169,11 +175,12 @@ def sim(guard_on, order, variant):
                     exit_price = None
             if exit_price is not None:
                 d = (exit_price - p.entry) if p.side == "BUY" else (p.entry - exit_price)
-                pnl = SPEC.money_per_lot(d) * p.lot
+                pnl = (d / SPEC.tick_size) * SPEC.tick_value * p.lot   # SIGNED
                 balance += pnl
                 trades.append({"bot": p.bot, "side": p.side, "t": str(t), "pnl": round(pnl, 2),
                                "reason": "gap" if gap_fill else ("sl" if sl_hit and not tp_hit else ("tp" if tp_hit else "sl"))})
                 del positions[key]
+                exited_this_bar.add(key)
                 continue
             # -------- BE/trailing: bar-best price, next-bar effect ------------
             rc = ORB_RC if p.bot == "orb" else ICHI_RC
@@ -192,7 +199,7 @@ def sim(guard_on, order, variant):
                     p.be_done = True
         # ---------------- new entries (previous closed bar signals) ----------
         for bot in (order):
-            if bot in positions:
+            if bot in positions or bot in exited_this_bar:
                 continue
             if bot == "orb":
                 pos_in_orb = ORB_IDX.searchsorted(t)
@@ -201,7 +208,7 @@ def sim(guard_on, order, variant):
                 sig = int(ORB_SIG[pos_in_orb - 1])
                 atr = float(ORB_ATR[i]) if np.isfinite(ORB_ATR[i]) else 0.0
                 if sig != 0 and atr > 0:
-                    p = try_entry(bot, i, "BUY" if sig > 0 else "SELL", atr, ORB_NEWS, ORB_RC)
+                    p = try_entry(bot, i, "BUY" if sig > 0 else "SELL", atr, ORB_NEWS, orb_rc)
                     if p:
                         positions[bot] = p
             else:
@@ -212,7 +219,7 @@ def sim(guard_on, order, variant):
                 atr_raw = ICHI_ATR_M15.iloc[m15_closed - 1]
                 atr = float(atr_raw) if pd.notna(atr_raw) else 0.0
                 if sig != 0 and atr > 0:
-                    p = try_entry(bot, i, "BUY" if sig > 0 else "SELL", atr, ICHI_NEWS, ICHI_RC)
+                    p = try_entry(bot, i, "BUY" if sig > 0 else "SELL", atr, ICHI_NEWS, ichi_rc)
                     if p:
                         positions[bot] = p
                     ichi_last_used = m15_closed
@@ -221,7 +228,7 @@ def sim(guard_on, order, variant):
         for p in positions.values():
             mark = C[i]
             d = (mark - p.entry) if p.side == "BUY" else (p.entry - mark)
-            floating += SPEC.money_per_lot(d) * p.lot
+            floating += (d / SPEC.tick_size) * SPEC.tick_value * p.lot   # SIGNED
         eq = balance + floating
         peak_eq = max(peak_eq, eq)
         maxdd_eq = max(maxdd_eq, peak_eq - eq)
@@ -242,6 +249,9 @@ def sim(guard_on, order, variant):
         "win_rate": round(len(wins) / max(1, len(nets)) * 100, 1),
         "max_dd_equity_usd": round(maxdd_eq, 2),
         "max_dd_equity_pct_of_init": round(maxdd_eq / INIT * 100, 1),
+        "max_dd_equity_pct_of_peak": round(maxdd_eq / peak_eq * 100, 1) if peak_eq > 0 else None,
+        "peak_equity": round(peak_eq, 2),
+        "max_trade_risk_pct": round(max_risk_pct, 2),
         "peak_margin_usage_usd": round(peak_margin, 2),
         "margin_shortfall_events": margin_shortfalls,
         "guard_blocks": guard_blocks,
