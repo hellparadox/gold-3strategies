@@ -70,6 +70,13 @@ class T1LookaheadTruncation(unittest.TestCase):
 
     def test_ichimoku_no_lookahead(self):
         s = Settings.load("config/settings_ichimoku.yaml")
+        # IMPROVE (2026-09-15): the synthetic series (seed 7) yields a kijun
+        # SHORT signal; the PROPOSED live yaml sets enable_kijun_short: false,
+        # which would leave 0 signals and abort this test. The lookahead
+        # property is about the SIGNAL MACHINERY, not the deployment config —
+        # pin both side gates to legacy True so the test stays decoupled.
+        s.set("strategy.params.ichimoku_m15.enable_kijun_short", True)
+        s.set("strategy.params.ichimoku_m15.enable_tenkan_short", True)
         strat = build_from_settings(s)
         m15 = synth(400, freq="15min")
         h1 = synth(120, freq="h")
