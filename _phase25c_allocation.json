@@ -1,0 +1,90 @@
+[
+ {
+  "case": "A_ichi_alone_482",
+  "capital_total": 482.53,
+  "trades": 1750,
+  "net": -313.17,
+  "pf": 0.892,
+  "win_rate": 62.3,
+  "guard_blocks": 1263,
+  "margin_rejects": 0,
+  "max_trade_risk_pct": 2.9949452457734305,
+  "dd": {
+   "dd_amount_usd": 429.18,
+   "dd_pct_of_peak": 74.1,
+   "dd_amount_over_initial_capital": 88.94,
+   "peak_date": "2022-03-17 16:50:00",
+   "peak_equity": 579.15,
+   "trough_date": "2024-09-06 14:40:00",
+   "trough_equity": 149.97,
+   "min_equity": 149.97,
+   "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+  }
+ },
+ {
+  "case": "B_orb_alone_482",
+  "capital_total": 482.53,
+  "trades": 1278,
+  "net": 269.77,
+  "pf": 1.087,
+  "win_rate": 50.2,
+  "guard_blocks": 19,
+  "margin_rejects": 0,
+  "max_trade_risk_pct": 2.976434564308038,
+  "dd": {
+   "dd_amount_usd": 223.79,
+   "dd_pct_of_peak": 42.18,
+   "dd_amount_over_initial_capital": 46.38,
+   "peak_date": "2023-01-24 09:00:00",
+   "peak_equity": 530.6,
+   "trough_date": "2024-11-20 08:35:00",
+   "trough_equity": 306.81,
+   "min_equity": 306.81,
+   "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+  }
+ },
+ {
+  "case": "C_independent_482_each",
+  "capital_total": 965.06,
+  "trades": 3028,
+  "net": -43.4,
+  "pf": 0.993,
+  "win_rate": 57.2,
+  "guard_blocks": 1282,
+  "max_trade_risk_pct": 2.9949452457734305,
+  "dd": {
+   "dd_amount_usd": 560.39,
+   "dd_pct_of_peak": 96.86,
+   "dd_amount_over_initial_capital": 58.07,
+   "peak_date": "2022-07-12 04:15:00",
+   "peak_equity": 578.53,
+   "trough_date": "2024-11-19 02:20:00",
+   "trough_equity": 18.14,
+   "min_equity": 18.14,
+   "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+  },
+  "note": "two SEPARATE accounts; equity series summed; each bot sized off its own balance"
+ },
+ {
+  "case": "D_shared_482_total",
+  "capital_total": 482.53,
+  "trades": 2492,
+  "net": -355.27,
+  "pf": 0.914,
+  "win_rate": 56.7,
+  "guard_blocks": 1829,
+  "margin_rejects": 0,
+  "max_trade_risk_pct": 2.9993304466828334,
+  "dd": {
+   "dd_amount_usd": 462.44,
+   "dd_pct_of_peak": 78.89,
+   "dd_amount_over_initial_capital": 95.84,
+   "peak_date": "2022-07-12 04:15:00",
+   "peak_equity": 586.19,
+   "trough_date": "2025-08-19 02:40:00",
+   "trough_equity": 123.76,
+   "min_equity": 123.76,
+   "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+  }
+ }
+]

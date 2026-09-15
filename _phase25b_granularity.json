@@ -1,0 +1,41 @@
+[
+ {
+  "grid": "M15",
+  "bars": 32903,
+  "trades": 818,
+  "net": 1888.31,
+  "net_ichi": 1659.5,
+  "net_orb": 228.81,
+  "pf": 1.508,
+  "wr": 69.2,
+  "eq_dd_of_peak_pct": 8.9,
+  "guard_blocks": 54,
+  "max_trade_risk_pct": 2.98
+ },
+ {
+  "grid": "M5",
+  "bars": 98544,
+  "trades": 1069,
+  "net": 2194.71,
+  "net_ichi": 1681.73,
+  "net_orb": 512.98,
+  "pf": 1.436,
+  "wr": 68.2,
+  "eq_dd_of_peak_pct": 7.0,
+  "guard_blocks": 47,
+  "max_trade_risk_pct": 2.98
+ },
+ {
+  "grid": "M1",
+  "bars": 492174,
+  "trades": 1105,
+  "net": 3770.57,
+  "net_ichi": 1887.48,
+  "net_orb": 1883.09,
+  "pf": 1.691,
+  "wr": 72.3,
+  "eq_dd_of_peak_pct": 4.2,
+  "guard_blocks": 40,
+  "max_trade_risk_pct": 2.98
+ }
+]
