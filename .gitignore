@@ -33,6 +33,17 @@ venv/
 # --- data caches (large) ---
 data/cache/
 
+# --- research lab (local only — strategy funnel experiments, big caches) ---
+_sp2l_*
+*_data.pkl
+_d1_20y.pkl
+_h5_*
+sp2l_lab*.py
+h5_autopsy.py
+h5_20y.py
+config/_sp2l_lab.yaml
+*_lab*_log.txt
+
 # --- IDE / OS ---
 .vscode/
 .idea/

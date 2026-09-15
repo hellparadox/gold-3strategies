@@ -1,0 +1,25 @@
+{
+ "variant": "no_kijun_short",
+ "spread_pts": 20.0,
+ "capital": 482.53,
+ "trades": 2298,
+ "net": 1268.91,
+ "net_from_equity_delta": 1268.82,
+ "pf": 1.234,
+ "win_rate": 66.5,
+ "avg_per_trade": 0.55,
+ "guard_blocks": 62,
+ "margin_rejects": 0,
+ "max_trade_risk_pct": 2.964688395575733,
+ "dd": {
+  "dd_amount_usd": 186.9,
+  "dd_pct_of_peak": 15.52,
+  "dd_amount_over_initial_capital": 38.73,
+  "peak_date": "2026-01-26 14:20:00",
+  "peak_equity": 1204.48,
+  "trough_date": "2026-02-27 06:55:00",
+  "trough_equity": 1017.58,
+  "min_equity": 412.44,
+  "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+ }
+}

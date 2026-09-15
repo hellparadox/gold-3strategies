@@ -1,0 +1,25 @@
+{
+ "variant": "baseline",
+ "spread_pts": 20.0,
+ "capital": 482.53,
+ "trades": 1750,
+ "net": -313.17,
+ "net_from_equity_delta": -313.18,
+ "pf": 0.892,
+ "win_rate": 62.3,
+ "avg_per_trade": -0.18,
+ "guard_blocks": 1263,
+ "margin_rejects": 0,
+ "max_trade_risk_pct": 2.9949452457734305,
+ "dd": {
+  "dd_amount_usd": 429.18,
+  "dd_pct_of_peak": 74.1,
+  "dd_amount_over_initial_capital": 88.94,
+  "peak_date": "2022-03-17 16:50:00",
+  "peak_equity": 579.15,
+  "trough_date": "2024-09-06 14:40:00",
+  "trough_equity": 149.97,
+  "min_equity": 149.97,
+  "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+ }
+}

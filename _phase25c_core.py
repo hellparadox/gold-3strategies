@@ -61,11 +61,16 @@ def _dd_details(eq: pd.Series, initial: float) -> dict:
 
 
 class _Pos:
-    __slots__ = ("bot", "side", "lot", "entry", "sl", "tp", "atr", "be_done", "t")
+    __slots__ = ("bot", "side", "lot", "entry", "sl", "tp", "atr", "be_done", "t",
+                 "layer", "sl0", "mfe", "mae", "bars", "risk_pct")
     def __init__(self, bot, side, lot, entry, sl, tp, atr):
         self.bot, self.side, self.lot, self.entry = bot, side, lot, entry
         self.sl, self.tp, self.atr, self.be_done = sl, tp, atr, False
         self.t = None
+        # forensic fields (diagnostic recording only — never read by trade logic)
+        self.layer, self.sl0 = "", sl          # layer name + initial SL
+        self.mfe, self.mae, self.bars = 0.0, 0.0, 0
+        self.risk_pct = 0.0
 
 
 def simulate(m5, m15, h1, bot_ctx, cfg: SimConfig) -> SimResult:
@@ -106,6 +111,23 @@ def simulate(m5, m15, h1, bot_ctx, cfg: SimConfig) -> SimResult:
     # a signal is actionable only AFTER its bar CLOSES: last closed signal bar per grid bar
     sig_pos = {b: sig_close[b].searchsorted(gi, side="right") for b in cfg.bots}
     atr_ff = {b: bot_ctx[b]["atr"].reindex(gi, method="ffill") for b in cfg.bots}
+    # optional layer attribution series (aligned with sig index, e.g. signal_layer)
+    layer_s = {b: bot_ctx[b].get("layer") for b in cfg.bots}
+
+    def update_exc(p, i, sp):
+        """MFE/MAE in $ using the SAME price sides the exit engine fills on
+        (BUY: bid low/high; SELL: ask = price + spread). Includes the entry
+        bar and the exit bar's full range — diagnostic only."""
+        if p.side == "BUY":
+            fav, adv = H[i] - p.entry, p.entry - L[i]
+        else:
+            fav, adv = p.entry - (L[i] + sp), (H[i] + sp) - p.entry
+        d = (fav / spec.tick_size) * spec.tick_value * p.lot
+        if d > p.mfe:
+            p.mfe = d
+        d = (adv / spec.tick_size) * spec.tick_value * p.lot
+        if d > p.mae:
+            p.mae = d
 
     def check_exit(p, i):
         """SL/TP/gap check for bar i (BUY: bid side; SELL: ask side + spread)."""
@@ -130,7 +152,13 @@ def simulate(m5, m15, h1, bot_ctx, cfg: SimConfig) -> SimResult:
         pnl = (d / spec.tick_size) * spec.tick_value * p.lot
         add_bal(p.bot, pnl)
         res.trades.append({"bot": p.bot, "side": p.side, "entry_time": str(p.t),
-                           "time": str(gi[i]), "pnl": round(pnl, 2), "reason": reason})
+                           "time": str(gi[i]), "pnl": round(pnl, 2), "reason": reason,
+                           # forensic recording (informational; identical trade logic)
+                           "layer": p.layer, "lot": p.lot, "entry_px": p.entry,
+                           "exit_px": px, "sl_initial": p.sl0, "sl_final": p.sl,
+                           "be_done": p.be_done, "mfe": round(p.mfe, 2),
+                           "mae": round(p.mae, 2), "bars_held": p.bars,
+                           "atr_entry": round(p.atr, 3), "risk_pct": round(p.risk_pct, 3)})
 
     for i in range(len(gi)):
         t = gi[i]
@@ -139,6 +167,8 @@ def simulate(m5, m15, h1, bot_ctx, cfg: SimConfig) -> SimResult:
         exited = set()
         for key in list(positions.keys()):
             p = positions[key]
+            update_exc(p, i, sp)          # diagnostic only (before exit check: exit-bar range included)
+            p.bars += 1
             px, reason = check_exit(p, i)
             if px is not None:
                 settle(p, i, px, reason)
@@ -199,6 +229,12 @@ def simulate(m5, m15, h1, bot_ctx, cfg: SimConfig) -> SimResult:
                      entry - sl_d if side == "BUY" else entry + sl_d,
                      entry + tp_d if side == "BUY" else entry - tp_d, atr)
             p.t = t
+            ls = layer_s[bot]
+            if ls is not None and k < len(ls):
+                p.layer = str(ls.iloc[k])
+            p.risk_pct = forced
+            p.bars = 1
+            update_exc(p, i, sp)          # entry-bar excursion (diagnostic)
             positions[bot] = p
             # ENGINE PARITY: the entry bar's own range can stop the position
             # out (engine passes entry_bar=True). BE/trailing still deferred

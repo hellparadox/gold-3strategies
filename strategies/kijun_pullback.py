@@ -65,6 +65,11 @@ class KijunPullbackStrategy(BaseStrategy):
 
             # Optional Tenkan momentum layer.
             "enable_tenkan": True,
+            # Side gates (IMPROVE 2026-09-15): default True = legacy behavior.
+            # Set False to trade the layer long-only (evidence: SELL side
+            # −$204.56 kijun / −$45.34 tenkan over 5y at spread 20).
+            "enable_kijun_short": True,
+            "enable_tenkan_short": True,
             "tenkan_near_atr": 0.20,
             "tenkan_min_distance_atr": 0.40,
             "tenkan_max_distance_atr": 1.80,
@@ -443,6 +448,15 @@ class KijunPullbackStrategy(BaseStrategy):
             & (close <= kijun)
         )
 
+        # IMPROVE (2026-09-15): side gate for the kijun pullback layer.
+        # Evidence (5y M15 backtest, sp20, $482.53, instrumented baseline):
+        # kijun SELL = 548 trades, net −$204.56, PF 0.793, negative in 4 of 5
+        # years (2022..2025) while kijun BUY ≈ breakeven. Corroborated by the
+        # 22-year daily study (h5): gold SHORT side structurally toxic.
+        # Default True = legacy behavior (base version unchanged).
+        if not self.pb("enable_kijun_short", True):
+            short_signal = pd.Series(False, index=frame.index, dtype=bool)
+
         return long_signal, short_signal
 
     def _tenkan_layer(
@@ -555,6 +569,13 @@ class KijunPullbackStrategy(BaseStrategy):
             & (close < tenkan)
             & ((open_price - close) > body_fraction * candle_range)
         )
+
+        # IMPROVE (2026-09-15): side gate for the tenkan momentum layer.
+        # Evidence (same instrumented baseline): tenkan SELL = 267 trades,
+        # net −$45.34, PF 0.894; ALL SELL trades (both layers) = −$249.90,
+        # i.e. 80% of the total −$313 hole. Default True = legacy behavior.
+        if not self.pb("enable_tenkan_short", True):
+            short_signal = pd.Series(False, index=frame.index, dtype=bool)
 
         return long_signal, short_signal
 

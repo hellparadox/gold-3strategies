@@ -1,0 +1,427 @@
+{
+ "layers": [
+  {
+   "label": "kijun_pullback",
+   "n": 1166,
+   "net": -202.33,
+   "pf": 0.897,
+   "wr": 62.0,
+   "avg": -0.17,
+   "worst": -12.33,
+   "best": 20.96
+  },
+  {
+   "label": "tenkan_momentum",
+   "n": 584,
+   "net": -110.84,
+   "pf": 0.882,
+   "wr": 62.8,
+   "avg": -0.19,
+   "worst": -11.67,
+   "best": 12.17
+  }
+ ],
+ "layers_yearly": {
+  "kijun_pullback": {
+   "2021": 14.79,
+   "2022": -10.65,
+   "2023": -194.95,
+   "2024": -7.07,
+   "2025": -4.45
+  },
+  "tenkan_momentum": {
+   "2021": 2.07,
+   "2022": 5.16,
+   "2023": -56.78,
+   "2024": -45.07,
+   "2025": -16.22
+  }
+ },
+ "layer_side": [
+  {
+   "label": "kijun_pullback/BUY",
+   "n": 618,
+   "net": 2.23,
+   "pf": 1.002,
+   "wr": 64.7,
+   "avg": 0.0,
+   "worst": -12.33,
+   "best": 20.96
+  },
+  {
+   "label": "kijun_pullback/SELL",
+   "n": 548,
+   "net": -204.56,
+   "pf": 0.793,
+   "wr": 58.9,
+   "avg": -0.37,
+   "worst": -11.44,
+   "best": 11.35
+  },
+  {
+   "label": "tenkan_momentum/BUY",
+   "n": 317,
+   "net": -65.5,
+   "pf": 0.872,
+   "wr": 61.5,
+   "avg": -0.21,
+   "worst": -10.65,
+   "best": 12.17
+  },
+  {
+   "label": "tenkan_momentum/SELL",
+   "n": 267,
+   "net": -45.34,
+   "pf": 0.894,
+   "wr": 64.4,
+   "avg": -0.17,
+   "worst": -11.67,
+   "best": 8.44
+  }
+ ],
+ "reason_by_layer": {
+  "kijun_pullback": {
+   "sl": 987,
+   "gap": 94,
+   "tp": 85
+  },
+  "tenkan_momentum": {
+   "sl": 495,
+   "gap": 49,
+   "tp": 40
+  }
+ },
+ "worst12": [
+  {
+   "entry_time": "2022-02-24 14:45:00",
+   "layer": "kijun_pullback",
+   "side": "BUY",
+   "pnl": -12.33,
+   "mfe": 3.65,
+   "mae": 21.31,
+   "bars_held": 22,
+   "be_done": false,
+   "entry_px": 1963.54,
+   "exit_px": 1951.2063477928812,
+   "sl_initial": 1951.2063477928812,
+   "sl_final": 1951.2063477928812,
+   "atr_entry": 6.167,
+   "lot": 0.01,
+   "risk_pct": 2.401
+  },
+  {
+   "entry_time": "2025-07-04 03:15:00",
+   "layer": "tenkan_momentum",
+   "side": "SELL",
+   "pnl": -11.67,
+   "mfe": 0.08,
+   "mae": 11.79,
+   "bars_held": 11,
+   "be_done": false,
+   "entry_px": 3326.15,
+   "exit_px": 3337.82,
+   "sl_initial": 3331.614392262449,
+   "sl_final": 3331.614392262449,
+   "atr_entry": 2.732,
+   "lot": 0.01,
+   "risk_pct": 2.748
+  },
+  {
+   "entry_time": "2022-03-15 16:15:00",
+   "layer": "kijun_pullback",
+   "side": "SELL",
+   "pnl": -11.44,
+   "mfe": 4.98,
+   "mae": 15.17,
+   "bars_held": 21,
+   "be_done": false,
+   "entry_px": 1912.23,
+   "exit_px": 1923.6710045574648,
+   "sl_initial": 1923.6710045574648,
+   "sl_final": 1923.6710045574648,
+   "atr_entry": 5.721,
+   "lot": 0.01,
+   "risk_pct": 2.039
+  },
+  {
+   "entry_time": "2024-06-12 12:45:00",
+   "layer": "tenkan_momentum",
+   "side": "SELL",
+   "pnl": -11.11,
+   "mfe": 0.92,
+   "mae": 15.78,
+   "bars_held": 34,
+   "be_done": false,
+   "entry_px": 2312.77,
+   "exit_px": 2323.88,
+   "sl_initial": 2316.9250517820124,
+   "sl_final": 2316.9250517820124,
+   "atr_entry": 2.078,
+   "lot": 0.01,
+   "risk_pct": 2.155
+  },
+  {
+   "entry_time": "2023-03-15 19:30:00",
+   "layer": "kijun_pullback",
+   "side": "BUY",
+   "pnl": -11.0,
+   "mfe": 2.49,
+   "mae": 17.37,
+   "bars_held": 13,
+   "be_done": false,
+   "entry_px": 1926.27,
+   "exit_px": 1915.266725089297,
+   "sl_initial": 1915.266725089297,
+   "sl_final": 1915.266725089297,
+   "atr_entry": 5.502,
+   "lot": 0.01,
+   "risk_pct": 2.381
+  },
+  {
+   "entry_time": "2022-03-02 17:15:00",
+   "layer": "tenkan_momentum",
+   "side": "BUY",
+   "pnl": -10.65,
+   "mfe": 3.87,
+   "mae": 10.92,
+   "bars_held": 11,
+   "be_done": false,
+   "entry_px": 1931.71,
+   "exit_px": 1921.0585210778688,
+   "sl_initial": 1921.0585210778688,
+   "sl_final": 1921.0585210778688,
+   "atr_entry": 5.326,
+   "lot": 0.01,
+   "risk_pct": 2.135
+  },
+  {
+   "entry_time": "2023-01-12 16:30:00",
+   "layer": "kijun_pullback",
+   "side": "BUY",
+   "pnl": -10.15,
+   "mfe": 2.28,
+   "mae": 12.34,
+   "bars_held": 5,
+   "be_done": false,
+   "entry_px": 1892.37,
+   "exit_px": 1882.2245387792689,
+   "sl_initial": 1882.2245387792689,
+   "sl_final": 1882.2245387792689,
+   "atr_entry": 5.073,
+   "lot": 0.01,
+   "risk_pct": 2.008
+  },
+  {
+   "entry_time": "2023-03-24 16:15:00",
+   "layer": "tenkan_momentum",
+   "side": "BUY",
+   "pnl": -9.47,
+   "mfe": 3.75,
+   "mae": 10.73,
+   "bars_held": 22,
+   "be_done": false,
+   "entry_px": 1994.62,
+   "exit_px": 1985.1490628092145,
+   "sl_initial": 1985.1490628092145,
+   "sl_final": 1985.1490628092145,
+   "atr_entry": 4.735,
+   "lot": 0.01,
+   "risk_pct": 2.001
+  },
+  {
+   "entry_time": "2022-02-28 17:15:00",
+   "layer": "kijun_pullback",
+   "side": "BUY",
+   "pnl": -9.23,
+   "mfe": 2.11,
+   "mae": 9.36,
+   "bars_held": 8,
+   "be_done": false,
+   "entry_px": 1914.77,
+   "exit_px": 1905.5395668346944,
+   "sl_initial": 1905.5395668346944,
+   "sl_final": 1905.5395668346944,
+   "atr_entry": 4.615,
+   "lot": 0.01,
+   "risk_pct": 1.868
+  },
+  {
+   "entry_time": "2022-07-14 18:15:00",
+   "layer": "kijun_pullback",
+   "side": "SELL",
+   "pnl": -8.8,
+   "mfe": 1.85,
+   "mae": 8.97,
+   "bars_held": 8,
+   "be_done": false,
+   "entry_px": 1705.77,
+   "exit_px": 1714.5742937743546,
+   "sl_initial": 1714.5742937743546,
+   "sl_final": 1714.5742937743546,
+   "atr_entry": 4.402,
+   "lot": 0.01,
+   "risk_pct": 1.595
+  },
+  {
+   "entry_time": "2022-03-18 15:30:00",
+   "layer": "kijun_pullback",
+   "side": "SELL",
+   "pnl": -8.79,
+   "mfe": 0.64,
+   "mae": 8.86,
+   "bars_held": 1,
+   "be_done": false,
+   "entry_px": 1927.17,
+   "exit_px": 1935.964761177491,
+   "sl_initial": 1935.964761177491,
+   "sl_final": 1935.964761177491,
+   "atr_entry": 4.397,
+   "lot": 0.01,
+   "risk_pct": 1.539
+  },
+  {
+   "entry_time": "2022-09-22 17:15:00",
+   "layer": "kijun_pullback",
+   "side": "BUY",
+   "pnl": -8.78,
+   "mfe": 1.8,
+   "mae": 9.33,
+   "bars_held": 193,
+   "be_done": false,
+   "entry_px": 1676.21,
+   "exit_px": 1667.4303622135544,
+   "sl_initial": 1667.4303622135544,
+   "sl_final": 1667.4303622135544,
+   "atr_entry": 4.39,
+   "lot": 0.01,
+   "risk_pct": 1.673
+  }
+ ],
+ "giveback": {
+  "trades_mfe_ge_8": 94,
+  "sum_mfe": 993.82,
+  "sum_pnl": 694.92,
+  "kept_pct": 69.9,
+  "ended_negative": 0,
+  "mfe_ge8_by_reason": {
+   "tp": 53,
+   "sl": 29,
+   "gap": 12
+  },
+  "mfe_ge8_be_done_split": {
+   "be_False": 94.02,
+   "be_True": 600.9
+  }
+ },
+ "giveback_by_reason": [
+  {
+   "reason": "gap",
+   "n": 143,
+   "sum_mfe": 653.93,
+   "sum_pnl": 230.94,
+   "kept_pct": 35.3
+  },
+  {
+   "reason": "sl",
+   "n": 1393,
+   "sum_mfe": 3846.0,
+   "sum_pnl": -1014.09,
+   "kept_pct": -26.4
+  },
+  {
+   "reason": "tp",
+   "n": 125,
+   "sum_mfe": 1020.03,
+   "sum_pnl": 838.99,
+   "kept_pct": 82.3
+  }
+ ],
+ "be_split": {
+  "be_done_n": 1090,
+  "be_done_net": 2445.69,
+  "be_done_win_rate": 98.2,
+  "be_done_neg": 19,
+  "be_done_neg_net": -12.18,
+  "no_be_n": 660,
+  "no_be_net": -2758.86,
+  "be_neg_pnl_distribution": [
+   -0.1,
+   -1.2,
+   -0.0,
+   -0.6,
+   -0.4,
+   -0.7,
+   -0.1,
+   -0.7,
+   -0.4,
+   -0.4,
+   -0.9,
+   -0.1,
+   -1.0,
+   -0.8,
+   -1.2,
+   -3.1,
+   -0.2,
+   -0.3,
+   -0.0
+  ]
+ },
+ "be_kickouts": {
+  "n_pnl_between_neg2_2": 608,
+  "sum_pnl": 464.72
+ },
+ "full_sl": [
+  {
+   "label": "full_sl_hits",
+   "n": 638,
+   "net": -2872.23,
+   "pf": 0.0,
+   "wr": 0.0,
+   "avg": -4.5,
+   "worst": -12.33,
+   "best": -1.71
+  },
+  {
+   "by_layer": {
+    "kijun_pullback": 430,
+    "tenkan_momentum": 208
+   },
+   "net": -2872.23,
+   "by_year": {
+    "2021": -232.87,
+    "2022": -1020.48,
+    "2023": -1004.36,
+    "2024": -510.02,
+    "2025": -104.5
+   }
+  }
+ ],
+ "yearly_net": {
+  "2021": 16.86,
+  "2022": -5.49,
+  "2023": -251.73,
+  "2024": -52.14,
+  "2025": -20.67
+ },
+ "sizing": {
+  "risk_pct_mean": 1.29,
+  "risk_pct_max": 3.0,
+  "lot_mean": 0.01,
+  "avg_loss": -4.41,
+  "avg_win": 2.38
+ },
+ "excursion": {
+  "winners_mae_mean": 1.69,
+  "winners_mae_p90": 3.57,
+  "losers_mfe_mean": 1.0,
+  "losers_mfe_ge_5": 4,
+  "losers_mfe_ge_5_sum": 22.88,
+  "losers_mfe_ge_5_net": -13.98
+ },
+ "bars": {
+  "winners_mean_bars": 18.4,
+  "losers_mean_bars": 22.1,
+  "trades_le_2_bars": 24,
+  "le2_bars_net": -70.69
+ }
+}
