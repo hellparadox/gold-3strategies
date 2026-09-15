@@ -104,6 +104,15 @@ class LiveBot:
         self.risk_config = RiskConfig.from_settings(settings)
         self.risk = RiskManager(self.risk_config, SymbolSpec.gold_default())
         self.strategy: BaseStrategy = build_from_settings(settings)
+        # IMPROVE (2026-09-15): چاپ وضعیت مؤثر گیت‌های سمت در شروع برنامه تا
+        # معلوم شود yaml واقعاً خوانده شده. هر دو Instance این فایل را اجرا
+        # می‌کنند؛ استراتژی‌های بدون این کلیدها چیزی لاگ نمی‌کنند.
+        _side_gates = {k: self.strategy.params.get(k) for k in
+                       ("enable_kijun_short", "enable_tenkan_short")
+                       if k in self.strategy.params}
+        if _side_gates:
+            logger.info("⚡ side gates effective | strategy={} | {}",
+                        self.strategy.name, _side_gates)
         # سوییچ لحظه‌ای /extension — آخرین تصمیم ادمین از yaml مهم‌تر است و
         # بعد از ری‌استارت هم می‌ماند (فایل per-strategy تا دوInstance تداخل نکنند).
         self._extension_state_path = os.path.join(

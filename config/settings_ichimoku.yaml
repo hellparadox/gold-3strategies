@@ -91,6 +91,8 @@ strategy:
       # اسپرد ۲۶: ‎−341→−219$‎ (بهتر ولی هنوز منفی — لبه به اسپرد حساس است).
       # پیش‌فرض کد True است؛ فقط همین فایل نسخه پیشنهادی را False می‌کند.
       enable_kijun_short: false
+      # تنکان هر دو جهت فعال می‌ماند (آزمون جداگانه حذف شورت تنکان مفید نبود)
+      enable_tenkan_short: true
       enable_tenkan: true
       enable_sp2l: false
       kijun_near_atr: 0.20
