@@ -1,0 +1,38 @@
+{
+ "method": "common calendar = outer-join union of M5 bar stamps; indices verified identical -> exact pointwise sum, no fill applied, NaN count 0",
+ "inputs": {
+  "A_equity_csv_sha256": "051c225c51b3a81c8127a538d829771db889ef40d6050a5ae8d21775168b0ba9",
+  "B_equity_csv_sha256": "123811e131b478d907287f1c911d05e0d2e9cf1478f2a26e28ba9fdff6fbcfd6",
+  "A_rows": 350000,
+  "B_rows": 350000,
+  "index_identical": true
+ },
+ "C_initial": 965.06,
+ "C_final_full_precision": 921.7618245574636,
+ "identity_final": {
+  "965.06_plus_netA_plus_netB": 921.7618245574636,
+  "matches": true
+ },
+ "net_A_from_equity_delta": -313.18270841988306,
+ "net_B_from_equity_delta": 269.8845329773467,
+ "net_A_from_rounded_trades": -313.17,
+ "net_B_from_rounded_trades": 269.77,
+ "rounding_note": "trade records round pnl to 2dp; balances keep full precision internally -> equity-delta net vs rounded-trade net differ by cents",
+ "min_C": 500.6687421628603,
+ "min_A": 149.97245674791725,
+ "min_B": 306.81115356720534,
+ "min_A_plus_min_B": 456.7836103151226,
+ "min_C_ge_minA_plus_minB": true,
+ "dd": {
+  "initial": 965.06,
+  "final": 921.7618245574636,
+  "min_equity": 500.6687421628603,
+  "dd_usd": 560.3893080280566,
+  "peak": 1061.058050190917,
+  "peak_time": "2022-07-12 04:15:00",
+  "trough": 500.6687421628603,
+  "trough_time": "2024-11-19 02:20:00",
+  "dd_pct_of_peak": 52.81419880158539,
+  "dd_pct_of_initial": 58.06782044930435
+ }
+}

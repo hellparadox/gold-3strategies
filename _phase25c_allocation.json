@@ -1,90 +1,224 @@
-[
- {
-  "case": "A_ichi_alone_482",
-  "capital_total": 482.53,
-  "trades": 1750,
-  "net": -313.17,
-  "pf": 0.892,
-  "win_rate": 62.3,
-  "guard_blocks": 1263,
-  "margin_rejects": 0,
-  "max_trade_risk_pct": 2.9949452457734305,
-  "dd": {
-   "dd_amount_usd": 429.18,
-   "dd_pct_of_peak": 74.1,
-   "dd_amount_over_initial_capital": 88.94,
-   "peak_date": "2022-03-17 16:50:00",
-   "peak_equity": 579.15,
-   "trough_date": "2024-09-06 14:40:00",
-   "trough_equity": 149.97,
-   "min_equity": 149.97,
-   "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
-  }
- },
- {
-  "case": "B_orb_alone_482",
-  "capital_total": 482.53,
-  "trades": 1278,
-  "net": 269.77,
-  "pf": 1.087,
-  "win_rate": 50.2,
-  "guard_blocks": 19,
-  "margin_rejects": 0,
-  "max_trade_risk_pct": 2.976434564308038,
-  "dd": {
-   "dd_amount_usd": 223.79,
-   "dd_pct_of_peak": 42.18,
-   "dd_amount_over_initial_capital": 46.38,
-   "peak_date": "2023-01-24 09:00:00",
-   "peak_equity": 530.6,
-   "trough_date": "2024-11-20 08:35:00",
-   "trough_equity": 306.81,
-   "min_equity": 306.81,
-   "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
-  }
- },
- {
-  "case": "C_independent_482_each",
-  "capital_total": 965.06,
-  "trades": 3028,
-  "net": -43.4,
-  "pf": 0.993,
-  "win_rate": 57.2,
-  "guard_blocks": 1282,
-  "max_trade_risk_pct": 2.9949452457734305,
-  "dd": {
-   "dd_amount_usd": 560.39,
-   "dd_pct_of_peak": 96.86,
-   "dd_amount_over_initial_capital": 58.07,
-   "peak_date": "2022-07-12 04:15:00",
-   "peak_equity": 578.53,
-   "trough_date": "2024-11-19 02:20:00",
-   "trough_equity": 18.14,
-   "min_equity": 18.14,
-   "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+{
+ "cases": [
+  {
+   "case": "A_ichi_alone_482",
+   "capital_total": 482.53,
+   "trades": 1750,
+   "net": -313.17,
+   "net_from_equity_delta": -313.18,
+   "pf": 0.892,
+   "win_rate": 62.3,
+   "guard_blocks": 1263,
+   "margin_rejects": 0,
+   "max_trade_risk_pct": 2.9949452457734305,
+   "dd": {
+    "dd_amount_usd": 429.18,
+    "dd_pct_of_peak": 74.1,
+    "dd_amount_over_initial_capital": 88.94,
+    "peak_date": "2022-03-17 16:50:00",
+    "peak_equity": 579.15,
+    "trough_date": "2024-09-06 14:40:00",
+    "trough_equity": 149.97,
+    "min_equity": 149.97,
+    "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+   }
   },
-  "note": "two SEPARATE accounts; equity series summed; each bot sized off its own balance"
+  {
+   "case": "B_orb_alone_482",
+   "capital_total": 482.53,
+   "trades": 1278,
+   "net": 269.77,
+   "net_from_equity_delta": 269.88,
+   "pf": 1.087,
+   "win_rate": 50.2,
+   "guard_blocks": 19,
+   "margin_rejects": 0,
+   "max_trade_risk_pct": 2.976434564308038,
+   "dd": {
+    "dd_amount_usd": 223.79,
+    "dd_pct_of_peak": 42.18,
+    "dd_amount_over_initial_capital": 46.38,
+    "peak_date": "2023-01-24 09:00:00",
+    "peak_equity": 530.6,
+    "trough_date": "2024-11-20 08:35:00",
+    "trough_equity": 306.81,
+    "min_equity": 306.81,
+    "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+   }
+  },
+  {
+   "case": "C_independent_482_each",
+   "capital_total": 965.06,
+   "trades": 3028,
+   "net": -43.4,
+   "net_from_equity_delta": -43.3,
+   "pf": 0.993,
+   "win_rate": 57.2,
+   "guard_blocks": 1282,
+   "margin_rejects": 0,
+   "max_trade_risk_pct": 2.9949452457734305,
+   "dd": {
+    "dd_amount_usd": 560.39,
+    "dd_pct_of_peak": 52.81,
+    "dd_amount_over_initial_capital": 58.07,
+    "peak_date": "2022-07-12 04:15:00",
+    "peak_equity": 1061.06,
+    "trough_date": "2024-11-19 02:20:00",
+    "trough_equity": 500.67,
+    "min_equity": 500.67,
+    "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+   }
+  },
+  {
+   "case": "D_shared_482_total",
+   "capital_total": 482.53,
+   "trades": 2492,
+   "net": -355.27,
+   "net_from_equity_delta": -355.13,
+   "pf": 0.914,
+   "win_rate": 56.7,
+   "guard_blocks": 1829,
+   "margin_rejects": 0,
+   "max_trade_risk_pct": 2.9993304466828334,
+   "dd": {
+    "dd_amount_usd": 462.44,
+    "dd_pct_of_peak": 78.89,
+    "dd_amount_over_initial_capital": 95.84,
+    "peak_date": "2022-07-12 04:15:00",
+    "peak_equity": 586.19,
+    "trough_date": "2025-08-19 02:40:00",
+    "trough_equity": 123.76,
+    "min_equity": 123.76,
+    "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+   }
+  },
+  {
+   "case": "E_independent_241.265_each",
+   "capital_total": 482.53,
+   "trades": 2213,
+   "net": 96.64,
+   "net_from_equity_delta": 96.72,
+   "pf": 1.026,
+   "win_rate": 55.9,
+   "guard_blocks": 2156,
+   "margin_rejects": 0,
+   "max_trade_risk_pct": 2.997750245835231,
+   "dd": {
+    "dd_amount_usd": 239.79,
+    "dd_pct_of_peak": 47.32,
+    "dd_amount_over_initial_capital": 49.69,
+    "peak_date": "2022-07-29 06:20:00",
+    "peak_equity": 506.79,
+    "trough_date": "2024-11-20 08:35:00",
+    "trough_equity": 267.0,
+    "min_equity": 267.0,
+    "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+   }
+  },
+  {
+   "case": "F_shared_965_total",
+   "capital_total": 965.06,
+   "trades": 3970,
+   "net": 1041.87,
+   "net_from_equity_delta": 1041.85,
+   "pf": 1.092,
+   "win_rate": 59.9,
+   "guard_blocks": 264,
+   "margin_rejects": 0,
+   "max_trade_risk_pct": 2.99622078246069,
+   "dd": {
+    "dd_amount_usd": 730.89,
+    "dd_pct_of_peak": 74.16,
+    "dd_amount_over_initial_capital": 75.73,
+    "peak_date": "2022-07-12 04:15:00",
+    "peak_equity": 985.54,
+    "trough_date": "2024-12-10 13:20:00",
+    "trough_equity": 254.65,
+    "min_equity": 254.65,
+    "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+   }
+  }
+ ],
+ "identity": {
+  "claim": "Equity_C(t) = Equity_A(t) + Equity_B(t) at every bar-close timestamp",
+  "index_identical_A_B": true,
+  "index_identical_C_A": true,
+  "max_abs_diff_engineC_vs_A_plus_B": 0.0,
+  "max_abs_diff_engineC_vs_csv_reconstruction": 1.1368683772161603e-13,
+  "trades_C_equals_A_plus_B": true,
+  "guard_blocks_C_equals_A_plus_B": true,
+  "margin_rejects_C_equals_A_plus_B": true,
+  "min_C": 500.6687421628603,
+  "min_A_plus_min_B": 456.7836103151226,
+  "min_C_ge_minA_plus_minB": true,
+  "final_C": 921.7618245574636,
+  "final_C_equals_2CAP_plus_nets": true
  },
- {
-  "case": "D_shared_482_total",
-  "capital_total": 482.53,
-  "trades": 2492,
-  "net": -355.27,
-  "pf": 0.914,
-  "win_rate": 56.7,
-  "guard_blocks": 1829,
-  "margin_rejects": 0,
-  "max_trade_risk_pct": 2.9993304466828334,
+ "timing": [
+  {
+   "bot": "ichi",
+   "rule": "a signal is actionable only at/after its source bar close (label + bar minutes); each signal bar sources at most one entry; dataset signal-bar 0 is never consumed (k<1 warmup)",
+   "entries_checked": 1750,
+   "last_closed_bar_without_matching_signal": 0,
+   "side_mismatch": 0,
+   "duplicate_source": 0,
+   "entry_before_source_close": 0,
+   "min_seconds_after_source_close": 0.0,
+   "max_seconds_after_source_close": 600.0
+  },
+  {
+   "bot": "orb",
+   "rule": "a signal is actionable only at/after its source bar close (label + bar minutes); each signal bar sources at most one entry; dataset signal-bar 0 is never consumed (k<1 warmup)",
+   "entries_checked": 1278,
+   "last_closed_bar_without_matching_signal": 0,
+   "side_mismatch": 0,
+   "duplicate_source": 0,
+   "entry_before_source_close": 0,
+   "min_seconds_after_source_close": 0.0,
+   "max_seconds_after_source_close": 0.0
+  }
+ ],
+ "determinism": {
+  "regenerated_A_equity_sha256": "051c225c51b3a81c8127a538d829771db889ef40d6050a5ae8d21775168b0ba9",
+  "regenerated_B_equity_sha256": "123811e131b478d907287f1c911d05e0d2e9cf1478f2a26e28ba9fdff6fbcfd6",
+  "matches_committed_inputs": true
+ },
+ "reconstruction": {
+  "method": "common calendar = outer-join union of M5 bar stamps; indices verified identical -> exact pointwise sum, no fill applied, NaN count 0",
+  "inputs": {
+   "A_equity_csv_sha256": "051c225c51b3a81c8127a538d829771db889ef40d6050a5ae8d21775168b0ba9",
+   "B_equity_csv_sha256": "123811e131b478d907287f1c911d05e0d2e9cf1478f2a26e28ba9fdff6fbcfd6",
+   "A_rows": 350000,
+   "B_rows": 350000,
+   "index_identical": true
+  },
+  "C_initial": 965.06,
+  "C_final_full_precision": 921.7618245574636,
+  "identity_final": {
+   "965.06_plus_netA_plus_netB": 921.7618245574636,
+   "matches": true
+  },
+  "net_A_from_equity_delta": -313.18270841988306,
+  "net_B_from_equity_delta": 269.8845329773467,
+  "net_A_from_rounded_trades": -313.17,
+  "net_B_from_rounded_trades": 269.77,
+  "rounding_note": "trade records round pnl to 2dp; balances keep full precision internally -> equity-delta net vs rounded-trade net differ by cents",
+  "min_C": 500.6687421628603,
+  "min_A": 149.97245674791725,
+  "min_B": 306.81115356720534,
+  "min_A_plus_min_B": 456.7836103151226,
+  "min_C_ge_minA_plus_minB": true,
   "dd": {
-   "dd_amount_usd": 462.44,
-   "dd_pct_of_peak": 78.89,
-   "dd_amount_over_initial_capital": 95.84,
-   "peak_date": "2022-07-12 04:15:00",
-   "peak_equity": 586.19,
-   "trough_date": "2025-08-19 02:40:00",
-   "trough_equity": 123.76,
-   "min_equity": 123.76,
-   "sampling": "equity at bar CLOSE only; intrabar fluctuations not marked"
+   "initial": 965.06,
+   "final": 921.7618245574636,
+   "min_equity": 500.6687421628603,
+   "dd_usd": 560.3893080280566,
+   "peak": 1061.058050190917,
+   "peak_time": "2022-07-12 04:15:00",
+   "trough": 500.6687421628603,
+   "trough_time": "2024-11-19 02:20:00",
+   "dd_pct_of_peak": 52.81419880158539,
+   "dd_pct_of_initial": 58.06782044930435
   }
  }
-]
+}
