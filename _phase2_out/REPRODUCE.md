@@ -23,13 +23,22 @@ git checkout phase2-audit-tests
 :: کپی دیتاست به ریشه:
 copy <مسیر>_sp2l_data_5y.pkl .
 
-py -3.11 -m unittest discover -s tests -v        :: باید 48 تست سبز بدهد
+py -3.11 -m unittest discover -s tests -v        :: باید ۶۱ تست سبز بدهد (۵۹ + T6/T7 اصلاحیه‌ی 2.5c)
 py -3.11 _phase2_baseline.py                     :: ماتریس ۵۰ اجرا → _phase2_results.json (~8 min)
 py -3.11 _phase2_deliverables.py                 :: خروجی‌های خام → _phase2_out/ (~7 min)
-py -3.11 _phase25_shared_sim.py                  :: ۱۶ اجرای حساب مشترک → _phase25_shared_results.json (~15 min)
+py -3.11 _phase25_shared_sim.py                  :: ⛔ باطل‌شده (باگ lookahead فاز ۲.۵) — فقط برای بازتولید تاریخی؛ اعدادش استفاده نشود
 py -3.11 _spread_stats.py                        :: توزیع اسپرد تجربی دیتاست
 ```
-راستی‌آزمایی محیط تمیز (انجام‌شده ۲۰۲۶-۰۹-۱۵): کلون تازه + این شاخه → ۴۸ تست سبز + اجرای دود موفق.
+راستی‌آزمایی محیط تمیز (۲۰۲۶-۰۹-۱۵): فاز ۲ → ۴۸ تست سبز؛ فاز 2.5c → ۵۹ تست سبز + بازتولید حالت A با عدد یکسان (−$313.17 / ۱,۷۵۰ معامله).
+
+## زنجیره‌ی فاز ۲.۵c اصلاح‌شده + ۲.۵d (کامیت 24df70c)
+```bat
+py -3.11 _phase25c_allocation.py    :: PART0 بازسازی C از CSVهای خام + ۶ حالت A–F + identity/timing/determinism (~25s)
+py -3.11 _phase25d_montecarlo.py    :: بوت‌استرپ ۵٬۰۰۰ نمونه‌ای ترتیب معاملات (iid + block-20)
+```
+- ⛔ اعداد حالت C در کامیت‌های قبل از `24df70c` **باطل** است (باگ `- CAP`؛ کل سری ۴۸۲.۵۳ دلار شیفت داشت).
+- لنگرهای راستی‌آزمایی خروجی: A: net −313.17 / 1,750 معامله · C: identity در برابر A+B با اختلاف **0.0**، حداقل Equity **500.67**، نهایی **921.76** · E: **+96.64** · F: **+1041.87** · determinism: sha256 CSVهای بازتولیدشده‌ی A/B = ورودی‌های کامیت‌شده.
+- خروجی‌ها: `ALLOCATION_{A_ichi,B_orb,C_indep,D_shared,E_indep241,F_shared965}_{trades,equity}.csv` + `ALLOCATION_C_reconstruction.json` + `_phase25c_allocation.json` + `_phase25d_montecarlo.json`.
 
 ## نام‌گذاری صریح سناریوهای هزینه (اصلاح بند ۳)
 - ۸ / ۱۷ / ۲۴ پوینت = **«سناریوهای مبتنی بر صدک‌های فید دمو»** (ستون spread دیتاست MetaQuotes-Demo) — نه اسپرد تاریخی بروکر شما.
@@ -41,7 +50,9 @@ py -3.11 _spread_stats.py                        :: توزیع اسپرد تجر
 |---|---|---|
 | `_phase2_results.json` | `_phase2_baseline.py` | متریک‌های ۵۰ اجرا |
 | `_phase2_out/*.csv, .json, .png, TEST_RESULTS.txt` | `_phase2_deliverables.py` | ۱۵ فایل خام (لیست معاملات، سایه‌ها، Equity روزانه، ...) |
-| `_phase25_shared_results.json` | `_phase25_shared_sim.py` | ۱۶ اجرای حساب مشترک (V1/V1c/V2/V3 × گارد × ترتیب) |
+| `_phase25_shared_results.json` | `_phase25_shared_sim.py` | ⛔ باطل‌شده (باگ lookahead) |
+| `_phase25c_allocation.json` + `ALLOCATION_*_{trades,equity}.csv` + `ALLOCATION_C_reconstruction.json` | `_phase25c_allocation.py` | ۶ حالت تخصیص سرمایه + identity/timing/determinism (اصلاح‌شده در 24df70c) |
+| `_phase25d_montecarlo.json` | `_phase25d_montecarlo.py` | بوت‌استرپ ترتیب معاملات |
 | `_phase2_spread_empirical.json` | (دستی) | اجراهای $482 روی صدک‌های اسپرد دمو |
 
 ## فرض‌های صریح شبیه‌ساز حساب مشترک (فاز ۲.۵)
