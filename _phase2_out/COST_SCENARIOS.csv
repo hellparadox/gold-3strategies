@@ -1,0 +1,15 @@
+config,bot,spread_pts,slip_pts,net,pf,trades
+C_vps_guard3,orb,8,0,909.72,1.246,1294
+C_vps_guard3,ichi,8,0,1618.51,1.224,2591
+C_vps_guard3,orb,20,0,338.79,1.106,1286
+C_vps_guard3,ichi,20,0,1143.41,1.191,2409
+C_vps_guard3,orb,26,0,220.08,1.072,1279
+C_vps_guard3,ichi,26,0,-298.76,0.915,1790
+C_vps_guard3,orb,35,0,54.59,1.019,1251
+C_vps_guard3,ichi,35,0,-409.91,0.846,1391
+C_vps_guard3,orb,50,0,-416.04,0.753,931
+C_vps_guard3,ichi,50,0,-441.69,0.804,1183
+C_vps_guard3,orb,70,0,-437.25,0.695,840
+C_vps_guard3,ichi,70,0,-469.56,0.698,777
+C_vps_guard3,orb,100,0,-494.01,0.483,512
+C_vps_guard3,ichi,100,0,-480.42,0.632,625

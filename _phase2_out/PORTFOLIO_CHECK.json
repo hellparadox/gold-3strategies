@@ -1,0 +1,385 @@
+{
+ "guard_path_comparison": {
+  "orb_bal533": {
+   "guard_ON": {
+    "trades": 1286,
+    "net": 338.79,
+    "pf": 1.1056,
+    "win_rate": 52.02,
+    "expectancy_usd": 0.2634,
+    "expR_mean_of_ratios": 0.02198,
+    "expR_aggregate": 0.049306,
+    "max_dd_usd": 213.32
+   },
+   "guard_OFF": {
+    "trades": 1299,
+    "net": 725.83,
+    "pf": 1.2188,
+    "win_rate": 52.19,
+    "expectancy_usd": 0.5588,
+    "expR_mean_of_ratios": 0.029459,
+    "expR_aggregate": 0.099259,
+    "max_dd_usd": 217.86
+   },
+   "blocked_count": 13
+  },
+  "orb_bal482": {
+   "guard_ON": {
+    "trades": 1283,
+    "net": 298.37,
+    "pf": 1.0965,
+    "win_rate": 51.99,
+    "expectancy_usd": 0.2326,
+    "expR_mean_of_ratios": 0.020083,
+    "expR_aggregate": 0.045083,
+    "max_dd_usd": 213.36
+   },
+   "guard_OFF": {
+    "trades": 1299,
+    "net": 756.75,
+    "pf": 1.2348,
+    "win_rate": 52.19,
+    "expectancy_usd": 0.5826,
+    "expR_mean_of_ratios": 0.029459,
+    "expR_aggregate": 0.105995,
+    "max_dd_usd": 208.19
+   },
+   "blocked_count": 16
+  },
+  "ichi_bal533": {
+   "guard_ON": {
+    "trades": 2409,
+    "net": 1143.41,
+    "pf": 1.1909,
+    "win_rate": 61.02,
+    "expectancy_usd": 0.4746,
+    "expR_mean_of_ratios": 0.016521,
+    "expR_aggregate": 0.068316,
+    "max_dd_usd": 388.28
+   },
+   "guard_OFF": {
+    "trades": 2645,
+    "net": 1718.09,
+    "pf": 1.2155,
+    "win_rate": 61.51,
+    "expectancy_usd": 0.6496,
+    "expR_mean_of_ratios": 0.020433,
+    "expR_aggregate": 0.075578,
+    "max_dd_usd": 464.85
+   },
+   "blocked_count": 236
+  },
+  "ichi_bal482": {
+   "guard_ON": {
+    "trades": 1824,
+    "net": -251.74,
+    "pf": 0.9286,
+    "win_rate": 58.77,
+    "expectancy_usd": -0.138,
+    "expR_mean_of_ratios": -0.02991,
+    "expR_aggregate": -0.029259,
+    "max_dd_usd": 415.06
+   },
+   "guard_OFF": {
+    "trades": 2645,
+    "net": 1722.87,
+    "pf": 1.2176,
+    "win_rate": 61.51,
+    "expectancy_usd": 0.6514,
+    "expR_mean_of_ratios": 0.020433,
+    "expR_aggregate": 0.076186,
+    "max_dd_usd": 455.97
+   },
+   "blocked_count": 821
+  }
+ },
+ "ichi_first_divergence_533_vs_482": {
+  "index": 1217,
+  "trade_before_both_shared": {
+   "entry_time": "2023-12-05 16:15:00",
+   "side": "SELL",
+   "bal533_after": 337.05,
+   "bal482_after": 291.36
+  },
+  "next_C533_trade": {
+   "entry_time": "2023-12-05 18:15:00",
+   "side": "SELL",
+   "initial_risk": 9.11,
+   "forced_pct_533": 2.7
+  },
+  "next_C482_trade": {
+   "entry_time": "2023-12-06 17:00:00",
+   "side": "SELL",
+   "initial_risk": 6.17,
+   "forced_pct_482": 2.12
+  }
+ },
+ "portfolio_verification": {
+  "capital_model": "SHARED single account $533 (matches live: both bots trade one account); per-bot sizing in the two backtests ran on their own curves -> approximation, corr 0.06",
+  "weights": "equal nominal P&L sum (both bots risk 1% of the same account in live)",
+  "daily_pnl_correlation": 0.0456,
+  "orb": {
+   "sharpe": {
+    "sharpe_fullcalendar_ann": 0.5118,
+    "days_fullcalendar": 1811,
+    "mean_ret_fullcalendar_daily": 0.000328,
+    "std_fullcalendar_daily": 0.010187,
+    "sharpe_tradeddays_ann_static_denominator": 0.6373,
+    "days_traded": 1012,
+    "mean_pnl_tradedday": 0.3348,
+    "std_pnl_tradedday": 8.3391,
+    "note": "full-calendar: returns on running equity, zero on flat days. traded-days: daily P&L over static initial capital (convention B); both reported, no cherry-pick."
+   },
+   "maxdd": {
+    "peak_date": "2023-01-24",
+    "peak_equity": 599.81,
+    "trough_date": "2024-11-19",
+    "trough_equity": 386.49,
+    "dd_usd": 213.32,
+    "dd_pct_of_peak": 35.56,
+    "dd_pct_of_initial": 40.02
+   }
+  },
+  "ichi": {
+   "sharpe": {
+    "sharpe_fullcalendar_ann": 0.7097,
+    "days_fullcalendar": 1811,
+    "mean_ret_fullcalendar_daily": 0.000786,
+    "std_fullcalendar_daily": 0.017585,
+    "sharpe_tradeddays_ann_static_denominator": 1.3121,
+    "days_traded": 1113,
+    "mean_pnl_tradedday": 1.0273,
+    "std_pnl_tradedday": 12.4294,
+    "note": "full-calendar: returns on running equity, zero on flat days. traded-days: daily P&L over static initial capital (convention B); both reported, no cherry-pick."
+   },
+   "maxdd": {
+    "peak_date": "2022-03-17",
+    "peak_equity": 635.41,
+    "trough_date": "2024-09-09",
+    "trough_equity": 247.13,
+    "dd_usd": 388.28,
+    "dd_pct_of_peak": 61.11,
+    "dd_pct_of_initial": 72.85
+   }
+  },
+  "combined": {
+   "sharpe": {
+    "sharpe_fullcalendar_ann": 0.6603,
+    "days_fullcalendar": 1811,
+    "mean_ret_fullcalendar_daily": 0.001063,
+    "std_fullcalendar_daily": 0.025543,
+    "sharpe_tradeddays_ann_static_denominator": 1.332,
+    "days_traded": 1236,
+    "mean_pnl_tradedday": 1.1992,
+    "std_pnl_tradedday": 14.2922,
+    "note": "full-calendar: returns on running equity, zero on flat days. traded-days: daily P&L over static initial capital (convention B); both reported, no cherry-pick."
+   },
+   "maxdd": {
+    "peak_date": "2022-07-12",
+    "peak_equity": 618.56,
+    "trough_date": "2024-12-10",
+    "trough_equity": 143.75,
+    "dd_usd": 474.81,
+    "dd_pct_of_peak": 76.76,
+    "dd_pct_of_initial": 89.08
+   }
+  },
+  "correction_of_v1": "v1 combined Sharpe 1.31 used TRADED-DAYS-ONLY with static denominator -> convention B here; full-calendar convention A is the defensible one and is reported first."
+ },
+ "cost_model": {
+  "spread": "ONE full spread per round trip (BUY pays on entry at ask=open+spread; SELL pays on exit at ask-side checks). NOT double-counted.",
+  "slippage": "applied on entry (both sides, adverse) AND on stop-type exits (sl/trailing/breakeven, adverse). TP exits and end-of-data fills: NO slippage.",
+  "tp_exit": "long: filled at tp (bid high touched); short: exit at tp after adding spread to bar low (engine 661-700)",
+  "sl_exit": "long: exit_price = sl - slip; short: sl + slip (engine 645-655). GAP THROUGH SL FILLS AT STOP, not at the gap price (optimistic vs real broker) - bug table B12",
+  "end_of_data": "exit at last close (+spread for SELL) - engine 552-562",
+  "units_check": "spread_points * point(0.01) = price distance; money = dist/tick_size(0.01)*tick_value(1.0)*lot -> spread cost $ = spread_points * lot",
+  "swap": "NOT MODELED. Overnight-held trades (entry date != exit date): ichi 121/2409 (5.0%), orb 9/1286 (0.7%)",
+  "net_label": "all 'net' figures = after all MODELED costs (spread+slip+commission=0). Swap excluded."
+ },
+ "gap_analysis": {
+  "buckets": {
+   "6-15min": 26,
+   "15-60min": 17,
+   "60-240min": 1020,
+   ">240min": 267
+  },
+  "intraday_gaps_over_60min": 6,
+  "intraday_gap_days_removed_in_qc": 6,
+  "multi_day_gaps": [
+   "2021-09-27",
+   "2021-10-04",
+   "2021-10-11",
+   "2021-10-18",
+   "2021-10-25"
+  ],
+  "multi_day_gap_durations": [
+   "177300000000000 nanoseconds",
+   "177300000000000 nanoseconds",
+   "177300000000000 nanoseconds",
+   "177300000000000 nanoseconds",
+   "177300000000000 nanoseconds"
+  ],
+  "trades_entering_right_after_big_gap": 0,
+  "indicator_note": "ATR/cooldown: computed on the continuous bar series \u2014 a gap becomes one huge synthetic 'bar' span in rolling windows only via the following bars' ranges; ORB: session-day grouping by (time-1h).date, range uses bars present after gap; H1 alignment: merge_asof backward -> after a gap the last closed H1 value persists (ffill). No lookahead introduced.",
+  "qc_run_without_gap_days": {
+   "orb": {
+    "trades": 1283,
+    "net": 331.81,
+    "removed_intraday_gap_days": 6,
+    "note": "data-QC only \u2014 days with >60min INTRADAY gaps removed (daily maintenance break excluded); not a result-selector"
+   },
+   "ichi": {
+    "trades": 2409,
+    "net": 1143.41,
+    "removed_intraday_gap_days": 6,
+    "note": "data-QC only \u2014 days with >60min INTRADAY gaps removed (daily maintenance break excluded); not a result-selector"
+   }
+  }
+ },
+ "yearly_C_S2": {
+  "orb": {
+   "2021": {
+    "net": -65.47,
+    "trades": 89,
+    "pf": 0.677,
+    "win_rate": 41.57,
+    "expectancy_usd": -0.736,
+    "max_dd_usd_within_year": 84.83
+   },
+   "2022": {
+    "net": 92.41,
+    "trades": 252,
+    "pf": 1.19,
+    "win_rate": 53.17,
+    "expectancy_usd": 0.367,
+    "max_dd_usd_within_year": 70.03
+   },
+   "2023": {
+    "net": -68.59,
+    "trades": 300,
+    "pf": 0.895,
+    "win_rate": 49.0,
+    "expectancy_usd": -0.229,
+    "max_dd_usd_within_year": 134.61
+   },
+   "2024": {
+    "net": -74.62,
+    "trades": 273,
+    "pf": 0.862,
+    "win_rate": 49.82,
+    "expectancy_usd": -0.273,
+    "max_dd_usd_within_year": 111.45
+   },
+   "2025": {
+    "net": 404.65,
+    "trades": 230,
+    "pf": 1.762,
+    "win_rate": 60.87,
+    "expectancy_usd": 1.759,
+    "max_dd_usd_within_year": 49.71
+   },
+   "2026": {
+    "net": 50.41,
+    "trades": 142,
+    "pf": 1.064,
+    "win_rate": 52.82,
+    "expectancy_usd": 0.355,
+    "max_dd_usd_within_year": 117.75
+   }
+  },
+  "ichi": {
+   "2021": {
+    "net": 16.23,
+    "trades": 148,
+    "pf": 1.067,
+    "win_rate": 61.49,
+    "expectancy_usd": 0.11,
+    "max_dd_usd_within_year": 39.05
+   },
+   "2022": {
+    "net": -24.27,
+    "trades": 547,
+    "pf": 0.977,
+    "win_rate": 59.41,
+    "expectancy_usd": -0.044,
+    "max_dd_usd_within_year": 117.08
+   },
+   "2023": {
+    "net": -205.67,
+    "trades": 559,
+    "pf": 0.801,
+    "win_rate": 56.89,
+    "expectancy_usd": -0.368,
+    "max_dd_usd_within_year": 238.66
+   },
+   "2024": {
+    "net": -20.42,
+    "trades": 484,
+    "pf": 0.981,
+    "win_rate": 59.09,
+    "expectancy_usd": -0.042,
+    "max_dd_usd_within_year": 134.63
+   },
+   "2025": {
+    "net": 359.74,
+    "trades": 423,
+    "pf": 1.263,
+    "win_rate": 63.83,
+    "expectancy_usd": 0.85,
+    "max_dd_usd_within_year": 115.37
+   },
+   "2026": {
+    "net": 1017.8,
+    "trades": 248,
+    "pf": 1.838,
+    "win_rate": 72.58,
+    "expectancy_usd": 4.104,
+    "max_dd_usd_within_year": 94.93
+   }
+  },
+  "ichi_2026_decomposition": {
+   "by_side": {
+    "BUY": 491.7,
+    "SELL": 526.1
+   },
+   "by_layer": {
+    "": 1017.8
+   },
+   "by_exit_reason": {
+    "breakeven": 4.95,
+    "tp": 2227.78,
+    "sl": -1214.93
+   },
+   "top5_trades": [
+    51.65,
+    48.45,
+    39.87,
+    37.37,
+    37.18
+   ],
+   "n_trades": 248
+  }
+ },
+ "expectancy_R_full": {
+  "A533|ichi|S2": {
+   "expR_mean_of_ratios_full": 5.192447349317344e-06,
+   "expR_aggregate_sum_net_over_sum_risk_full": 0.06519299513913261,
+   "definition": "R_i = net_i / (money_per_lot(initial_sl_distance_i)*lot_i + commission_i); commission=0 on VPS; spread/slip are NOT in initial risk (they are inside net)"
+  },
+  "C533|ichi|S2": {
+   "expR_mean_of_ratios_full": 0.016521170610211706,
+   "expR_aggregate_sum_net_over_sum_risk_full": 0.06831622355712069,
+   "definition": "R_i = net_i / (money_per_lot(initial_sl_distance_i)*lot_i + commission_i); commission=0 on VPS; spread/slip are NOT in initial risk (they are inside net)"
+  },
+  "C533|orb|S2": {
+   "expR_mean_of_ratios_full": 0.021980093312597197,
+   "expR_aggregate_sum_net_over_sum_risk_full": 0.04930551108679076,
+   "definition": "R_i = net_i / (money_per_lot(initial_sl_distance_i)*lot_i + commission_i); commission=0 on VPS; spread/slip are NOT in initial risk (they are inside net)"
+  },
+  "D533|ichi|S2": {
+   "expR_mean_of_ratios_full": 0.020433459357277885,
+   "expR_aggregate_sum_net_over_sum_risk_full": 0.07557764602481527,
+   "definition": "R_i = net_i / (money_per_lot(initial_sl_distance_i)*lot_i + commission_i); commission=0 on VPS; spread/slip are NOT in initial risk (they are inside net)"
+  }
+ }
+}

@@ -1,0 +1,49 @@
+{
+  "generated": "2026-09-15T14:00+03:30",
+  "code": {
+    "commit_main": "dfb400f1b0e3997a5b8b7f249d66717b2e2d4658",
+    "commit_audit_tests_branch": "phase2-audit-tests @ b64c4141d82968139374b5e36ec93a3d3a19e8d1",
+    "production_files_changed_by_audit": [],
+    "note": "audit tests add tests/test_phase2_audit.py only; scripts _phase2_*.py are untracked research-only"
+  },
+  "dataset": {
+    "file": "_sp2l_data_5y.pkl",
+    "sha256": "de6e3843b0735cb91ce2e93655d3db858ebbdec7f34d64b1be8c4625c2d96825",
+    "source": "local MetaTrader5 terminal, MetaQuotes-Demo server, symbol XAUUSD",
+    "timezone": "broker server time, naive timestamps",
+    "m5": {"bars": 350000, "from": "2021-09-20 07:00", "to": "2026-09-07 15:55"},
+    "m15": {"bars": 116666, "from": "2021-09-22 09:00", "to": "2026-09-07 15:45"},
+    "h1": {"bars": 29166, "from": "2021-09-23 16:00", "to": "2026-09-07 15:00"},
+    "weekday_days_with_data": 1282,
+    "gaps_over_6min": 1330,
+    "gap_caveat": "includes the normal ~1h daily market maintenance break; intraday-only gaps >60min are the true data-quality metric (see GAP_ANALYSIS.csv / PORTFOLIO_CHECK.json)"
+  },
+  "symbol_spec": {
+    "point": 0.01, "tick_size": 0.01, "tick_value": 1.0,
+    "tick_value_source": "computed tick_size*contract (broker value guard-verified)",
+    "contract_size": 100.0, "digits": 2,
+    "volume_min": 0.01, "volume_step": 0.01,
+    "volume_max_config": {"orb": 0.05, "ichi": 0.1}
+  },
+  "cost_model": {
+    "commission_per_lot": 0.0,
+    "swap": "NOT MODELED — overnight-held trade counts in TRADE_LIST.held_overnight",
+    "spread": "one full spread per round trip, constant per scenario (8/20/26/35/50/70/100 pts)",
+    "slippage": "adverse, on entry + stop-type exits only (0/10 pts scenarios)",
+    "real_broker_spread_measured": false,
+    "real_broker_spread_note": "WMMarkets spread was never measured — S2=20pts is a LABELED ASSUMPTION"
+  },
+  "environment": {
+    "python": "3.11.9", "pandas": "2.3.3", "numpy": "2.4.6",
+    "MetaTrader5": "5.0.6090", "os": "Windows (local dev machine)"
+  },
+  "scripts": {
+    "_phase2_baseline.py": "sha256[:16] c0a4051d35a778ac — 50-run matrix",
+    "_phase2_deliverables.py": "sha256[:16] f05b045216b4b243 — raw outputs into _phase2_out/",
+    "runtime_total_approx_min": 15
+  },
+  "settings_hashes": {
+    "config/settings.yaml": "4e964411436ed4b6",
+    "config/settings_ichimoku.yaml": "306b7e1096b0f4e4"
+  }
+}

@@ -1,0 +1,105 @@
+test_export_has_inputs_parameters_and_trades (test_backtest_reporting.Reporting.test_export_has_inputs_parameters_and_trades) ... [32m2026-09-15 13:41:33.666[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36mrun[0m:[36m445[0m - [1mbacktest start | strategy=orb_gold bars=160 spread=8.0pts commission=$0.0/lot news_filter=False[0m
+[32m2026-09-15 13:41:33.671[0m | [32m[1mSUCCESS [0m | [36mbacktest.engine[0m:[36mrun[0m:[36m578[0m - [32m[1mbacktest done | 0 trades | net $0.00 | WR 0.0% | PF 0.00 | maxDD 0.00%[0m
+ok
+test_actual_orb_does_not_enter_before_previous_trade_exits (test_backtest_timing.BacktestTiming.test_actual_orb_does_not_enter_before_previous_trade_exits) ... [32m2026-09-15 13:41:33.708[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36mrun[0m:[36m445[0m - [1mbacktest start | strategy=orb_gold bars=576 spread=8.0pts commission=$0.0/lot news_filter=False[0m
+[32m2026-09-15 13:41:33.713[0m | [32m[1mSUCCESS [0m | [36mbacktest.engine[0m:[36mrun[0m:[36m578[0m - [32m[1mbacktest done | 1 trades | net $-4.75 | WR 0.0% | PF 0.00 | maxDD 0.89%[0m
+ok
+test_buy_partial_precedes_full_target (test_backtest_timing.BacktestTiming.test_buy_partial_precedes_full_target) ... [32m2026-09-15 13:41:33.720[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36m__init__[0m:[36m404[0m - [1mpartial-exit simulation ON: bank 50% of the position at +1.5R, remainder runs with SL/TP[0m
+ok
+test_disabled_partial_retains_full_target (test_backtest_timing.BacktestTiming.test_disabled_partial_retains_full_target) ... [32m2026-09-15 13:41:33.726[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36m__init__[0m:[36m404[0m - [1mpartial-exit simulation ON: bank 50% of the position at +1.5R, remainder runs with SL/TP[0m
+ok
+test_minimum_volume_cannot_split (test_backtest_timing.BacktestTiming.test_minimum_volume_cannot_split) ... [32m2026-09-15 13:41:33.732[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36m__init__[0m:[36m404[0m - [1mpartial-exit simulation ON: bank 50% of the position at +1.5R, remainder runs with SL/TP[0m
+ok
+test_partial_beyond_full_target_is_not_filled (test_backtest_timing.BacktestTiming.test_partial_beyond_full_target_is_not_filled) ... [32m2026-09-15 13:41:33.740[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36m__init__[0m:[36m404[0m - [1mpartial-exit simulation ON: bank 50% of the position at +1.5R, remainder runs with SL/TP[0m
+ok
+test_sell_partial_uses_ask (test_backtest_timing.BacktestTiming.test_sell_partial_uses_ask) ... [32m2026-09-15 13:41:33.747[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36m__init__[0m:[36m404[0m - [1mpartial-exit simulation ON: bank 50% of the position at +1.5R, remainder runs with SL/TP[0m
+ok
+test_sl_wins_ambiguous_bar (test_backtest_timing.BacktestTiming.test_sl_wins_ambiguous_bar) ... [32m2026-09-15 13:41:33.753[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36m__init__[0m:[36m404[0m - [1mpartial-exit simulation ON: bank 50% of the position at +1.5R, remainder runs with SL/TP[0m
+ok
+test_errors_are_not_empty_accounts (test_execution_safety.BrokerReads.test_errors_are_not_empty_accounts) ... ok
+test_position_history_includes_manual_exit (test_execution_safety.BrokerReads.test_position_history_includes_manual_exit) ... ok
+test_position_id_resolves_from_deal (test_execution_safety.BrokerReads.test_position_id_resolves_from_deal) ... ok
+test_successfully_empty_is_valid (test_execution_safety.BrokerReads.test_successfully_empty_is_valid) ... ok
+test_restart_counts_unique_entries_not_partial_fills (test_execution_safety.DailyGuard.test_restart_counts_unique_entries_not_partial_fills) ... ok
+test_connections_cannot_claim_twice (test_execution_safety.DurableJournal.test_connections_cannot_claim_twice) ... [32m2026-09-15 13:41:33.767[0m | [1mINFO    [0m | [36mcore.database[0m:[36m__init__[0m:[36m168[0m - [1msubscription database ready at C:\Users\hamid\AppData\Local\Temp\tmp_ze9f5bq\test.db[0m
+[32m2026-09-15 13:41:33.780[0m | [1mINFO    [0m | [36mcore.database[0m:[36m__init__[0m:[36m168[0m - [1msubscription database ready at C:\Users\hamid\AppData\Local\Temp\tmp_ze9f5bq\test.db[0m
+ok
+test_restart_preserves_unknown_and_consumed_signals (test_execution_safety.DurableJournal.test_restart_preserves_unknown_and_consumed_signals) ... [32m2026-09-15 13:41:33.793[0m | [1mINFO    [0m | [36mcore.database[0m:[36m__init__[0m:[36m168[0m - [1msubscription database ready at C:\Users\hamid\AppData\Local\Temp\tmpng4p6drh\test.db[0m
+[32m2026-09-15 13:41:33.797[0m | [1mINFO    [0m | [36mcore.database[0m:[36m__init__[0m:[36m168[0m - [1msubscription database ready at C:\Users\hamid\AppData\Local\Temp\tmpng4p6drh\test.db[0m
+ok
+test_unrelated_account_is_not_blocked (test_execution_safety.DurableJournal.test_unrelated_account_is_not_blocked) ... [32m2026-09-15 13:41:33.801[0m | [1mINFO    [0m | [36mcore.database[0m:[36m__init__[0m:[36m168[0m - [1msubscription database ready at C:\Users\hamid\WorkBuddy AI\2026-08-29-23-27-08\gold-3strategies\:memory:[0m
+ok
+test_confirmed_but_unresolved_position_blocks_without_false_ticket (test_execution_safety.LiveEntryIntegration.test_confirmed_but_unresolved_position_blocks_without_false_ticket) ... [32m2026-09-15 13:41:33.802[0m | [1mINFO    [0m | [36mcore.database[0m:[36m__init__[0m:[36m168[0m - [1msubscription database ready at C:\Users\hamid\WorkBuddy AI\2026-08-29-23-27-08\gold-3strategies\:memory:[0m
+[32m2026-09-15 13:41:33.809[0m | [31m[1mERROR   [0m | [36mmain_live[0m:[36m_open_trade[0m:[36m974[0m - [31m[1mconfirmed order could not be mapped to a position; new entries blocked[0m
+ok
+test_confirmed_order_cannot_repeat_same_signal (test_execution_safety.LiveEntryIntegration.test_confirmed_order_cannot_repeat_same_signal) ... [32m2026-09-15 13:41:33.810[0m | [1mINFO    [0m | [36mcore.database[0m:[36m__init__[0m:[36m168[0m - [1msubscription database ready at C:\Users\hamid\WorkBuddy AI\2026-08-29-23-27-08\gold-3strategies\:memory:[0m
+[32m2026-09-15 13:41:33.816[0m | [33m[1mWARNING [0m | [36mmain_live[0m:[36m_open_trade[0m:[36m924[0m - [33m[1mentry skipped: duplicate signal or unresolved order; inspect execution journal[0m
+ok
+test_confirmed_order_survives_followup_position_read_error (test_execution_safety.LiveEntryIntegration.test_confirmed_order_survives_followup_position_read_error) ... [32m2026-09-15 13:41:33.817[0m | [1mINFO    [0m | [36mcore.database[0m:[36m__init__[0m:[36m168[0m - [1msubscription database ready at C:\Users\hamid\WorkBuddy AI\2026-08-29-23-27-08\gold-3strategies\:memory:[0m
+[32m2026-09-15 13:41:33.824[0m | [33m[1mWARNING [0m | [36mmain_live[0m:[36m_open_trade[0m:[36m970[0m - [33m[1morder confirmed; using returned ticket until broker sync recovers[0m
+ok
+test_deal_only_result_resolves_real_position (test_execution_safety.LiveEntryIntegration.test_deal_only_result_resolves_real_position) ... [32m2026-09-15 13:41:33.825[0m | [1mINFO    [0m | [36mcore.database[0m:[36m__init__[0m:[36m168[0m - [1msubscription database ready at C:\Users\hamid\WorkBuddy AI\2026-08-29-23-27-08\gold-3strategies\:memory:[0m
+ok
+test_partial_fill_records_actual_volume_and_holds (test_execution_safety.LiveEntryIntegration.test_partial_fill_records_actual_volume_and_holds) ... [32m2026-09-15 13:41:33.831[0m | [1mINFO    [0m | [36mcore.database[0m:[36m__init__[0m:[36m168[0m - [1msubscription database ready at C:\Users\hamid\WorkBuddy AI\2026-08-29-23-27-08\gold-3strategies\:memory:[0m
+[32m2026-09-15 13:41:33.838[0m | [31m[1mERROR   [0m | [36mmain_live[0m:[36m_open_trade[0m:[36m984[0m - [31m[1mpartially completed order requires broker verification; new entries blocked[0m
+ok
+test_unknown_order_blocks_later_signal (test_execution_safety.LiveEntryIntegration.test_unknown_order_blocks_later_signal) ... [32m2026-09-15 13:41:33.839[0m | [1mINFO    [0m | [36mcore.database[0m:[36m__init__[0m:[36m168[0m - [1msubscription database ready at C:\Users\hamid\WorkBuddy AI\2026-08-29-23-27-08\gold-3strategies\:memory:[0m
+[32m2026-09-15 13:41:33.847[0m | [31m[1mERROR   [0m | [36mmain_live[0m:[36m_open_trade[0m:[36m940[0m - [31m[1morder needs broker verification; new entries blocked persistently[0m
+[32m2026-09-15 13:41:33.847[0m | [33m[1mWARNING [0m | [36mmain_live[0m:[36m_open_trade[0m:[36m947[0m - [33m[1morder not confirmed: [0m
+[32m2026-09-15 13:41:33.847[0m | [33m[1mWARNING [0m | [36mmain_live[0m:[36m_open_trade[0m:[36m924[0m - [33m[1mentry skipped: duplicate signal or unresolved order; inspect execution journal[0m
+ok
+test_close_unknown_never_falls_through_filling_modes (test_execution_safety.OrderSending.test_close_unknown_never_falls_through_filling_modes) ... ok
+test_explicit_requote_can_retry (test_execution_safety.OrderSending.test_explicit_requote_can_retry) ... [32m2026-09-15 13:41:33.848[0m | [33m[1mWARNING [0m | [36mcore.mt5_client[0m:[36msend_market_order[0m:[36m662[0m - [33m[1mrequote on attempt 1, retrying[0m
+[32m2026-09-15 13:41:33.848[0m | [32m[1mSUCCESS [0m | [36mcore.mt5_client[0m:[36msend_market_order[0m:[36m642[0m - [32m[1mBUY 0.03 lots @ 100.0 | sl=None tp=None ticket=123[0m
+ok
+test_invalid_fill_can_fallback (test_execution_safety.OrderSending.test_invalid_fill_can_fallback) ... [32m2026-09-15 13:41:33.849[0m | [33m[1mWARNING [0m | [36mcore.mt5_client[0m:[36msend_market_order[0m:[36m669[0m - [33m[1mfilling mode 0 rejected, trying next[0m
+[32m2026-09-15 13:41:33.849[0m | [32m[1mSUCCESS [0m | [36mcore.mt5_client[0m:[36msend_market_order[0m:[36m642[0m - [32m[1mBUY 0.03 lots @ 100.0 | sl=None tp=None ticket=123[0m
+ok
+test_partial_fill_is_not_resent (test_execution_safety.OrderSending.test_partial_fill_is_not_resent) ... [32m2026-09-15 13:41:33.849[0m | [32m[1mSUCCESS [0m | [36mcore.mt5_client[0m:[36msend_market_order[0m:[36m642[0m - [32m[1mBUY 0.03 lots @ 100.0 | sl=None tp=None ticket=123[0m
+ok
+test_rejected_order_is_not_retried (test_execution_safety.OrderSending.test_rejected_order_is_not_retried) ... [32m2026-09-15 13:41:33.850[0m | [31m[1mERROR   [0m | [36mcore.mt5_client[0m:[36msend_market_order[0m:[36m671[0m - [31m[1morder rejected: (10019) test[0m
+ok
+test_unknown_never_retries (test_execution_safety.OrderSending.test_unknown_never_retries) ... [32m2026-09-15 13:41:33.850[0m | [31m[1mERROR   [0m | [36mcore.mt5_client[0m:[36m_capture_error[0m:[36m372[0m - [31m[1mMT5 order_send failed: (-1) test[0m
+[32m2026-09-15 13:41:33.850[0m | [31m[1mERROR   [0m | [36mcore.mt5_client[0m:[36msend_market_order[0m:[36m632[0m - [31m[1morder_send raised: IPC[0m
+[32m2026-09-15 13:41:33.850[0m | [31m[1mERROR   [0m | [36mcore.mt5_client[0m:[36m_capture_error[0m:[36m372[0m - [31m[1mMT5 order_send failed: (-1) test[0m
+ok
+test_account_failure_does_not_commit_closure (test_execution_safety.Reconciliation.test_account_failure_does_not_commit_closure) ... ok
+test_delayed_history_waits_then_closes_once (test_execution_safety.Reconciliation.test_delayed_history_waits_then_closes_once) ... [32m2026-09-15 13:41:33.851[0m | [33m[1mWARNING [0m | [36mmain_live[0m:[36m_handle_closed_position[0m:[36m553[0m - [33m[1mclosure #123 awaiting complete broker deal history[0m
+[32m2026-09-15 13:41:33.852[0m | [32m[1mSUCCESS [0m | [36mmain_live[0m:[36m_handle_closed_position[0m:[36m568[0m - [32m[1mposition #123 closed | WIN | $9.00[0m
+ok
+test_history_failure_preserves_state (test_execution_safety.Reconciliation.test_history_failure_preserves_state) ... ok
+test_partial_history_is_not_final_close (test_execution_safety.Reconciliation.test_partial_history_is_not_final_close) ... [32m2026-09-15 13:41:33.853[0m | [33m[1mWARNING [0m | [36mmain_live[0m:[36m_handle_closed_position[0m:[36m553[0m - [33m[1mclosure #123 awaiting complete broker deal history[0m
+ok
+test_position_read_failure_preserves_state (test_execution_safety.Reconciliation.test_position_read_failure_preserves_state) ... ok
+test_ichimoku_no_lookahead (test_phase2_audit.T1LookaheadTruncation.test_ichimoku_no_lookahead) ... ok
+test_orb_no_lookahead (test_phase2_audit.T1LookaheadTruncation.test_orb_no_lookahead) ... ok
+test_entry_is_next_open_plus_spread (test_phase2_audit.T2NextBarFill.test_entry_is_next_open_plus_spread) ... [32m2026-09-15 13:41:33.956[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36mrun[0m:[36m445[0m - [1mbacktest start | strategy=orb_gold bars=900 spread=10.0pts commission=$0.0/lot news_filter=False[0m
+[32m2026-09-15 13:41:33.961[0m | [33m[1mWARNING [0m | [36mcore.risk_manager[0m:[36mcalculate_lot[0m:[36m283[0m - [33m[1mrisk budget $5.33 implies 0.0099 lots (< min 0.01); trading min lot risks $5.40 (1.01% of balance)[0m
+[32m2026-09-15 13:41:33.962[0m | [32m[1mSUCCESS [0m | [36mbacktest.engine[0m:[36mrun[0m:[36m578[0m - [32m[1mbacktest done | 1 trades | net $-5.40 | WR 0.0% | PF 0.00 | maxDD 1.01%[0m
+ok
+test_m5_inside_hour_h_never_sees_hour_h_close (test_phase2_audit.T3H1Boundary.test_m5_inside_hour_h_never_sees_hour_h_close) ... ok
+test_bogus_broker_tick_value_replaced_by_computed (test_phase2_audit.T4LotArithmetic.test_bogus_broker_tick_value_replaced_by_computed) ... [32m2026-09-15 13:41:33.993[0m | [33m[1mWARNING [0m | [36mcore.risk_manager[0m:[36mfrom_mt5[0m:[36m58[0m - [33m[1mbroker tick_value 0.1000 implausible vs tick_size*contract_size 1.0000; using computed value (sizing guard)[0m
+ok
+test_money_per_lot_matches_distance_over_tick_times_value (test_phase2_audit.T4LotArithmetic.test_money_per_lot_matches_distance_over_tick_times_value) ... ok
+test_plausible_reported_tick_value_kept (test_phase2_audit.T4LotArithmetic.test_plausible_reported_tick_value_kept) ... ok
+test_guard_blocks_oversized_min_lot (test_phase2_audit.T5ForcedRiskGuard.test_guard_blocks_oversized_min_lot) ... [32m2026-09-15 13:41:33.993[0m | [33m[1mWARNING [0m | [36mcore.risk_manager[0m:[36mcalculate_lot[0m:[36m277[0m - [33m[1m🛑 risk guard: min-lot would force $23.76 risk (4.84% of balance) > 3.00% cap — SKIPPING entry[0m
+[32m2026-09-15 13:41:33.993[0m | [33m[1mWARNING [0m | [36mcore.risk_manager[0m:[36mbuild_levels[0m:[36m316[0m - [33m[1mrisk guard tripped — no trade levels built for this signal[0m
+ok
+test_guard_off_takes_min_lot (test_phase2_audit.T5ForcedRiskGuard.test_guard_off_takes_min_lot) ... [32m2026-09-15 13:41:33.993[0m | [33m[1mWARNING [0m | [36mcore.risk_manager[0m:[36mcalculate_lot[0m:[36m283[0m - [33m[1mrisk budget $4.91 implies 0.0021 lots (< min 0.01); trading min lot risks $23.76 (4.84% of balance)[0m
+ok
+test_guard_passes_normal_risk (test_phase2_audit.T5ForcedRiskGuard.test_guard_passes_normal_risk) ... [32m2026-09-15 13:41:33.994[0m | [33m[1mWARNING [0m | [36mcore.risk_manager[0m:[36mcalculate_lot[0m:[36m283[0m - [33m[1mrisk budget $4.91 implies 0.0049 lots (< min 0.01); trading min lot risks $10.06 (2.05% of balance)[0m
+ok
+test_same_bar_evaluated_once_then_again_after_restart (test_phase2_audit.T6RestartDedupSemantics.test_same_bar_evaluated_once_then_again_after_restart) ... ok
+test_engine_fills_at_stop_level_on_gap (test_phase2_audit.T7GapThroughSL.test_engine_fills_at_stop_level_on_gap) ... [32m2026-09-15 13:41:34.033[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36m__init__[0m:[36m404[0m - [1mpartial-exit simulation ON: bank 50% of the position at +1.5R, remainder runs with SL/TP[0m
+ok
+test_server_bar_time_converted_with_offset (test_phase2_audit.T8NewsTimezone.test_server_bar_time_converted_with_offset) ... [32m2026-09-15 13:41:34.034[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36m__init__[0m:[36m102[0m - [1mloaded 1 historical news events for backtesting blackout[0m
+ok
+test_wrong_offset_shifts_window_one_hour (test_phase2_audit.T8NewsTimezone.test_wrong_offset_shifts_window_one_hour) ... [32m2026-09-15 13:41:34.036[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36m__init__[0m:[36m102[0m - [1mloaded 1 historical news events for backtesting blackout[0m
+ok
+test_settle_charges_commission_once_on_full_volume (test_phase2_audit.T9CommissionMath.test_settle_charges_commission_once_on_full_volume) ... [32m2026-09-15 13:41:34.045[0m | [1mINFO    [0m | [36mbacktest.engine[0m:[36m__init__[0m:[36m102[0m - [1mloaded 162 historical news events for backtesting blackout[0m
+ok
+
+----------------------------------------------------------------------
+Ran 48 tests in 0.387s
+
+OK

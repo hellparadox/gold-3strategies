@@ -1,0 +1,5 @@
+,expR_mean_of_ratios_full,expR_aggregate_sum_net_over_sum_risk_full,definition
+A533|ichi|S2,5.192447349317344e-06,0.06519299513913261,R_i = net_i / (money_per_lot(initial_sl_distance_i)*lot_i + commission_i); commission=0 on VPS; spread/slip are NOT in initial risk (they are inside net)
+C533|ichi|S2,0.016521170610211706,0.06831622355712069,R_i = net_i / (money_per_lot(initial_sl_distance_i)*lot_i + commission_i); commission=0 on VPS; spread/slip are NOT in initial risk (they are inside net)
+C533|orb|S2,0.021980093312597197,0.04930551108679076,R_i = net_i / (money_per_lot(initial_sl_distance_i)*lot_i + commission_i); commission=0 on VPS; spread/slip are NOT in initial risk (they are inside net)
+D533|ichi|S2,0.020433459357277885,0.07557764602481527,R_i = net_i / (money_per_lot(initial_sl_distance_i)*lot_i + commission_i); commission=0 on VPS; spread/slip are NOT in initial risk (they are inside net)
