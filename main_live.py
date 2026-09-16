@@ -24,7 +24,7 @@ import sys
 import threading
 import time
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
@@ -348,7 +348,9 @@ class LiveBot:
             "bid": float(tick.bid),
             "ask": float(tick.ask),
             "spread_points": float((tick.ask - tick.bid) / info.point) if info.point else 0.0,
-            "server_time": datetime.fromtimestamp(int(tick.time)).strftime("%Y-%m-%d %H:%M:%S"),
+            "server_time": datetime.fromtimestamp(int(tick.time), tz=timezone.utc)
+            .replace(tzinfo=None)
+            .strftime("%Y-%m-%d %H:%M:%S"),
         }
 
     def _hook_toggle(self, state: Optional[bool] = None) -> bool:

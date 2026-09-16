@@ -14,7 +14,7 @@ from __future__ import annotations
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -428,11 +428,18 @@ class MT5Client:
         return float((tick.ask - tick.bid) / info.point)
 
     def server_time(self) -> Optional[datetime]:
-        """Broker server clock, taken from the freshest tick."""
+        """Broker server clock, taken from the freshest tick.
+
+        ``tick.time`` is the broker wall clock encoded as an epoch, so it must
+        be decoded WITHOUT the machine's local timezone. Plain
+        ``datetime.fromtimestamp`` applies the host TZ on top: on the VPS
+        (UTC-7) that returned broker time minus 7 hours, which shifted the
+        weekday gate and the daily guard window.
+        """
         tick = self.get_tick()
         if tick is None:
             return None
-        return datetime.fromtimestamp(int(tick.time))
+        return datetime.fromtimestamp(int(tick.time), tz=timezone.utc).replace(tzinfo=None)
 
     def get_rates(self, timeframe: str, count: int, start_pos: int = 0) -> pd.DataFrame:
         """``copy_rates_from_pos`` -> tidy, time-indexed DataFrame."""
@@ -785,7 +792,9 @@ class MT5Client:
                 else 0.0
             ),
             "server_time": (
-                datetime.fromtimestamp(int(tick.time)).strftime("%Y-%m-%d %H:%M:%S")
+                datetime.fromtimestamp(int(tick.time), tz=timezone.utc)
+                .replace(tzinfo=None)
+                .strftime("%Y-%m-%d %H:%M:%S")
                 if tick else "-"
             ),
             "positions": [
