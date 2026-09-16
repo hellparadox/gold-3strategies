@@ -789,7 +789,15 @@ class LiveBot:
     def _on_new_closed_bar(self, frames: Dict[str, pd.DataFrame]) -> None:
         m5 = frames["m5"].iloc[:-1].copy()
         m15 = frames.get("m15").iloc[:-1].copy() if frames.get("m15") is not None and not frames.get("m15").empty else None
-        h1 = frames.get("h1").iloc[:-1].copy() if frames.get("h1") is not None and not frames.get("h1").empty else None
+        # FIX (2026-09-16, H1 timing — incident 106282597): the H1 frame must
+        # be passed WITH its forming candle. The strategy's internal shift(1)
+        # already drops the forming H1 row and lands every decision on the
+        # last FULLY CLOSED H1 candle — exactly the backtest alignment.
+        # Stripping the forming candle here as well made live skip one MORE
+        # closed candle: on :00/:15/:30 bars the bot decided with an H1 candle
+        # up to one hour older than backtest (h1_trend_bull lagged 45-60 min
+        # behind the actual H1 close). ORB ignores h1 entirely -> ichimoku only.
+        h1 = frames.get("h1").copy() if frames.get("h1") is not None and not frames.get("h1").empty else None
 
         with self._lock:
             strategy = self.strategy
