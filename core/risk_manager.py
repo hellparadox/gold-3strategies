@@ -117,6 +117,11 @@ class RiskConfig:
     # 3.0 chosen 2026-09-14: caps forced min-lot bets; 5y test shows skipped
     # trades were net winners (~+$255 @3%), so this is insurance, not edge.
     max_forced_risk_percent: float = 3.0
+    # RESEARCH (2026-09-17): what to do when min-lot risk exceeds the cap.
+    # "skip" = legacy (no trade). "tighten" = shrink SL to the cap distance
+    # if that is still >= tighten_min_sl_atr x ATR, otherwise skip.
+    forced_risk_mode: str = "skip"
+    tighten_min_sl_atr: float = 1.0
 
     @classmethod
     def from_settings(cls, settings: Any) -> "RiskConfig":
@@ -142,6 +147,8 @@ class RiskConfig:
             max_forced_risk_percent=float(
                 settings.get("risk.max_forced_risk_percent", 3.0)
             ),
+            forced_risk_mode=str(settings.get("risk.forced_risk_mode", "skip")),
+            tighten_min_sl_atr=float(settings.get("risk.tighten_min_sl_atr", 1.0)),
         )
 
 
@@ -241,6 +248,44 @@ class RiskManager:
         floor_points = max(self.config.min_sl_points, self.spec.stops_level_points + 5.0)
         return max(raw, self.spec.price_from_points(floor_points))
 
+    def entry_sl_distance(self, balance: float, atr_value: float) -> float:
+        """SL distance used for a NEW entry.
+
+        Default ("skip"): identical to :meth:`sl_distance`. With
+        ``forced_risk_mode == "tighten"``: when the minimum lot would force a
+        risk above ``max_forced_risk_percent``, return the largest distance
+        that keeps min-lot risk at the cap, if it is still at least
+        ``tighten_min_sl_atr`` x ATR (else the normal distance, which the
+        guard in :meth:`calculate_lot` will then skip).
+        """
+        sl = self.sl_distance(atr_value)
+        cfg = self.config
+        if cfg.forced_risk_mode != "tighten" or cfg.max_forced_risk_percent <= 0.0:
+            return sl
+        bal = float(balance) if balance and balance > 0 else cfg.base_balance
+        lot = max(cfg.min_lot, self.spec.volume_min)
+        per_price = self.spec.money_per_lot(1.0) * lot
+        commission = cfg.commission_per_lot * lot
+        if per_price <= 0.0:
+            return sl
+        if self.calculate_lot(bal, sl)[0] > 0.0:
+            return sl      # the guard would not block this entry: nothing to do
+        cap_money = bal * cfg.max_forced_risk_percent / 100.0 - commission
+        tick = self.spec.tick_size or 0.01
+        cap_dist = math.floor((cap_money / per_price) / tick * (1 - 1e-9)) * tick
+        if cap_dist >= sl:
+            return sl
+        floor_points = max(cfg.min_sl_points, self.spec.stops_level_points + 5.0)
+        if cap_dist < cfg.tighten_min_sl_atr * float(atr_value) or cap_dist < self.spec.price_from_points(floor_points):
+            return sl
+        logger.info(
+            "🔧 forced-risk tighten: SL {:.2f} ({:.2f}xATR) -> {:.2f} ({:.2f}xATR) "
+            "to keep min-lot risk <= {:.1f}% of ${:.2f}",
+            sl, sl / float(atr_value), cap_dist, cap_dist / float(atr_value),
+            cfg.max_forced_risk_percent, bal,
+        )
+        return cap_dist
+
     def tp_distance(self, atr_value: float) -> float:
         return float(atr_value) * self.config.tp_atr_multiplier
 
@@ -300,7 +345,7 @@ class RiskManager:
             logger.error("invalid ATR ({}), refusing to size a trade", atr_value)
             return None
 
-        sl_dist = self.sl_distance(atr_value)
+        sl_dist = self.entry_sl_distance(balance, atr_value)
         tp_dist = self.tp_distance(atr_value)
         entry = self._round_price(entry_price)
 
