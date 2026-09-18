@@ -101,6 +101,11 @@ class KijunPullbackStrategy(BaseStrategy):
 
             # Prevent repeated entries on consecutive candles.
             "cooldown_bars": 6,
+            # RESEARCH (2026-09-18): "global" = legacy (any accepted signal blocks
+            # every other signal for `cooldown_bars`). "same_side" = the cooldown
+            # only blocks a new signal in the SAME direction; a reversal the other
+            # way is a different setup and is allowed.
+            "cooldown_scope": "global",
 
             # Price rounding is intentionally disabled by default. The
             # execution layer should round to the broker's symbol specification.
@@ -655,7 +660,9 @@ class KijunPullbackStrategy(BaseStrategy):
         accepted_layer = np.array([""] * n, dtype=object)
 
         cooldown = self.pi("cooldown_bars", 6)
+        same_side = str(self.params.get("cooldown_scope", "global")) == "same_side"
         last_signal_pos = -9999
+        last_long_pos = last_short_pos = -9999
 
         # FIX (#1): ترتیب صحیح اولویت‌بندی — ابتدا لایه، سپس جهت.
         # قبلاً همه long ها قبل از short ها چک می‌شدند که باعث می‌شد
@@ -667,7 +674,7 @@ class KijunPullbackStrategy(BaseStrategy):
         ]
 
         for position in range(n):
-            if (position - last_signal_pos) < cooldown:
+            if not same_side and (position - last_signal_pos) < cooldown:
                 continue
 
             for layer_name, long_arr, short_arr in layers:
@@ -678,16 +685,22 @@ class KijunPullbackStrategy(BaseStrategy):
                 if raw_long and raw_short:
                     continue
 
+                if same_side:
+                    if raw_long and (position - last_long_pos) < cooldown:
+                        raw_long = False
+                    if raw_short and (position - last_short_pos) < cooldown:
+                        raw_short = False
+
                 if raw_long:
                     accepted_long[position] = True
                     accepted_layer[position] = layer_name
-                    last_signal_pos = position
+                    last_signal_pos = last_long_pos = position
                     break
 
                 if raw_short:
                     accepted_short[position] = True
                     accepted_layer[position] = layer_name
-                    last_signal_pos = position
+                    last_signal_pos = last_short_pos = position
                     break
 
         out["long_signal"] = accepted_long
