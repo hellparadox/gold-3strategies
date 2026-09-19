@@ -1,20 +1,20 @@
 """SCOUT — تشخیص ده ستاپ روی کندل‌های بستهٔ M15 (فقط تشخیص؛ هیچ سفارشی ثبت نمی‌شود).
- 
+
 هر ستاپ برای هر کندل بسته ارزیابی می‌شود و در صورت فعال‌شدن، جهت و سطوح پیشنهادی
 (ورود، حد ضرر ساختاری، حد سود) را برمی‌گرداند. همهٔ شرط‌ها فقط از کندل‌های بسته
 استفاده می‌کنند؛ هیچ دادهٔ آینده‌ای در تصمیم دخالت ندارد.
 """
 from __future__ import annotations
- 
+
 import numpy as np
 import pandas as pd
- 
+
 from core.indicators import atr as _atr, ema as _ema
- 
+
 SETUPS = ["kijun_pullback", "tenkan_momentum", "range_break", "pullback_resume",
           "cloud_break", "tk_cross", "rejection", "engulfing", "ignition", "exhaustion"]
- 
- 
+
+
 def indicators(m15: pd.DataFrame, h1: pd.DataFrame | None = None,
                h1_ema_period: int = 20) -> pd.DataFrame:
     f = m15.copy()
@@ -45,8 +45,8 @@ def indicators(m15: pd.DataFrame, h1: pd.DataFrame | None = None,
         f["h1_bull"] = True
         f["h1_bear"] = True
     return f
- 
- 
+
+
 def detect(f: pd.DataFrame) -> pd.DataFrame:
     """برای هر کندل، فهرست ستاپ‌های فعال را به‌صورت جدول بلند برمی‌گرداند."""
     a, c, o, h, l = f.atr, f.close, f.open, f.high, f.low
@@ -57,7 +57,7 @@ def detect(f: pd.DataFrame) -> pd.DataFrame:
     touched3 = touch_t.shift(1).rolling(3).max() > 0
     atr_up = a > f.atr_mean5
     vol_up = f.get("tick_volume", pd.Series(np.nan, index=f.index)).astype("float64") >= 1.5 * f.vol_mean20
- 
+
     rules = {
         "kijun_pullback": (up & (l <= f.kijun + 0.2 * a) & (c >= f.kijun),
                            dn & (h >= f.kijun - 0.2 * a) & (c <= f.kijun)),
@@ -80,7 +80,7 @@ def detect(f: pd.DataFrame) -> pd.DataFrame:
         "exhaustion": ((f.tenkan - c > 3 * a),      # خیلی زیر تنکان -> برگشت صعودی
                        (c - f.tenkan > 3 * a)),     # خیلی بالای تنکان -> برگشت نزولی
     }
- 
+
     rows = []
     for name, (lng, sht) in rules.items():
         for side, mask in (("BUY", lng), ("SELL", sht)):

@@ -1,17 +1,17 @@
 """SCOUT BOT — هر ستاپ را به تلگرام می‌فرستد و منتظر تأیید یا رد شما می‌ماند.
- 
+
 - خودش وارد نمی‌شود. فقط بعد از «تأیید» شما سفارش می‌گذارد.
 - حد ضرر همیشه روی بروکر گذاشته می‌شود؛ حد سود گذاشته نمی‌شود (خروج با شماست).
 - بعد از ورود، در رسیدن به ۱ برابر ریسک و در شکست ساختار خبر می‌دهد، ولی نمی‌بندد.
 - بستن با دکمهٔ «بستن» یا دستور /close <ticket>.
 - همه‌چیز در data/scout_journal.csv ثبت می‌شود.
- 
+
 اجرا:
     py -3.11 tools/scout_bot.py --config config/settings_scout.yaml
     py -3.11 tools/scout_bot.py --config config/settings_scout.yaml --dry   # بدون ثبت سفارش
 """
 from __future__ import annotations
- 
+
 import argparse
 import csv
 import json
@@ -23,24 +23,24 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
- 
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
- 
+
 import pandas as pd  # noqa: E402
 import requests  # noqa: E402
 from loguru import logger  # noqa: E402
- 
+
 from core import Settings  # noqa: E402
 from core.mt5_client import MT5Client, MT5Config  # noqa: E402
- 
+
 try:                                   # ماژول تشخیص، کنار همین فایل یا در ریشه
     from tools.scout_setups import indicators, detect
 except Exception:                      # pragma: no cover
     from scout_setups import indicators, detect
- 
+
 API = "https://api.telegram.org/bot{}/{}"
- 
- 
+
+
 # --------------------------------------------------------------------- telegram
 class TG:
     def __init__(self, token: str, chat_id: int) -> None:
@@ -48,7 +48,7 @@ class TG:
         self.q: "queue.Queue[dict]" = queue.Queue()
         self._offset = 0
         self._stop = threading.Event()
- 
+
     def _call(self, method: str, **kw: Any) -> Optional[dict]:
         try:
             r = requests.post(API.format(self.token, method), json=kw, timeout=20)
@@ -57,27 +57,27 @@ class TG:
         except Exception as exc:
             logger.warning("telegram {} failed: {}", method, exc)
             return None
- 
+
     def send(self, text: str, buttons: Optional[list] = None) -> Optional[int]:
         kw: Dict[str, Any] = {"chat_id": self.chat, "text": text, "parse_mode": "HTML"}
         if buttons:
             kw["reply_markup"] = {"inline_keyboard": buttons}
         r = self._call("sendMessage", **kw)
         return r.get("message_id") if r else None
- 
+
     def edit(self, message_id: int, text: str) -> None:
         self._call("editMessageText", chat_id=self.chat, message_id=message_id,
                    text=text, parse_mode="HTML")
- 
+
     def ack(self, cb_id: str, text: str = "") -> None:
         self._call("answerCallbackQuery", callback_query_id=cb_id, text=text)
- 
+
     def start(self) -> None:
         threading.Thread(target=self._poll, name="tg-poll", daemon=True).start()
- 
+
     def stop(self) -> None:
         self._stop.set()
- 
+
     def _poll(self) -> None:
         while not self._stop.is_set():
             try:
@@ -88,8 +88,8 @@ class TG:
                     self.q.put(u)
             except Exception:
                 time.sleep(3)
- 
- 
+
+
 # ------------------------------------------------------------------------ scout
 class Scout:
     def __init__(self, s: Settings, dry: bool) -> None:
@@ -107,17 +107,19 @@ class Scout:
         self.open: Dict[int, dict] = {}
         self.last_bar: Optional[pd.Timestamp] = None
         self.n = 0
- 
+        self.beat_path = Path(str(s.get("scout.heartbeat", "data/heartbeat_scout.txt")))
+        self._last_beat = 0.0
+
     # ---------------------------------------------------------------- journal
     def log(self, **row: Any) -> None:
         row.setdefault("ts", datetime.now().isoformat(timespec="seconds"))
-        new = not self.journal.exists()
+        new = (not self.journal.exists()) or self.journal.stat().st_size == 0
         with self.journal.open("a", newline="", encoding="utf-8") as fh:
             w = csv.DictWriter(fh, fieldnames=list(row.keys()))
             if new:
                 w.writeheader()
             w.writerow(row)
- 
+
     # ----------------------------------------------------------------- alerts
     def alert(self, r: pd.Series, spread_pts: float) -> None:
         self.n += 1
@@ -138,7 +140,7 @@ class Scout:
         self.log(event="alert", alert=aid, setup=r.setup, side=r.side, bar=str(r.bar),
                  price=entry, sl=round(sl, 2), tp=round(tp, 2), atr=round(r.atr, 3),
                  spread=spread_pts, risk_usd=risk)
- 
+
     def expire(self) -> None:
         now = time.time()
         for aid in [k for k, v in self.pending.items() if now - v["t"] > self.expiry]:
@@ -146,7 +148,7 @@ class Scout:
             if p["mid"]:
                 self.tg.edit(p["mid"], p["txt"] + "\n\n⏳ <b>منقضی شد</b>")
             self.log(event="expired", alert=aid, setup=p["row"].setup, side=p["row"].side)
- 
+
     # ---------------------------------------------------------------- decision
     def decide(self, aid: str, yes: bool, cb: str) -> None:
         p = self.pending.pop(aid, None)
@@ -179,7 +181,7 @@ class Scout:
                      [[{"text": "🔻 بستن", "callback_data": f"c|{tk}"}]])
         self.log(event="opened", alert=aid, setup=r.setup, side=r.side, ticket=tk,
                  price=res.price, sl=round(p["sl"], 2))
- 
+
     def close(self, tk: int, cb: Optional[str] = None) -> None:
         res = self.client.close_position(int(tk), comment="scout manual")
         if cb:
@@ -188,7 +190,7 @@ class Scout:
         self.tg.send(f"{'✅' if res.ok else '⚠️'} بستن #{tk}: {res.comment or 'OK'} @ {res.price:.2f}")
         self.log(event="closed", ticket=tk, setup=info.get("setup"), side=info.get("side"),
                  price=res.price, ok=res.ok)
- 
+
     # -------------------------------------------------------------- monitoring
     def monitor(self, f: pd.DataFrame) -> None:
         live = {int(p.ticket): p for p in self.client.positions(magic_only=True)}
@@ -216,7 +218,21 @@ class Scout:
                              f"سود فعلی ${profit:.2f}",
                              [[{"text": "🔻 بستن", "callback_data": f"c|{tk}"}]])
                 self.log(event="structure_break", ticket=tk, setup=info["setup"], profit=profit)
- 
+
+    # -------------------------------------------------------------- heartbeat
+    def beat(self) -> None:
+        """هر دقیقه یک بار زمان را در فایل ضربان می‌نویسد تا نگهبان بفهمد زنده است."""
+        now = time.time()
+        if now - self._last_beat < 60.0:
+            return
+        self._last_beat = now
+        try:
+            self.beat_path.parent.mkdir(parents=True, exist_ok=True)
+            self.beat_path.write_text(
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"), encoding="utf-8")
+        except Exception as exc:                       # pragma: no cover
+            logger.warning("heartbeat write failed: {}", exc)
+
     # -------------------------------------------------------------------- loop
     def run(self) -> None:
         if not self.client.connect():
@@ -230,6 +246,7 @@ class Scout:
         logger.info("scout online")
         while True:
             try:
+                self.beat()
                 while not self.tg.q.empty():
                     u = self.tg.q.get_nowait()
                     cq = u.get("callback_query")
@@ -244,7 +261,7 @@ class Scout:
                         bits = msg.split()
                         if len(bits) > 1 and bits[1].isdigit():
                             self.close(int(bits[1]))
- 
+
                 self.expire()
                 m15 = self.client.get_rates("M15", 700)
                 if m15 is None or m15.empty:
@@ -271,17 +288,28 @@ class Scout:
                 time.sleep(5)
         self.tg.send("🛑 اسکات خاموش شد")
         self.client.shutdown()
- 
- 
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="config/settings_scout.yaml")
     ap.add_argument("--dry", action="store_true", help="هشدار بفرست ولی سفارش ثبت نکن")
     a = ap.parse_args()
+    st = Settings.load(a.config)
     logger.remove()
     logger.add(sys.stdout, level="INFO", format="{time:HH:mm:ss} | {level} | {message}")
-    Scout(Settings.load(a.config), a.dry).run()
- 
- 
+    lp = str(st.get("logging.path", "") or "")
+    if lp:
+        try:
+            Path(lp).parent.mkdir(parents=True, exist_ok=True)
+            logger.add(lp, level=str(st.get("logging.level", "INFO")),
+                       rotation=str(st.get("logging.rotation", "10 MB")),
+                       retention=str(st.get("logging.retention", "21 days")),
+                       encoding="utf-8")
+        except Exception as exc:                       # pragma: no cover
+            logger.warning("file log disabled: {}", exc)
+    Scout(st, a.dry).run()
+
+
 if __name__ == "__main__":
     main()

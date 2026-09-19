@@ -3,7 +3,7 @@
 #  اجرا:  py -3.11 tools/scout_bot.py --config config/settings_scout.yaml
 #  ⚠️ فقط حساب دمو. ربات خودش وارد نمی‌شود؛ فقط بعد از تأیید شما سفارش می‌گذارد.
 # ==============================================================================
- 
+
 mt5:
   login: 0                     # از .env خوانده می‌شود (MT5_LOGIN_SCOUT یا MT5_LOGIN)
   password: ""
@@ -11,19 +11,19 @@ mt5:
   terminal_path: ""            # مسیر ترمینال حساب دموی دوم
   timeout_ms: 60000
   portable: false
- 
+
 symbol:
   name: "XAUUSD"
   fallback_names: ["XAUUSD@", "GOLD", "XAUUSDm", "XAUUSD.a", "XAUUSD.pro"]
   magic: 735777                # جدا از 735511 و 553311
   deviation_points: 30
   comment: "scout"
- 
+
 timeframes:
   trigger: "M5"
   intermediate: "M15"
   macro: "H1"
- 
+
 risk:
   base_balance: 530.0
   risk_percent: 1.0
@@ -36,20 +36,21 @@ risk:
   commission_per_lot: 0.0
   min_sl_points: 40
   max_forced_risk_percent: 0.0   # گارد برای اسکات خاموش است؛ حجم ثابت 0.01
- 
+
 scout:
   lot: 0.01                    # حجم ثابت همهٔ معاملات، برای مقایسهٔ منصفانه
   expiry_seconds: 300          # مهلت پاسخ شما به هر هشدار
   h1_ema_period: 20
   loop_seconds: 2
   journal: "data/scout_journal.csv"
- 
+  heartbeat: "data/heartbeat_scout.txt"   # نگهبان از روی این فایل زنده‌بودن را می‌فهمد
+
 telegram:
   enabled: true
   token: ""
   token_env: "TELEGRAM_TOKEN_SCOUT"   # توکن ربات سوم را در .env بگذارید
   admin_ids: [84078462]
- 
+
 logging:
   path: "logs/scout_{time:YYYY-MM-DD}.log"
   level: "INFO"
