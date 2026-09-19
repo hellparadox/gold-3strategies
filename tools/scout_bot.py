@@ -92,8 +92,9 @@ class TG:
 
 # ------------------------------------------------------------------------ scout
 class Scout:
-    def __init__(self, s: Settings, dry: bool) -> None:
+    def __init__(self, s: Settings, dry: bool, selftest: bool = False) -> None:
         self.s, self.dry = s, dry
+        self.selftest = selftest
         self.client = MT5Client(MT5Config.from_settings(s))
         self.lot = float(s.get("scout.lot", 0.01))
         self.expiry = int(s.get("scout.expiry_seconds", 300))
@@ -233,6 +234,28 @@ class Scout:
         except Exception as exc:                       # pragma: no cover
             logger.warning("heartbeat write failed: {}", exc)
 
+    # --------------------------------------------------------------- selftest
+    def fire_selftest(self) -> None:
+        """یک هشدار از آخرین ستاپِ موجود در تاریخچه می‌فرستد تا دکمه‌ها را تست کنید.
+
+        فقط برای وقتی که بازار بسته است و کندل جدیدی ساخته نمی‌شود. چون همیشه با
+        --dry اجرا می‌شود، تأیید هم هیچ سفارشی ثبت نمی‌کند.
+        """
+        m15 = self.client.get_rates("M15", 700)
+        if m15 is None or m15.empty:
+            self.tg.send("⚠️ تست: کندلی از ترمینال نیامد.")
+            return
+        f = indicators(m15.iloc[:-1], self.client.get_rates("H1", 300),
+                       int(self.s.get("scout.h1_ema_period", 20)))
+        sig = detect(f)
+        if sig.empty:
+            self.tg.send("⚠️ تست: در تاریخچهٔ موجود هیچ ستاپی پیدا نشد.")
+            return
+        r = sig.iloc[-1]
+        self.tg.send("🧪 <b>پیام آزمایشی</b> — از آخرین ستاپ تاریخچه ساخته شده، "
+                     "نه از بازار زنده. دکمه‌ها را بزنید؛ هیچ سفارشی ثبت نمی‌شود.")
+        self.alert(r, self.client.spread_points() or 0.0)
+
     # -------------------------------------------------------------------- loop
     def run(self) -> None:
         if not self.client.connect():
@@ -244,6 +267,8 @@ class Scout:
                      f"موجودی ${getattr(acc,'balance',0):.2f}\nلات {self.lot} · انقضای هشدار "
                      f"{self.expiry//60} دقیقه")
         logger.info("scout online")
+        if self.selftest:
+            self.fire_selftest()
         while True:
             try:
                 self.beat()
@@ -294,6 +319,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="config/settings_scout.yaml")
     ap.add_argument("--dry", action="store_true", help="هشدار بفرست ولی سفارش ثبت نکن")
+    ap.add_argument("--selftest", action="store_true",
+                    help="در شروع یک هشدار آزمایشی بفرست (خودش --dry را روشن می‌کند)")
     a = ap.parse_args()
     st = Settings.load(a.config)
     logger.remove()
@@ -308,7 +335,7 @@ def main() -> None:
                        encoding="utf-8")
         except Exception as exc:                       # pragma: no cover
             logger.warning("file log disabled: {}", exc)
-    Scout(st, a.dry).run()
+    Scout(st, a.dry or a.selftest, a.selftest).run()
 
 
 if __name__ == "__main__":
