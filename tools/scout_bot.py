@@ -108,6 +108,8 @@ class Scout:
         self.open: Dict[int, dict] = {}
         self.last_bar: Optional[pd.Timestamp] = None
         self.n = 0
+        self.block_hedge = bool(s.get("scout.block_hedge", True))
+        self.merge_setups = bool(s.get("scout.merge_setups", True))
         self.beat_path = Path(str(s.get("scout.heartbeat", "data/heartbeat_scout.txt")))
         self._last_beat = 0.0
 
@@ -122,6 +124,21 @@ class Scout:
             w.writerow(row)
 
     # ----------------------------------------------------------------- alerts
+    @staticmethod
+    def merge(grp: pd.DataFrame) -> pd.Series:
+        """چند ستاپ روی یک کندل و یک جهت = یک هشدار، نه چند تا.
+
+        حد ضررِ بازترین آن‌ها انتخاب می‌شود: اگر ساختارِ یکی از ستاپ‌ها می‌گوید
+        حد ضرر باید آنجا باشد، حد ضررِ نزدیک‌تر داخل همان ساختار است و زود می‌خورد.
+        """
+        r = grp.sort_values("sl_dist").iloc[-1].copy()
+        names = list(dict.fromkeys(grp["setup"].tolist()))
+        r["setup"] = " + ".join(names[:3]) + (f" +{len(names) - 3}" if len(names) > 3 else "")
+        r["setups_all"] = ",".join(names)
+        r["n_setups"] = len(names)
+        r["tp_dist"] = 2.0 * float(r["sl_dist"])
+        return r
+
     def alert(self, r: pd.Series, spread_pts: float) -> None:
         self.n += 1
         aid = f"{self.n}"
@@ -129,7 +146,9 @@ class Scout:
         sl = entry - r.sl_dist if r.side == "BUY" else entry + r.sl_dist
         tp = entry + r.tp_dist if r.side == "BUY" else entry - r.tp_dist
         risk = round(r.sl_dist * 100 * self.lot, 2)
-        txt = (f"<b>{'🟢 BUY' if r.side=='BUY' else '🔴 SELL'}</b> · <code>{r.setup}</code>\n"
+        n_set = int(r.get("n_setups", 1) or 1)
+        head = f"  ({n_set} ستاپ هم‌زمان)" if n_set > 1 else ""
+        txt = (f"<b>{'🟢 BUY' if r.side=='BUY' else '🔴 SELL'}</b> · <code>{r.setup}</code>{head}\n"
                f"کندل: {r.bar:%H:%M}  |  قیمت: <b>{entry:.2f}</b>\n"
                f"حد ضرر: {sl:.2f}  ({r.sl_dist:.2f} = {r.sl_dist/r.atr:.1f}×ATR)\n"
                f"هدف پیشنهادی: {tp:.2f}  (۲ برابر ریسک)\n"
@@ -138,7 +157,8 @@ class Scout:
         mid = self.tg.send(txt, [[{"text": "✅ تأیید", "callback_data": f"a|{aid}|y"},
                                   {"text": "❌ رد", "callback_data": f"a|{aid}|n"}]])
         self.pending[aid] = {"row": r, "sl": sl, "tp": tp, "mid": mid, "t": time.time(), "txt": txt}
-        self.log(event="alert", alert=aid, setup=r.setup, side=r.side, bar=str(r.bar),
+        self.log(event="alert", alert=aid, setup=str(r.get("setups_all", r.setup)),
+                 n_setups=n_set, side=r.side, bar=str(r.bar),
                  price=entry, sl=round(sl, 2), tp=round(tp, 2), atr=round(r.atr, 3),
                  spread=spread_pts, risk_usd=risk)
 
@@ -161,6 +181,17 @@ class Scout:
             self.tg.ack(cb, "رد شد")
             self.tg.edit(p["mid"], p["txt"] + "\n\n❌ <b>رد شد</b>")
             self.log(event="rejected", alert=aid, setup=r.setup, side=r.side)
+            return
+        opposite = [tk for tk, i in self.open.items() if i["side"] != r.side]
+        if self.block_hedge and opposite and not self.dry:
+            names = "، ".join(f"#{t}" for t in opposite)
+            self.tg.ack(cb, "پوزیشن مخالف باز است")
+            self.tg.edit(p["mid"], p["txt"] +
+                         f"\n\n🚫 <b>ثبت نشد — پوزیشن مخالف باز است</b> ({names})\n"
+                         "خرید و فروش هم‌زمان همدیگر را خنثی می‌کنند و فقط اسپرد می‌دهید. "
+                         "اول آن را ببندید.")
+            self.log(event="blocked_hedge", alert=aid, setup=r.setup, side=r.side,
+                     note=names)
             return
         self.tg.ack(cb, "در حال ثبت سفارش...")
         if self.dry:
@@ -303,8 +334,12 @@ class Scout:
                     sig = detect(f)
                     sig = sig[sig.bar == bar]
                     sp = self.client.spread_points() or 0.0
-                    for _, r in sig.iterrows():
-                        self.alert(r, sp)
+                    if self.merge_setups and not sig.empty:
+                        for _side, grp in sig.groupby("side", sort=False):
+                            self.alert(self.merge(grp), sp)
+                    else:
+                        for _, r in sig.iterrows():
+                            self.alert(r, sp)
                 time.sleep(float(self.s.get("scout.loop_seconds", 2)))
             except KeyboardInterrupt:
                 break
