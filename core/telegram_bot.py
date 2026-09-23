@@ -128,6 +128,9 @@ class BotBridge:
     last_backtest: Optional[Callable[[], Any]] = None
     equity_chart: Optional[Callable[[Any], Optional[io.BytesIO]]] = None
     request_close: Optional[Callable[[str], str]] = None
+    # Live open-position count for this symbol + this bot's magic only
+    # (positions_get).  None → daily digest falls back to max(0, derived).
+    open_position_count: Optional[Callable[[], int]] = None
     # فیلتر کشش (anti-chase): خواندن/تغییر لحظه‌ای + تعداد بلاک‌ها.
     # None یعنی «این استراتژی فیلتر ندارد» (مثلاً orb_gold).
     get_extension: Optional[Callable[[], Optional[Dict[str, Any]]]] = None
@@ -899,8 +902,15 @@ class TelegramController:
         """(stats, card image) built off the event loop — MT5/matplotlib safe."""
         from core.daily_digest import build_daily_stats, render_daily_card
 
+        open_now: Optional[int] = None
+        if self.bridge.open_position_count is not None:
+            try:
+                open_now = int(self.bridge.open_position_count())
+            except Exception as exc:
+                logger.warning("open_position_count failed; digest falls back: {}", exc)
+                open_now = None
         try:
-            stats = build_daily_stats(self.db, day)
+            stats = build_daily_stats(self.db, day, open_positions=open_now)
         except Exception as exc:
             logger.exception("daily digest failed: {}", exc)
             return None, None

@@ -33,8 +33,18 @@ def _day_bounds(day: date) -> tuple:
     return start, end
 
 
-def build_daily_stats(db: Any, day: Optional[date] = None) -> Dict[str, Any]:
-    """Aggregate one day of signal performance from the database."""
+def build_daily_stats(
+    db: Any,
+    day: Optional[date] = None,
+    open_positions: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Aggregate one day of signal performance from the database.
+
+    ``open_positions``: live count from the broker (positions_get on this
+    symbol + this bot's magic) at report-build time.  When provided it wins;
+    otherwise fall back to ``max(0, opened − closed)`` so the printed count
+    can never go negative (closes of positions opened on a prior day).
+    """
     day = day or datetime.utcnow().date()
     rows = db.recent_signals(limit=1000)
 
@@ -79,11 +89,16 @@ def build_daily_stats(db: Any, day: Optional[date] = None) -> Dict[str, Any]:
     best = max(profits) if profits else 0.0
     worst = min(profits) if profits else 0.0
     trades = len(profits)
+    if open_positions is not None:
+        open_now = max(0, int(open_positions))
+    else:
+        open_now = max(0, opened - trades)
     return {
         "day": day.isoformat(),
         "trades": trades,
         "opened": opened,
-        "open_now": opened - trades,
+        "open_now": open_now,
+        "open_now_source": "broker" if open_positions is not None else "derived",
         "wins": len(wins),
         "losses": len(losses),
         "win_rate": (len(wins) / trades * 100.0) if trades else 0.0,

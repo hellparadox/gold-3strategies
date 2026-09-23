@@ -162,6 +162,7 @@ class Reconciliation(unittest.TestCase):
         b.db = Mock()
         b.telegram = Mock()
         b._sync_daily = Mock()
+        b._shadows = []
 
     def test_position_read_failure_preserves_state(self):
         self.bot.client.positions.side_effect = MT5ReadError("IPC")

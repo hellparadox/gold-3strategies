@@ -51,6 +51,47 @@ from strategies import available_strategies, build_from_settings, build_strategy
 from strategies.base import BaseStrategy, Signal
 
 
+def shadow_pl(side: str, entry: float, exit_price: float, lot: float = 0.01) -> float:
+    """Signed P/L if the position had been held to ``exit_price``.
+
+    BUY  → exit − entry
+    SELL → entry − exit
+    Contract size 100 (XAUUSD): dollars = price_diff × lot × 100.
+    """
+    if str(side).upper() == "BUY":
+        diff = float(exit_price) - float(entry)
+    else:
+        diff = float(entry) - float(exit_price)
+    return diff * float(lot) * 100.0
+
+
+def shadow_outcome(pl: float) -> str:
+    if pl > 0.01:
+        return "WIN"
+    if pl < -0.01:
+        return "LOSS"
+    return "BE"
+
+
+def shadow_verdict_text(actual_profit: float, shadow_profit: float) -> str:
+    """Compare manual-close P/L vs held-to-SL/TP P/L. |diff| < $0.5 → equal."""
+    diff = float(actual_profit) - float(shadow_profit)
+    if abs(diff) < 0.5:
+        return "تفاوتی نداشت"
+    if diff > 0:
+        return "بستن دستی بهتر بود"
+    return "نگه داشتن بهتر بود"
+
+
+def format_shadow_verdict(actual_profit: float, shadow_profit: float) -> str:
+    """Both numbers + comparison verdict on one line (auditable)."""
+    verdict = shadow_verdict_text(actual_profit, shadow_profit)
+    return (
+        f"بستن دستی: {float(actual_profit):+,.2f}  |  "
+        f"اگر نگه می‌داشتی: {float(shadow_profit):+,.2f}  →  {verdict}"
+    )
+
+
 @dataclass
 class TrackedPosition:
     """Local mirror of an open position, carrying our management flags."""
@@ -230,7 +271,16 @@ class LiveBot:
             set_extension=self._hook_set_extension,
             bar_minutes=lambda: int(getattr(self.strategy, "bar_minutes", 5)),
             request_close=self._request_manual_close,
+            open_position_count=self._hook_open_position_count,
         )
+
+    def _hook_open_position_count(self) -> int:
+        """Broker positions_get for this symbol + this bot's magic only."""
+        try:
+            return int(self.client.open_position_count())
+        except Exception as exc:
+            logger.warning("open_position_count failed: {}", exc)
+            raise
 
     # FIX(#5): /cooldown قبلاً هیچ هوکی در bridge نداشت و بی‌آنکه چیزی تغییر
     # کند «موفق» جواب می‌داد. cooldown_bars در زمان prepare خوانده می‌شود، پس
@@ -574,7 +624,12 @@ class LiveBot:
         # failure leaves the mirror intact for the next reconciliation cycle.
         self._sync_daily()
         self.db.close_signal(ticket, close_price, profit, outcome)
+        # Fill actual manual-close P/L into any armed shadow for this ticket.
         with self._lock:
+            for s in self._shadows:
+                if int(s.get("ticket", -1)) == int(ticket) and s.get("actual_profit") is None:
+                    s["actual_profit"] = profit
+                    break
             self.tracked.pop(ticket, None)
         logger.success("position #{} closed | {} | ${:.2f}", ticket, outcome, profit)
         if self.telegram is not None:
@@ -615,22 +670,26 @@ class LiveBot:
                 + "\n".join(f"<code>/close {t.ticket}</code> · {t.side} {t.volume}" for t in tracked_list)
             )
 
+        # Arm shadow BEFORE close so a fast main-loop sync cannot miss it.
+        # actual_profit is filled by _handle_closed_position once deals land.
+        shadow = {
+            "ticket": target.ticket,
+            "side": target.side,
+            "entry": float(target.price_open),
+            "sl": float(target.sl or 0.0),
+            "tp": float(target.tp or 0.0),
+            "volume": float(target.volume),
+            "actual_profit": None,
+        }
+        with self._lock:
+            self._shadows.append(shadow)
+
         result = self.client.close_position(target.ticket, comment="admin manual close")
         if not result.ok:
+            with self._lock:
+                self._shadows = [s for s in self._shadows if s is not shadow]
             return f"❌ بستن #‌{target.ticket} ناموفق بود: {result.comment}"
 
-        # ثبت سایه: اگر نگه می‌داشتی چه می‌شد؟ (تا لحظه‌ای که TP یا SL اصلی می‌خورد)
-        with self._lock:
-            self._shadows.append(
-                {
-                    "ticket": target.ticket,
-                    "side": target.side,
-                    "entry": float(target.price_open),
-                    "sl": float(target.sl or 0.0),
-                    "tp": float(target.tp or 0.0),
-                    "volume": float(target.volume),
-                }
-            )
         logger.success("manual close #{} by admin (shadow armed)", target.ticket)
         return (
             f"✅ دستور بستن #‌{target.ticket} اجرا شد — کارت بسته‌شدن به‌زودی می‌آید.\n"
@@ -639,7 +698,11 @@ class LiveBot:
         )
 
     def _check_shadows(self) -> None:
-        """داوری سایه‌ها: اولین برخورد قیمت با TP یا SLِ اصلیِ معامله‌ی دست‌بسته."""
+        """داوری سایه‌ها: اولین برخورد قیمت با TP یا SLِ اصلیِ معامله‌ی دست‌بسته.
+
+        Verdict needs BOTH (1) price hit original SL/TP and (2) actual manual-close
+        P/L from broker deals — then compares the two numbers (not win/loss label).
+        """
         if not self._shadows:
             return
         tick = self.client.get_tick()
@@ -651,30 +714,40 @@ class LiveBot:
             side = shadow["side"]
             entry, sl, tp = shadow["entry"], shadow["sl"], shadow["tp"]
             lot = shadow["volume"]
-            verdict = None
+            exit_price: Optional[float] = None
             if side == "BUY":
                 if tp > 0 and bid >= tp:
-                    verdict = ("WIN", (tp - entry) * lot * 100.0)
+                    exit_price = tp
                 elif sl > 0 and bid <= sl:
-                    verdict = ("LOSS", (entry - sl) * lot * 100.0)
+                    exit_price = sl
             else:
                 if tp > 0 and ask <= tp:
-                    verdict = ("WIN", (entry - tp) * lot * 100.0)
+                    exit_price = tp
                 elif sl > 0 and ask >= sl:
-                    verdict = ("LOSS", (sl - entry) * lot * 100.0)
-            if verdict is None:
+                    exit_price = sl
+            if exit_price is None:
                 still_open.append(shadow)
                 continue
-            outcome, money = verdict
-            emoji = "\U0001F3C1" if outcome == "WIN" else "\U0001F534"
+            actual = shadow.get("actual_profit")
+            if actual is None:
+                # Price hit, but broker deals not landed yet — wait one more cycle.
+                still_open.append(shadow)
+                continue
+            money = shadow_pl(side, entry, exit_price, lot)
+            outcome = shadow_outcome(money)
+            emoji = "\U0001F3C1" if outcome == "WIN" else ("\U000026AA" if outcome == "BE" else "\U0001F534")
+            comparison = format_shadow_verdict(float(actual), money)
             if self.telegram is not None:
                 self.telegram.notify_admins(
                     f"🪞 <b>داوری معامله‌ی دستی #{shadow['ticket']}</b>\n"
                     f"اگر نگه می‌داشتی: {emoji} <b>{outcome}</b> "
                     f"(${money:+,.2f})\n"
-                    f"<i>{'تصمیمت ضرر را بُرید' if outcome == 'LOSS' and money > 0 else 'ربات درست می‌گفت'}</i>"
+                    f"{comparison}"
                 )
-            logger.info("shadow verdict #{}: {} ${:.2f}", shadow["ticket"], outcome, money)
+            logger.info(
+                "shadow verdict #{}: held={} actual={} | {}",
+                shadow["ticket"], money, actual, comparison,
+            )
         self._shadows = still_open
 
     def _manage_open_positions(self) -> None:
@@ -762,8 +835,14 @@ class LiveBot:
         if first_call:
             return
         previous = today - timedelta(days=1)
+        open_now: Optional[int] = None
         try:
-            stats = build_daily_stats(self.db, previous)
+            open_now = int(self.client.open_position_count())
+        except Exception as exc:
+            logger.warning("open_position_count failed; digest falls back: {}", exc)
+            open_now = None
+        try:
+            stats = build_daily_stats(self.db, previous, open_positions=open_now)
         except Exception as exc:
             logger.warning("daily digest build failed: {}", exc)
             return
