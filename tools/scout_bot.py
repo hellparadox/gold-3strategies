@@ -4,7 +4,12 @@
 - حد ضرر همیشه روی بروکر گذاشته می‌شود؛ حد سود گذاشته نمی‌شود (خروج با شماست).
 - بعد از ورود، در رسیدن به ۱ برابر ریسک و در شکست ساختار خبر می‌دهد، ولی نمی‌بندد.
 - بستن با دکمهٔ «بستن» یا دستور /close <ticket>.
-- همه‌چیز در data/scout_journal.csv ثبت می‌شود.
+- مهلت پاسخ به هر هشدار: scout.expiry_seconds (پیش‌فرض ۳۰ دقیقه).
+- در لحظهٔ تأیید، ورود با قیمت همان لحظه است و حد ضرر با همان فاصلهٔ هشدار از این قیمت
+  گذاشته می‌شود؛ اگر قیمت از حد ضرر هشدار رد شده باشد، سفارشی ثبت نمی‌شود.
+- تا وقتی پوزیشن اسکات باز است، هشدار جدید فرستاده نمی‌شود؛ ستاپ‌ها بی‌صدا در ژورنال ثبت
+  می‌شوند (رویداد suppressed) و هشدارهای بی‌جوابِ قبلی لغو می‌شوند.
+- همه‌چیز در data/scout_journal_v2.csv با ستون‌های ثابت ثبت می‌شود؛ آمار: tools/scout_stats.py
 
 اجرا:
     py -3.11 tools/scout_bot.py --config config/settings_scout.yaml
@@ -39,6 +44,9 @@ except Exception:                      # pragma: no cover
     from scout_setups import indicators, detect
 
 API = "https://api.telegram.org/bot{}/{}"
+# ستون‌های ثابت ژورنال — همهٔ رویدادها زیر یک سرستون (نسخهٔ قبل ستون‌ها را جابه‌جا می‌نوشت)
+JOURNAL_FIELDS = ["ts", "event", "alert", "setup", "n_setups", "side", "bar", "price", "sl", "tp",
+                  "atr", "spread", "risk_usd", "ticket", "entry", "profit", "ok", "note"]
 
 
 # --------------------------------------------------------------------- telegram
@@ -97,8 +105,8 @@ class Scout:
         self.selftest = selftest
         self.client = MT5Client(MT5Config.from_settings(s))
         self.lot = float(s.get("scout.lot", 0.01))
-        self.expiry = int(s.get("scout.expiry_seconds", 300))
-        self.journal = Path(s.get("scout.journal", "data/scout_journal.csv"))
+        self.expiry = int(s.get("scout.expiry_seconds", 1800))
+        self.journal = Path(s.get("scout.journal", "data/scout_journal_v2.csv"))
         self.journal.parent.mkdir(parents=True, exist_ok=True)
         token = os.environ.get(str(s.get("telegram.token_env", "TELEGRAM_TOKEN_SCOUT")), "")
         if not token:
@@ -118,7 +126,7 @@ class Scout:
         row.setdefault("ts", datetime.now().isoformat(timespec="seconds"))
         new = (not self.journal.exists()) or self.journal.stat().st_size == 0
         with self.journal.open("a", newline="", encoding="utf-8") as fh:
-            w = csv.DictWriter(fh, fieldnames=list(row.keys()))
+            w = csv.DictWriter(fh, fieldnames=JOURNAL_FIELDS, extrasaction="ignore")
             if new:
                 w.writeheader()
             w.writerow(row)
@@ -139,21 +147,32 @@ class Scout:
         r["tp_dist"] = 2.0 * float(r["sl_dist"])
         return r
 
-    def alert(self, r: pd.Series, spread_pts: float) -> None:
-        self.n += 1
-        aid = f"{self.n}"
+    def levels(self, r: pd.Series):
         entry = float(r.ref_close)
         sl = entry - r.sl_dist if r.side == "BUY" else entry + r.sl_dist
         tp = entry + r.tp_dist if r.side == "BUY" else entry - r.tp_dist
         risk = round(r.sl_dist * 100 * self.lot, 2)
         n_set = int(r.get("n_setups", 1) or 1)
+        return entry, sl, tp, risk, n_set
+
+    def record_silent(self, r: pd.Series, spread_pts: float) -> None:
+        """معامله باز است: هشدار فرستاده نمی‌شود، فقط برای آمار ثبت می‌شود."""
+        entry, sl, tp, risk, n_set = self.levels(r)
+        self.log(event="suppressed", setup=str(r.get("setups_all", r.setup)), n_setups=n_set,
+                 side=r.side, bar=str(r.bar), price=entry, sl=round(sl, 2), tp=round(tp, 2),
+                 atr=round(r.atr, 3), spread=spread_pts, risk_usd=risk)
+
+    def alert(self, r: pd.Series, spread_pts: float) -> None:
+        self.n += 1
+        aid = f"{self.n}"
+        entry, sl, tp, risk, n_set = self.levels(r)
         head = f"  ({n_set} ستاپ هم‌زمان)" if n_set > 1 else ""
         txt = (f"<b>{'🟢 BUY' if r.side=='BUY' else '🔴 SELL'}</b> · <code>{r.setup}</code>{head}\n"
                f"کندل: {r.bar:%H:%M}  |  قیمت: <b>{entry:.2f}</b>\n"
                f"حد ضرر: {sl:.2f}  ({r.sl_dist:.2f} = {r.sl_dist/r.atr:.1f}×ATR)\n"
                f"هدف پیشنهادی: {tp:.2f}  (۲ برابر ریسک)\n"
                f"ریسک: ${risk} · ATR {r.atr:.2f} · اسپرد {spread_pts:.0f}\n"
-               f"<i>۵ دقیقه فرصت پاسخ</i>")
+               f"<i>{self.expiry // 60} دقیقه فرصت پاسخ</i>")
         mid = self.tg.send(txt, [[{"text": "✅ تأیید", "callback_data": f"a|{aid}|y"},
                                   {"text": "❌ رد", "callback_data": f"a|{aid}|n"}]])
         self.pending[aid] = {"row": r, "sl": sl, "tp": tp, "mid": mid, "t": time.time(), "txt": txt}
@@ -193,12 +212,32 @@ class Scout:
             self.log(event="blocked_hedge", alert=aid, setup=r.setup, side=r.side,
                      note=names)
             return
+        # قیمت لحظهٔ تأیید؛ حد ضرر با همان فاصلهٔ هشدار نسبت به این قیمت
+        ref = float(r.ref_close); dist = abs(ref - p["sl"])
+        tick = None
+        try:
+            tick = self.client.get_tick()
+        except Exception as exc:                       # pragma: no cover
+            logger.warning("tick read failed: {}", exc)
+        px = float(getattr(tick, "ask" if r.side == "BUY" else "bid", 0.0) or 0.0) if tick else 0.0
+        if px <= 0:
+            px = ref
+        crossed = (px <= p["sl"]) if r.side == "BUY" else (px >= p["sl"])
+        if crossed:
+            self.tg.ack(cb, "ستاپ باطل شده")
+            self.tg.edit(p["mid"], p["txt"] + f"\n\n⛔ <b>ثبت نشد — قیمت ({px:.2f}) از حد ضرر هشدار رد شده</b>")
+            self.log(event="invalid", alert=aid, setup=r.setup, side=r.side, price=px, sl=round(p["sl"], 2))
+            return
+        sl_now = px - dist if r.side == "BUY" else px + dist
+        moved = (px - ref) if r.side == "BUY" else (ref - px)
+        info_line = f"ورود {px:.2f} (نسبت به هشدار {moved:+.2f}) · حد ضرر {sl_now:.2f}"
         self.tg.ack(cb, "در حال ثبت سفارش...")
         if self.dry:
-            self.tg.edit(p["mid"], p["txt"] + "\n\n🧪 <b>حالت آزمایشی — سفارشی ثبت نشد</b>")
-            self.log(event="approved_dry", alert=aid, setup=r.setup, side=r.side)
+            self.tg.edit(p["mid"], p["txt"] + f"\n\n🧪 <b>حالت آزمایشی — سفارشی ثبت نشد</b>\n{info_line}")
+            self.log(event="approved_dry", alert=aid, setup=r.setup, side=r.side,
+                     price=px, sl=round(sl_now, 2))
             return
-        res = self.client.send_market_order(r.side, self.lot, sl=round(p["sl"], 2),
+        res = self.client.send_market_order(r.side, self.lot, sl=round(sl_now, 2),
                                             tp=None, comment=f"scout:{r.setup}"[:31])
         if not res.ok:
             self.tg.edit(p["mid"], p["txt"] + f"\n\n⚠️ <b>ثبت نشد</b>: {res.comment}")
@@ -206,19 +245,50 @@ class Scout:
             return
         tk = res.position or res.order
         self.open[tk] = {"setup": r.setup, "side": r.side, "entry": res.price,
-                         "sl": p["sl"], "risk": abs(res.price - p["sl"]), "r1": False,
-                         "opened": time.time()}
-        self.tg.edit(p["mid"], p["txt"] + f"\n\n✅ <b>باز شد</b> #{tk} @ {res.price:.2f}")
-        self.tg.send(f"پوزیشن #{tk} باز است. هر وقت خواستید ببندید:",
+                         "sl": sl_now, "risk": abs(res.price - sl_now), "r1": False,
+                         "opened": time.time(), "alert": aid}
+        self.tg.edit(p["mid"], p["txt"] + f"\n\n✅ <b>باز شد</b> #{tk} @ {res.price:.2f}\n{info_line}")
+        self.tg.send(f"پوزیشن #{tk} باز است. تا بسته نشود هشدار جدیدی نمی‌آید. هر وقت خواستید ببندید:",
                      [[{"text": "🔻 بستن", "callback_data": f"c|{tk}"}]])
         self.log(event="opened", alert=aid, setup=r.setup, side=r.side, ticket=tk,
-                 price=res.price, sl=round(p["sl"], 2))
+                 price=res.price, sl=round(sl_now, 2))
+        self.cancel_pending("معامله‌ای باز شد")
+
+    def cancel_pending(self, why: str) -> None:
+        for aid in list(self.pending):
+            q = self.pending.pop(aid)
+            if q["mid"]:
+                self.tg.edit(q["mid"], q["txt"] + f"\n\n⏸ <b>لغو شد — {why}</b>")
+            self.log(event="cancelled", alert=aid, setup=q["row"].setup, side=q["row"].side, note=why)
+
+    def busy(self) -> bool:
+        """پوزیشن باز اسکات (در حافظه یا روی بروکر، حتی بعد از ری‌استارت)؟"""
+        if self.open:
+            return True
+        try:
+            return len(self.client.positions(magic_only=True)) > 0
+        except Exception:                              # pragma: no cover
+            return False
+
+    def realized(self, tk: int):
+        """سود واقعی و قیمت خروج از تاریخچهٔ بروکر؛ اگر هنوز نیامده None."""
+        try:
+            deals = self.client.deals_for_position(int(tk))
+        except Exception:
+            return None, None
+        if not deals:
+            return None, None
+        pnl = sum(float(getattr(d, a, 0.0) or 0.0) for d in deals
+                  for a in ("profit", "commission", "swap", "fee"))
+        out = [d for d in deals if int(getattr(d, "entry", 0)) in (1, 3)]
+        px = float(getattr(out[-1], "price", 0.0)) if out else None
+        return (round(pnl, 2) if out else None), px
 
     def close(self, tk: int, cb: Optional[str] = None) -> None:
         res = self.client.close_position(int(tk), comment="scout manual")
         if cb:
             self.tg.ack(cb, "بسته شد" if res.ok else f"خطا: {res.comment}")
-        info = self.open.pop(int(tk), {})
+        info = self.open.get(int(tk), {})
         self.tg.send(f"{'✅' if res.ok else '⚠️'} بستن #{tk}: {res.comment or 'OK'} @ {res.price:.2f}")
         self.log(event="closed", ticket=tk, setup=info.get("setup"), side=info.get("side"),
                  price=res.price, ok=res.ok)
@@ -228,9 +298,16 @@ class Scout:
         live = {int(p.ticket): p for p in self.client.positions(magic_only=True)}
         for tk in list(self.open):
             if tk not in live:                       # با حد ضرر یا دستی بسته شده
+                pnl, px = self.realized(tk)
+                if pnl is None and time.time() - self.open[tk].get("gone_t", time.time()) < 30:
+                    self.open[tk].setdefault("gone_t", time.time())   # تاریخچه هنوز نیامده
+                    continue
                 info = self.open.pop(tk)
-                self.tg.send(f"ℹ️ پوزیشن #{tk} ({info['setup']}) دیگر باز نیست.")
-                self.log(event="gone", ticket=tk, setup=info["setup"])
+                res_txt = f" · نتیجه ${pnl:+.2f}" if pnl is not None else ""
+                self.tg.send(f"ℹ️ پوزیشن #{tk} ({info['setup']}) بسته شد{res_txt}."
+                             + ("\n🔔 هشدارها دوباره فعال شد." if not self.open else ""))
+                self.log(event="gone", alert=info.get("alert"), ticket=tk, setup=info["setup"],
+                         side=info["side"], entry=round(info["entry"], 2), price=px, profit=pnl)
                 continue
             p, info = live[tk], self.open[tk]
             profit = float(getattr(p, "profit", 0.0))
@@ -334,12 +411,12 @@ class Scout:
                     sig = detect(f)
                     sig = sig[sig.bar == bar]
                     sp = self.client.spread_points() or 0.0
-                    if self.merge_setups and not sig.empty:
-                        for _side, grp in sig.groupby("side", sort=False):
-                            self.alert(self.merge(grp), sp)
-                    else:
-                        for _, r in sig.iterrows():
-                            self.alert(r, sp)
+                    rows = ([self.merge(g) for _s, g in sig.groupby("side", sort=False)]
+                            if self.merge_setups and not sig.empty
+                            else [r for _, r in sig.iterrows()])
+                    quiet = self.busy() and not self.dry
+                    for r in rows:
+                        (self.record_silent if quiet else self.alert)(r, sp)
                 time.sleep(float(self.s.get("scout.loop_seconds", 2)))
             except KeyboardInterrupt:
                 break

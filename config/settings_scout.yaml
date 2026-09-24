@@ -39,10 +39,10 @@ risk:
 
 scout:
   lot: 0.01                    # حجم ثابت همهٔ معاملات، برای مقایسهٔ منصفانه
-  expiry_seconds: 300          # مهلت پاسخ شما به هر هشدار
+  expiry_seconds: 1800         # مهلت پاسخ به هر هشدار (۳۰ دقیقه)
   h1_ema_period: 20
   loop_seconds: 2
-  journal: "data/scout_journal.csv"
+  journal: "data/scout_journal_v2.csv"   # ستون‌های ثابت؛ فایل قدیمی دست نمی‌خورد
   merge_setups: true           # ستاپ‌های هم‌کندل و هم‌جهت در یک پیام
   block_hedge: true            # تأیید در جهت مخالف پوزیشن باز، ثبت نمی‌شود
   heartbeat: "data/heartbeat_scout.txt"   # نگهبان از روی این فایل زنده‌بودن را می‌فهمد
