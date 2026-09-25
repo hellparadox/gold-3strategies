@@ -1,7 +1,10 @@
 """Live web dashboard served from inside the bot process.
 
 Zero new dependencies: a ``ThreadingHTTPServer`` on a daemon thread serving
-one embedded dark RTL page plus a JSON API.  Telemetry is pulled through the
+one embedded dark RTL page plus a JSON API.  The page has two tabs: the live
+dashboard (``/api/stats``), a plain-language Persian report (``/api/report``)
+built from the signals table, and the bot's log file translated into plain
+Persian (``/api/log``).  Telemetry is pulled through the
 same hooks the Telegram panel uses, throttled by a snapshot cache so page
 polls can never hammer MT5.
 
@@ -13,17 +16,22 @@ Settings (settings.yaml):
 """
 from __future__ import annotations
 
+import glob
 import json
+import os
+import re
 import sys
 import threading
 import time
+from collections import deque
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
 from loguru import logger
 
-__all__ = ["DashboardServer"]
+__all__ = ["DashboardServer", "build_report", "translate_log_event"]
 
 _SNAPSHOT_TTL = 3.0  # seconds a telemetry snapshot stays fresh
 
@@ -43,6 +51,7 @@ class DashboardServer:
         port: int = 8080,
         brand: str = "GoldBot",
         token: str = "",
+        log_path: Optional[str] = None,
     ) -> None:
         self._telemetry = telemetry_provider
         self._db = db
@@ -56,6 +65,13 @@ class DashboardServer:
         self._cache: Dict[str, Any] = {}
         self._cache_ts: float = 0.0
         self._started_at = time.time()
+        self._events: "deque[Dict[str, Any]]" = deque(maxlen=400)
+        self._events_lock = threading.Lock()
+        self._sink_id: Optional[int] = None
+        self._report_cache: Dict[str, Any] = {}
+        self._report_ts: float = 0.0
+        self._log_glob = _log_glob(log_path)
+        self._log_cache: Dict[str, Any] = {}
 
     # ------------------------------------------------------------- lifecycle
     def start(self) -> bool:
@@ -89,6 +105,12 @@ class DashboardServer:
             target=self._httpd.serve_forever, name="dashboard-http", daemon=True
         )
         self._thread.start()
+        try:
+            self._sink_id = logger.add(self._on_log, level="INFO", filter=_log_filter,
+                                       format="{message}", enqueue=False)
+        except Exception as exc:  # the report tab still works without the event feed
+            logger.warning("dashboard event feed disabled: {}", exc)
+            self._sink_id = None
         url = f"http://{self._host}:{self._port}/"
         if self._token:
             url += f"?token={self._token}"
@@ -96,6 +118,12 @@ class DashboardServer:
         return True
 
     def stop(self) -> None:
+        if self._sink_id is not None:
+            try:
+                logger.remove(self._sink_id)
+            except ValueError:
+                pass
+            self._sink_id = None
         if self._httpd is not None:
             self._httpd.shutdown()
             self._httpd.server_close()
@@ -141,6 +169,546 @@ class DashboardServer:
         return payload
 
 
+    # ------------------------------------------------------------ report tab
+    def _on_log(self, message: Any) -> None:
+        """loguru sink: keep a short, translated feed of what the bot did."""
+        try:
+            record = message.record
+            ev = translate_log_event(record["message"], record["level"].name)
+            if ev is None:
+                return
+            ts = record["time"].timestamp()
+            with self._events_lock:
+                # news blocks repeat on every bar inside the window: keep one per 15 min
+                for old in reversed(self._events):
+                    if ts - old["ts"] > 900:
+                        break
+                    if old["kind"] == ev["kind"] and old["text"] == ev["text"]:
+                        return
+                self._events.append({"ts": ts, "kind": ev["kind"], "text": ev["text"]})
+        except Exception:
+            pass  # a logging sink must never raise
+
+    def report(self) -> Dict[str, Any]:
+        now = time.time()
+        with self._cache_lock:
+            if self._report_cache and (now - self._report_ts) < _REPORT_TTL:
+                return self._report_cache
+        snap = self.snapshot()
+        try:
+            rows = self._db.recent_signals(limit=5000)
+        except Exception as exc:
+            logger.warning("dashboard report: signals unavailable: {}", exc)
+            rows = []
+        with self._events_lock:
+            events = list(self._events)
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+        started = datetime.fromtimestamp(self._started_at, tz=timezone.utc).replace(tzinfo=None)
+        payload = build_report(rows, events, snap.get("telemetry") or {}, now_utc, started)
+        payload["brand"] = self._brand
+        payload["strategy"] = (snap.get("telemetry") or {}).get("strategy", "")
+        with self._cache_lock:
+            self._report_cache = payload
+            self._report_ts = now
+        return payload
+
+
+    def read_log(self, view: str = "important") -> Dict[str, Any]:
+        """Translate the tail of the bot's own log file(s) for the log tab."""
+        view = "all" if view == "all" else "important"
+        now = time.time()
+        with self._cache_lock:
+            hit = self._log_cache.get(view)
+            if hit and (now - hit[0]) < _REPORT_TTL:
+                return hit[1]
+        payload = read_log_files(self._log_glob, view)
+        with self._cache_lock:
+            self._log_cache[view] = (now, payload)
+        return payload
+
+
+def _log_filter(record: Dict[str, Any]) -> bool:
+    return record["name"] in _LOG_SOURCES
+
+
+# ============================================================================
+# Plain-language report tab (/api/report)
+# ============================================================================
+_REPORT_TZ_MINUTES = 210        # Tehran, UTC+03:30 (no DST since 2022)
+_REPORT_TZ_LABEL = "تهران"
+_REPORT_TTL = 10.0              # seconds a report stays cached
+_BE_BAND = 0.50                 # |net profit| below this ($) counts as break-even
+_WEEKDAYS_FA = ["دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه", "یکشنبه"]
+_SIDE_FA = {"BUY": "خرید", "SELL": "فروش"}
+
+# Log line -> plain Persian.  Each rule: (substring, kind, text).  ``text`` is a fixed string,
+# a callable(msg) -> str, or None (= drop the line as noise).  First match wins.
+def _rx(pattern: str, fmt: Callable[..., str]) -> Callable[[str], Optional[str]]:
+    compiled = re.compile(pattern)
+
+    def build(msg: str) -> Optional[str]:
+        m = compiled.search(msg)
+        return fmt(*m.groups()) if m else msg
+    return build
+
+
+def _news_text(msg: str) -> str:
+    detail = _news_fa(msg.split("|", 1)[1].strip()) if "|" in msg else ""
+    return "ورود به‌خاطر خبر مهم ممنوع بود" + (f": {detail}" if detail else "")
+
+
+def _manage_text(what: str, ticket: str, old: str, new: str) -> str:
+    label = "به نقطهٔ ورود (سربه‌سر)" if what == "breakeven" else "با حد ضرر متحرک (تریل)"
+    return f"حد ضرر پوزیشن #{ticket} {label} رفت: {old} ← {new}"
+
+
+_NEWS_OFFLINE = "تقویم اینترنتی خبرها در دسترس نبود؛ فایل خبرهای ذخیره‌شده استفاده می‌شود"
+
+_EVENT_RULES: List[tuple] = [
+    # ---- trading decisions (main_live / risk_manager)
+    ("سیگنال شناسایی شد", "signal", _rx(r"شد:\s*(.+?)\s*→\s*(BUY|SELL)\s*\((.*)\)\s*$",
+        lambda bar, side, why: f"سیگنال {_SIDE_FA.get(side, side)} ({why}) روی کندل {bar} (ساعت سرور)")),
+    ("بلاک خبری", "news", _news_text),
+    ("DAILY GUARD ACTIVE", "guard", "گارد روزانه فعال شد؛ تا شروع روز بعد سرور ورود جدید ندارد"),
+    ("risk guard", "guard", "گارد ریسک ورود را رد کرد: با کمترین حجم، ریسک از سقف مجاز بیشتر می‌شد"),
+    ("forced-risk tighten", "risk", "حد ضرر کوچک‌تر شد تا ریسک از سقف مجاز بیشتر نشود"),
+    ("trading min lot risks", "risk", _rx(r"\(([\d.]+)% of balance\)",
+        lambda pct: f"با کمترین حجم (۰.۰۱ لات) وارد شد؛ ریسک این معامله {pct}٪ حساب است")),
+    ("order not confirmed", "error", "بروکر سفارش را تأیید نکرد"),
+    ("entry skipped", "error", "ورود انجام نشد: سیگنال تکراری یا سفارش نامعلوم"),
+    ("SL move rejected", "error", "بروکر جابه‌جایی حد ضرر را رد کرد"),
+    ("breakeven #", "manage", _rx(r"^(breakeven) #(\d+) SL ([\d.]+) -> ([\d.]+)", _manage_text)),
+    ("trailing #", "manage", _rx(r"^(trailing) #(\d+) SL ([\d.]+) -> ([\d.]+)", _manage_text)),
+    (" closed | ", "close", _rx(r"position #(\d+) closed \| \w+ \| \$(-?[\d.]+)",
+        lambda t, p: f"پوزیشن #{t} بسته شد: {_money(float(p))}")),
+    ("manual close #", "close", _rx(r"manual close #(\d+)", lambda t: f"پوزیشن #{t} به دستور ادمین بسته شد")),
+    ("adopted existing position", "open", "پوزیشن باز قبلی پیدا شد و مدیریت می‌شود"),
+    ("broker state unknown", "error", "وضعیت بروکر معلوم نبود؛ این دور بررسی نشد"),
+    ("GOLD M5 BOT starting", "start", "ربات روشن شد"),
+    ("shutdown requested", "stop", "ربات در حال خاموش شدن است"),
+    ("RESTART requested", "start", "ری‌استارت ربات درخواست شد"),
+    ("engine kill-switch -> PAUSED", "stop", "موتور ربات متوقف شد (ورود جدید ندارد)"),
+    ("engine kill-switch -> RUNNING", "start", "موتور ربات دوباره فعال شد"),
+    ("risk switched", "system", _rx(r"-> ([\d.]+)%", lambda v: f"درصد ریسک هر معامله به {v}٪ تغییر کرد")),
+    ("daily digest skipped", "system", "گزارش روزانه فرستاده نشد: روز قبل معامله‌ای نبود"),
+    ("daily digest for", "system", "گزارش روزانه به تلگرام فرستاده شد"),
+    ("به همراه چارت به تلگرام", "system", "سیگنال با چارت به تلگرام فرستاده شد"),
+    ("shadow verdict", "system", "داوری معاملهٔ دستی ثبت شد"),
+    ("signal score", "system", None),
+    ("entering main loop", "system", None),
+    ("side gates effective", "system", None),
+    # ---- broker link and orders (mt5_client)
+    ("MT5 connected", "conn", _rx(r"balance=([\d.]+)", lambda b: f"به بروکر وصل شد؛ موجودی ${b}")),
+    ("link LOST", "error", "ارتباط با بروکر قطع شد"),
+    ("link RESTORED", "conn", "ارتباط با بروکر برگشت"),
+    ("reconnected after", "conn", "دوباره به بروکر وصل شد"),
+    ("reconnect exhausted", "error", "وصل شدن دوباره به بروکر ممکن نشد؛ ربات آفلاین مانده"),
+    ("reconnect attempt", "error", "تلاش برای وصل شدن دوباره به بروکر"),
+    ("Algo Trading is DISABLED", "error", "دکمهٔ Algo Trading در MT5 خاموش است؛ سفارش‌ها رد می‌شوند"),
+    (" lots @ ", "open", _rx(r"^(BUY|SELL) ([\d.]+) lots @ ([\d.]+) \| sl=([\d.]+) tp=([\d.]+) ticket=(\d+)",
+        lambda s, v, p, sl, tp, t: f"سفارش {_SIDE_FA.get(s, s)} {v} لات در {p} باز شد "
+                                   f"(حد ضرر {sl}، حد سود {tp}، تیکت #{t})")),
+    ("order rejected", "error", _rx(r"order rejected: \((\d+)\) (.*)$",
+        lambda code, why: f"بروکر سفارش را رد کرد: {why} (کد {code})")),
+    ("SLTP rejected", "error", "بروکر تغییر حد ضرر/حد سود را رد کرد"),
+    ("SLTP updated", "system", None),
+    ("closed position", "close", _rx(r"closed position (\d+)", lambda t: f"پوزیشن #{t} بسته شد")),
+    ("fuzzy-matched gold symbol", "system", None),
+    ("heartbeat thread", "system", None),
+    # ---- news calendar and telegram
+    ("no news data available", "error", "هیچ دادهٔ خبری در دسترس نیست؛ فیلتر خبر درست کار نمی‌کند"),
+    ("calendar fetch failed", "system", _NEWS_OFFLINE),
+    ("network calendar parsed but empty", "system", _NEWS_OFFLINE),
+    ("news network refresh failed", "system", _NEWS_OFFLINE),
+    ("calendar parse error", "system", _NEWS_OFFLINE),
+    ("matching events from historical", "system", None),
+    ("using local historical calendar", "system", None),
+    ("cold-start", "system", None),
+    ("background refresh started", "system", None),
+    ("telegram controller online", "conn", "تلگرام ربات وصل شد"),
+    ("telegram menu commands", "system", None),
+    ("send_message to", "error", "ارسال پیام تلگرام ناموفق بود"),
+    ("dashboard online", "system", None),       # contains the access token
+    ("subscription database ready", "system", None),
+    ("signal scores loaded", "system", None),
+]
+_LOG_SOURCES = ("__main__", "main_live", "core.risk_manager", "core.mt5_client",
+                "core.news_filter", "core.telegram_bot")
+IMPORTANT_KINDS = ("signal", "news", "guard", "risk", "error", "close", "manage", "open",
+                   "start", "stop", "conn")
+_RE_TOKEN = re.compile(r"token=[^\s&]+")
+
+
+def translate_log_event(message: str, level: str, keep_raw: bool = False) -> Optional[Dict[str, str]]:
+    """Map one bot log line to ``{kind, text}`` in plain Persian, or None to ignore.
+
+    ``keep_raw`` (log tab, "all" view): unknown lines are returned as kind ``raw``/``warn``
+    instead of being dropped, and known noise is returned as ``system``.
+    """
+    msg = str(message or "").strip()
+    for needle, kind, text in _EVENT_RULES:
+        if needle not in msg:
+            continue
+        if text is None:
+            if not keep_raw:
+                return None
+            return {"kind": "system", "text": _RE_TOKEN.sub("token=***", msg)[:300]}
+        if callable(text):
+            text = text(msg)
+        return {"kind": kind, "text": text}
+    if level in ("ERROR", "CRITICAL"):
+        return {"kind": "error", "text": "خطا: " + _RE_TOKEN.sub("token=***", msg)[:300]}
+    if not keep_raw:
+        return None
+    kind = "warn" if level == "WARNING" else "raw"
+    return {"kind": kind, "text": _RE_TOKEN.sub("token=***", msg)[:300]}
+
+
+def _money(v: float) -> str:
+    # wrapped in Unicode LTR isolates so the sign stays on the left inside Persian (RTL) text
+    return "\u2066" + ("+" if v >= 0 else "−") + f"${abs(v):,.2f}" + "\u2069"
+
+
+_RE_NEWS_BEFORE = re.compile(r"(\d+) mins before [^:]*:\s*(.+)$")
+_RE_NEWS_AFTER = re.compile(r"(\d+) mins after (.+?)(?: \(|$)")
+
+
+def _news_fa(detail: str) -> str:
+    m = _RE_NEWS_BEFORE.search(detail)
+    if m:
+        return f"{m.group(1)} دقیقه مانده به خبر {m.group(2).strip()}"
+    m = _RE_NEWS_AFTER.search(detail)
+    if m:
+        return f"{m.group(1)} دقیقه بعد از خبر {m.group(2).strip()}"
+    return detail
+
+
+def _parse_utc(value: Any) -> Optional[datetime]:
+    if not value:
+        return None
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(str(value)[:19], fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def _ago(delta: timedelta) -> str:
+    minutes = max(0, int(delta.total_seconds() // 60))
+    if minutes < 60:
+        return f"{minutes} دقیقه پیش"
+    hours = minutes // 60
+    if hours < 48:
+        return f"{hours} ساعت پیش"
+    return f"{hours // 24} روز پیش"
+
+
+def _duration(delta: timedelta) -> str:
+    minutes = max(0, int(delta.total_seconds() // 60))
+    if minutes < 60:
+        return f"{minutes} دقیقه"
+    h, m = divmod(minutes, 60)
+    return f"{h} ساعت" + (f" و {m} دقیقه" if m else "")
+
+
+def _result(profit: float) -> str:
+    if profit >= _BE_BAND:
+        return "win"
+    if profit <= -_BE_BAND:
+        return "loss"
+    return "be"
+
+
+def _exit_kind(row: Dict[str, Any]) -> str:
+    """Best guess of how a closed trade ended (the database does not store it)."""
+    try:
+        close = float(row.get("close_price") or 0)
+        entry = float(row.get("entry") or 0)
+        sl = float(row.get("sl") or 0)
+        tp = float(row.get("tp") or 0)
+        profit = float(row.get("profit") or 0)
+    except (TypeError, ValueError):
+        return "نامعلوم"
+    tol = 1.0
+    if tp and abs(close - tp) <= tol:
+        return "حد سود"
+    if sl and abs(close - sl) <= tol:
+        return "حد ضرر"
+    if abs(close - entry) <= tol and abs(profit) < _BE_BAND:
+        return "سربه‌سر"
+    if profit > 0:
+        return "تریل با سود"
+    return "حد ضرر جابه‌جاشده یا دستی"
+
+
+def _stats(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+    n = len(trades)
+    wins = sum(1 for t in trades if t["result"] == "win")
+    losses = sum(1 for t in trades if t["result"] == "loss")
+    net = round(sum(t["profit"] for t in trades), 2)
+    decided = wins + losses
+    return {
+        "trades": n, "wins": wins, "losses": losses, "be": n - wins - losses,
+        "net": net,
+        "win_rate": round(wins / decided * 100.0, 1) if decided else None,
+        "best": round(max((t["profit"] for t in trades), default=0.0), 2),
+        "worst": round(min((t["profit"] for t in trades), default=0.0), 2),
+    }
+
+
+def build_report(
+    rows: List[Dict[str, Any]],
+    events: List[Dict[str, Any]],
+    telemetry: Dict[str, Any],
+    now_utc: datetime,
+    started_utc: datetime,
+    tz_minutes: int = _REPORT_TZ_MINUTES,
+    tz_label: str = _REPORT_TZ_LABEL,
+) -> Dict[str, Any]:
+    """Pure function: signals-table rows + log events -> plain-language report."""
+    shift = timedelta(minutes=tz_minutes)
+    local_now = now_utc + shift
+    today = local_now.date()
+
+    closed: List[Dict[str, Any]] = []
+    open_rows: List[Dict[str, Any]] = []
+    for r in rows:
+        opened = _parse_utc(r.get("created_at"))
+        if opened is None:
+            continue
+        side = str(r.get("side") or "").upper()
+        layer = str(r.get("reason") or r.get("strategy") or "").strip()[:40]
+        item = {
+            "ticket": r.get("ticket"),
+            "side": side,
+            "side_fa": _SIDE_FA.get(side, side),
+            "layer": layer,
+            "entry": float(r.get("entry") or 0),
+            "opened": (opened + shift).strftime("%Y-%m-%d %H:%M"),
+            "_opened_utc": opened,
+        }
+        closed_at = _parse_utc(r.get("closed_at"))
+        if closed_at is None:
+            open_rows.append(item)
+            continue
+        profit = float(r.get("profit") or 0.0)
+        item.update({
+            "closed": (closed_at + shift).strftime("%Y-%m-%d %H:%M"),
+            "close_price": float(r.get("close_price") or 0),
+            "profit": round(profit, 2),
+            "result": _result(profit),
+            "exit": _exit_kind(r),
+            "duration": _duration(closed_at - opened),
+            "_closed_utc": closed_at,
+            "_day": (closed_at + shift).date(),
+        })
+        closed.append(item)
+    closed.sort(key=lambda t: t["_closed_utc"])
+
+    def window(days: Optional[int]) -> List[Dict[str, Any]]:
+        if days is None:
+            return closed
+        first = today - timedelta(days=days - 1)
+        return [t for t in closed if t["_day"] >= first]
+
+    periods = []
+    for key, title, days in (("today", "امروز", 1), ("7d", "۷ روز اخیر", 7),
+                             ("30d", "۳۰ روز اخیر", 30), ("all", "از ابتدا", None)):
+        s = _stats(window(days))
+        s.update({"key": key, "title": title})
+        periods.append(s)
+
+    # daily table: last 14 calendar days (weekends only when something closed)
+    by_day: Dict[Any, List[Dict[str, Any]]] = {}
+    for t in closed:
+        by_day.setdefault(t["_day"], []).append(t)
+    cum = round(sum(t["profit"] for t in closed if t["_day"] < today - timedelta(days=13)), 2)
+    days_out = []
+    for i in range(13, -1, -1):
+        d = today - timedelta(days=i)
+        items = by_day.get(d, [])
+        if not items and d.weekday() >= 5:
+            continue
+        s = _stats(items)
+        cum = round(cum + s["net"], 2)
+        days_out.append({"date": d.isoformat(), "weekday": _WEEKDAYS_FA[d.weekday()],
+                         "trades": s["trades"], "wins": s["wins"], "losses": s["losses"],
+                         "be": s["be"], "net": s["net"], "cum": cum})
+    days_out.reverse()
+
+    groups: Dict[str, List[Dict[str, Any]]] = {}
+    for t in closed:
+        groups.setdefault(f"{t['side_fa']} — {t['layer'] or 'نامشخص'}", []).append(t)
+    groups_out = []
+    for name, items in sorted(groups.items(), key=lambda kv: -len(kv[1])):
+        s = _stats(items)
+        s["name"] = name
+        groups_out.append(s)
+
+    # ------------------------------------------------------------- headline
+    lines: List[str] = []
+    connected = bool(telemetry.get("connected"))
+    running = bool(telemetry.get("engine_running", True))
+    if not connected:
+        lines.append("❌ اتصال ربات به بروکر قطع است؛ الان معامله نمی‌کند.")
+    elif not running:
+        lines.append("⏸ ربات به بروکر وصل است ولی موتورش متوقف شده (دستور توقف)؛ ورود جدید ندارد.")
+    else:
+        lines.append("✅ ربات روشن است و به بروکر وصل است.")
+
+    positions = telemetry.get("positions") or []
+    if positions:
+        for p in positions:
+            side = _SIDE_FA.get(str(p.get("side", "")).upper(), p.get("side", ""))
+            lines.append(f"📌 پوزیشن باز: {side} از {float(p.get('price_open') or 0):,.2f} — "
+                         f"سود/زیان شناور الان {_money(float(p.get('profit') or 0))}.")
+    else:
+        lines.append("📌 الان پوزیشن بازی ندارد.")
+
+    tday = periods[0]
+    if tday["trades"]:
+        lines.append(f"📅 امروز {tday['trades']} معامله بسته شد: {tday['wins']} سود، "
+                     f"{tday['losses']} ضرر، {tday['be']} سربه‌سر — جمع {_money(tday['net'])}.")
+    else:
+        lines.append("📅 امروز هنوز معامله‌ای بسته نشده.")
+
+    if closed:
+        last = closed[-1]
+        lines.append(f"🕘 آخرین معامله: {last['side_fa']}، {_ago(now_utc - last['_closed_utc'])} "
+                     f"بسته شد با {_money(last['profit'])} ({last['exit']}).")
+
+    since = now_utc - started_utc
+    n_sig = sum(1 for e in events if e["kind"] == "signal")
+    n_news = sum(1 for e in events if e["kind"] == "news")
+    n_guard = sum(1 for e in events if e["kind"] == "guard")
+    n_err = sum(1 for e in events if e["kind"] == "error")
+    txt = f"🔎 از روشن شدن ربات ({_duration(since)} پیش): {n_sig} سیگنال"
+    if n_news:
+        txt += f"، {n_news} بار بلاک خبری"
+    if n_guard:
+        txt += f"، {n_guard} بار رد توسط گارد"
+    if n_err:
+        txt += f"، {n_err} خطا"
+    txt += "."
+    lines.append(txt)
+    if n_sig == 0 and not positions:
+        lines.append("ℹ️ در این مدت شرایط ورود استراتژی پیش نیامده؛ اگر گارد یا خطایی جلوی ورود را گرفته بود، "
+                     "در فهرست رویدادها دیده می‌شد.")
+
+    w7 = periods[1]
+    if w7["trades"]:
+        lines.append(f"📈 ۷ روز اخیر: {w7['trades']} معامله، جمع {_money(w7['net'])}.")
+
+    def public(t: Dict[str, Any]) -> Dict[str, Any]:
+        return {k: v for k, v in t.items() if not k.startswith("_")}
+
+    return {
+        "tz": tz_label,
+        "generated": local_now.strftime("%Y-%m-%d %H:%M"),
+        "headline": lines,
+        "periods": periods,
+        "days": days_out,
+        "groups": groups_out,
+        "open": [public(t) for t in open_rows],
+        "trades": [public(t) for t in reversed(closed[-40:])],
+        "events": [{"time": (datetime.fromtimestamp(e["ts"], tz=timezone.utc).replace(tzinfo=None)
+                             + shift).strftime("%m-%d %H:%M"),
+                    "kind": e["kind"], "text": e["text"]} for e in reversed(events[-60:])],
+    }
+
+
+# ============================================================================
+# Log tab (/api/log): the bot's own log file, translated
+# ============================================================================
+_LOG_TAIL_BYTES = 3_000_000     # read at most this much from the end of the log files
+_LOG_MAX_ITEMS = 400
+_RE_LOG_LINE = re.compile(
+    r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(?:\.\d+)? \| (\w+)\s*\| [^|]*\| ([\w.<>]+):[^ ]* - (.*)$"
+)
+
+
+def _log_glob(log_path: Optional[str]) -> Optional[str]:
+    """``logs/ichimoku_{time:YYYY-MM-DD}.log`` -> absolute ``.../logs/ichimoku_*.log``."""
+    if not log_path:
+        return None
+    pattern = re.sub(r"\{time[^}]*\}", "*", str(log_path))
+    if not os.path.isabs(pattern):
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        pattern = os.path.join(root, pattern)
+    return os.path.normpath(pattern)
+
+
+def _tail_lines(path: str, max_bytes: int) -> List[str]:
+    with open(path, "rb") as fh:
+        fh.seek(0, os.SEEK_END)
+        size = fh.tell()
+        start = max(0, size - max_bytes)
+        fh.seek(start)
+        data = fh.read()
+    lines = data.decode("utf-8", errors="replace").splitlines()
+    return lines[1:] if start > 0 else lines          # first line may be cut
+
+
+def parse_log_lines(lines: List[str], view: str = "important",
+                    tz_minutes: int = _REPORT_TZ_MINUTES) -> List[Dict[str, Any]]:
+    """Log lines (local-time stamps of the machine running the bot) -> translated events."""
+    keep_raw = view == "all"
+    shift = timedelta(minutes=tz_minutes)
+    out: List[Dict[str, Any]] = []
+    last_seen: Dict[tuple, float] = {}
+    for line in lines:
+        m = _RE_LOG_LINE.match(line)
+        if not m:
+            continue                                      # traceback / continuation line
+        stamp, level, _name, message = m.groups()
+        ev = translate_log_event(message, level.upper(), keep_raw=keep_raw)
+        if ev is None:
+            continue
+        if not keep_raw and ev["kind"] not in IMPORTANT_KINDS:
+            continue
+        try:
+            local = datetime.strptime(stamp, "%Y-%m-%d %H:%M:%S")
+            ts = local.astimezone(timezone.utc).timestamp()   # naive = this machine's local time
+        except (ValueError, OSError, OverflowError):
+            continue
+        key = (ev["kind"], ev["text"])
+        if key in last_seen and ts - last_seen[key] < 900:   # repeated lines within 15 min
+            continue
+        last_seen[key] = ts
+        tehran = datetime.fromtimestamp(ts, tz=timezone.utc).replace(tzinfo=None) + shift
+        out.append({"ts": ts, "day": tehran.strftime("%Y-%m-%d"),
+                    "weekday": _WEEKDAYS_FA[tehran.weekday()], "time": tehran.strftime("%H:%M"),
+                    "kind": ev["kind"], "text": ev["text"]})
+    out.sort(key=lambda e: e["ts"])
+    return out
+
+
+def read_log_files(pattern: Optional[str], view: str = "important") -> Dict[str, Any]:
+    if not pattern:
+        return {"ok": False, "message": "مسیر فایل لاگ برای داشبورد مشخص نشده است.", "items": []}
+    files = sorted(glob.glob(pattern), key=lambda f: os.path.getmtime(f))
+    if not files:
+        return {"ok": False, "message": "فایل لاگی پیدا نشد: " + os.path.basename(pattern), "items": []}
+    lines: List[str] = []
+    budget = _LOG_TAIL_BYTES
+    for path in reversed(files[-3:]):                     # newest first until the budget is used
+        if budget <= 0:
+            break
+        try:
+            chunk = _tail_lines(path, budget)
+            budget -= os.path.getsize(path)
+        except OSError:
+            continue
+        lines = chunk + lines
+    items = parse_log_lines(lines, view)[-_LOG_MAX_ITEMS:]
+    items.reverse()
+    for it in items:
+        it.pop("ts", None)
+    return {"ok": True, "view": view, "files": [os.path.basename(f) for f in files[-3:]],
+            "items": items}
+
+
 class _BaseHandler(BaseHTTPRequestHandler):
     dashboard: DashboardServer = None  # type: ignore[assignment]
 
@@ -164,7 +732,20 @@ class _BaseHandler(BaseHTTPRequestHandler):
             if supplied != self.dashboard._token:
                 self._send(403, "text/plain; charset=utf-8", b"forbidden")
                 return
-        if path_only.startswith("/api/stats"):
+        if path_only.startswith("/api/log"):
+            try:
+                view = (parse_qs(urlparse(self.path).query).get("view") or ["important"])[0]
+                body = json.dumps(self.dashboard.read_log(view), ensure_ascii=False).encode("utf-8")
+                self._send(200, "application/json; charset=utf-8", body)
+            except Exception as exc:
+                self._send(500, "application/json", json.dumps({"error": str(exc)}).encode())
+        elif path_only.startswith("/api/report"):
+            try:
+                body = json.dumps(self.dashboard.report(), ensure_ascii=False).encode("utf-8")
+                self._send(200, "application/json; charset=utf-8", body)
+            except Exception as exc:
+                self._send(500, "application/json", json.dumps({"error": str(exc)}).encode())
+        elif path_only.startswith("/api/stats"):
             try:
                 body = json.dumps(self.dashboard.snapshot()).encode("utf-8")
                 self._send(200, "application/json; charset=utf-8", body)
@@ -224,6 +805,21 @@ section{margin-bottom:14px}
 section h2{font-size:14px;color:var(--gold);margin-bottom:10px}
 .empty{padding:18px;text-align:center;color:var(--muted);font-size:13px}
 footer{text-align:center;color:var(--muted);font-size:11px;padding:16px 0}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{background:var(--panel);color:var(--muted);border:1px solid var(--grid);border-radius:10px;
+  padding:8px 20px;font:inherit;font-size:14px;cursor:pointer}
+.tab.on{background:var(--gold);border-color:var(--gold);color:var(--bg);font-weight:700}
+.lines{list-style:none;display:grid;gap:8px;font-size:15px;line-height:1.9}
+.pcards{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.small{font-size:12px;color:var(--muted);line-height:1.9}
+.scroll{overflow-x:auto}
+.ev{padding:6px 0;border-bottom:1px solid var(--grid);font-size:13px;line-height:1.8}
+.ev:last-child{border-bottom:none}
+.k-signal{color:var(--gold)} .k-news{color:var(--blue)} .k-guard,.k-error{color:var(--down)}
+.k-close,.k-manage,.k-open,.k-conn{color:var(--up)} .k-start,.k-stop,.k-risk{color:var(--text)}
+.k-system,.k-raw{color:var(--muted)} .k-warn{color:#ffb74d}
+.day{color:var(--gold);font-size:13px;font-weight:700;padding:12px 0 4px}
+@media (max-width:600px){body{padding:10px} td,th{padding:6px 4px;font-size:12px}}
 </style>
 </head>
 <body>
@@ -233,6 +829,13 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:16px 0}
     <div class="status"><span class="dot" id="dot"></span><span id="status-text">…</span></div>
   </header>
 
+  <nav class="tabs">
+    <button class="tab on" data-tab="dash" onclick="showTab('dash')">داشبورد</button>
+    <button class="tab" data-tab="report" onclick="showTab('report')">گزارش</button>
+    <button class="tab" data-tab="log" onclick="showTab('log')">لاگ</button>
+  </nav>
+
+  <div id="tab-dash">
   <div class="grid kpis">
     <div class="card"><h3>قیمت لحظه‌ای</h3><div class="big gold" id="price">—</div>
       <div class="muted" id="spread"></div></div>
@@ -263,6 +866,47 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:16px 0}
     <h2>سیگنال‌های اخیر</h2>
     <div class="card" id="recent"><div class="empty">در حال بارگذاری…</div></div>
   </section>
+  </div>
+
+  <div id="tab-report" hidden>
+    <section><h2>خلاصه به زبان ساده</h2>
+      <div class="card"><ul class="lines" id="r-lines"><li class="muted">در حال بارگذاری…</li></ul>
+      <div class="small" id="r-note"></div></div></section>
+    <section><h2>نتیجه‌ها (خالص، بعد از کمیسیون و سواپ)</h2>
+      <div class="grid pcards" id="r-periods"></div></section>
+    <section><h2>روز به روز — ۱۴ روز اخیر</h2>
+      <div class="card scroll" id="r-days"></div></section>
+    <section><h2>به تفکیک جهت و نوع سیگنال (از ابتدا)</h2>
+      <div class="card scroll" id="r-groups"></div></section>
+    <section><h2>معاملات اخیر</h2>
+      <div class="card scroll" id="r-trades"></div></section>
+    <section><h2>کارهای ربات از آخرین روشن شدن</h2>
+      <div class="card" id="r-events"></div></section>
+    <div class="card small">
+      راهنما: همهٔ ساعت‌ها به وقت تهران است، به‌جز «ساعت سرور» که ساعت MT5 بروکر است.
+      «سربه‌سر» یعنی سود یا زیان کمتر از ۵۰ سنت. «درصد برد» بدون معاملات سربه‌سر حساب می‌شود.
+      «نوع خروج» تخمینی است (قیمت خروج با حد سود و حد ضرر اولیه مقایسه می‌شود).
+      سودها از تاریخچهٔ خود بروکر و خالص است. فهرست «کارهای ربات» در حافظه است و با ری‌استارت از نو شروع می‌شود.
+    </div>
+  </div>
+
+  <div id="tab-log" hidden>
+    <section><h2>لاگ ربات به زبان ساده</h2>
+      <div class="tabs">
+        <button class="tab on" data-view="important" onclick="setView('important')">فقط موارد مهم</button>
+        <button class="tab" data-view="all" onclick="setView('all')">همه (با پیام‌های فنی)</button>
+      </div>
+      <div class="card" id="l-items"><div class="empty">در حال بارگذاری…</div></div>
+      <div class="small" id="l-note" style="margin-top:8px"></div>
+    </section>
+    <div class="card small">
+      رنگ‌ها: <span class="k-signal">سیگنال</span> · <span class="k-news">خبر</span> ·
+      <span class="k-guard">گارد و خطا</span> · <span class="k-close">باز و بسته شدن و مدیریت پوزیشن</span> ·
+      <span class="k-system">پیام فنی</span>. ساعت‌ها به وقت تهران است.
+      این صفحه از فایل لاگ خود ربات خوانده می‌شود و با ری‌استارت پاک نمی‌شود (حدود چند روز اخیر).
+      پیام‌های تکراری در فاصلهٔ ۱۵ دقیقه یک بار نشان داده می‌شوند.
+    </div>
+  </div>
 
   <footer>GoldBot Dashboard · آپدیت خودکار هر ۵ ثانیه · <span id="uptime"></span></footer>
 </div>
@@ -339,6 +983,75 @@ async function tick(){
   catch(e){$('status-text').textContent='خطای ارتباط';$('dot').className='dot';}
 }
 tick();setInterval(tick,5000);
+
+// ------------------------------------------------------------- report tab
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const iso=s=>'\u2066'+s+'\u2069';
+const usd=n=>{n=+n||0;return iso((n>0?'+':(n<0?'−':''))+'$'+fmt(Math.abs(n)));};
+const pn=n=>(+n>0?'pos':(+n<0?'neg':''));
+const RES={win:'سود',loss:'ضرر',be:'سربه‌سر'};
+function table(head,rows){return '<table><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr>'+
+  rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</table>';}
+function renderReport(d){
+  $('r-lines').innerHTML=(d.headline||[]).map(x=>'<li>'+esc(x)+'</li>').join('');
+  $('r-note').textContent='به‌روزرسانی: '+d.generated+' (وقت '+d.tz+')'+(d.strategy?' · '+d.strategy:'');
+  $('r-periods').innerHTML=(d.periods||[]).map(p=>'<div class="card"><h3>'+esc(p.title)+'</h3>'+
+    '<div class="big '+(p.net>0?'up':(p.net<0?'down':''))+'">'+usd(p.net)+'</div><div class="small">'+
+    (p.trades?(p.trades+' معامله: '+p.wins+' سود · '+p.losses+' ضرر · '+p.be+' سربه‌سر'+
+      (p.win_rate!==null?'<br>درصد برد: '+iso(p.win_rate+'%'):'')+
+      '<br>بهترین '+usd(p.best)+' · بدترین '+usd(p.worst)):'معامله‌ای نبوده')+'</div></div>').join('');
+  const days=d.days||[];
+  $('r-days').innerHTML=days.length?table(['تاریخ','روز','معامله','سود / ضرر / سربه‌سر','جمع روز','جمع از ابتدا'],
+    days.map(x=>[x.date,x.weekday,x.trades||'—',x.trades?(x.wins+' / '+x.losses+' / '+x.be):'—',
+      '<span class="'+pn(x.net)+'">'+(x.trades?usd(x.net):'—')+'</span>','<span class="'+pn(x.cum)+'">'+usd(x.cum)+'</span>'])):
+    '<div class="empty">معامله‌ای نیست</div>';
+  const g=d.groups||[];
+  $('r-groups').innerHTML=g.length?table(['نوع','معامله','سود','ضرر','سربه‌سر','درصد برد','جمع'],
+    g.map(x=>[esc(x.name),x.trades,x.wins,x.losses,x.be,x.win_rate===null?'—':iso(x.win_rate+'%'),
+      '<span class="'+pn(x.net)+'">'+usd(x.net)+'</span>'])):'<div class="empty">معامله‌ای نیست</div>';
+  const t=d.trades||[];
+  $('r-trades').innerHTML=t.length?table(['باز شد','بسته شد','جهت','نوع سیگنال','ورود ← خروج','نتیجه','نوع خروج','مدت'],
+    t.map(x=>['<span class="muted">'+x.opened+'</span>','<span class="muted">'+x.closed+'</span>',
+      '<span class="tag '+(x.side==='BUY'?'buy':'sell')+'">'+x.side_fa+'</span>',esc(x.layer),
+      fmt(x.entry)+' ← '+fmt(x.close_price),
+      '<span class="'+pn(x.profit)+'">'+usd(x.profit)+'</span> <span class="muted">('+RES[x.result]+')</span>',
+      esc(x.exit),x.duration])):'<div class="empty">هنوز معامله‌ی بسته‌ای نیست</div>';
+  const ev=d.events||[];
+  $('r-events').innerHTML=ev.length?ev.map(e=>'<div class="ev"><span class="muted">'+e.time+'</span> &nbsp; '+
+    '<span class="k-'+e.kind+'">'+esc(e.text)+'</span></div>').join(''):
+    '<div class="empty">از آخرین روشن شدن، رویدادی ثبت نشده</div>';
+}
+async function loadReport(){
+  try{const r=await fetch('/api/report'+location.search);const d=await r.json();
+    if(d.error)throw new Error(d.error);renderReport(d);}
+  catch(e){$('r-lines').innerHTML='<li class="neg">خطا در گرفتن گزارش</li>';}
+}
+let logView='important';
+function renderLog(d){
+  const it=d.items||[];
+  if(!d.ok){$('l-items').innerHTML='<div class="empty">'+esc(d.message||'لاگ در دسترس نیست')+'</div>';$('l-note').textContent='';return;}
+  let html='',day='';
+  it.forEach(e=>{if(e.day!==day){day=e.day;html+='<div class="day">'+e.weekday+' '+e.day+'</div>';}
+    html+='<div class="ev"><span class="muted">'+e.time+'</span> &nbsp; <span class="k-'+e.kind+'">'+esc(e.text)+'</span></div>';});
+  $('l-items').innerHTML=html||'<div class="empty">موردی نیست</div>';
+  $('l-note').textContent=it.length+' مورد · فایل: '+(d.files||[]).join('، ');
+}
+async function loadLog(){
+  try{const q=location.search+(location.search?'&':'?')+'view='+logView;
+    const r=await fetch('/api/log'+q);const d=await r.json();if(d.error)throw new Error(d.error);renderLog(d);}
+  catch(e){$('l-items').innerHTML='<div class="empty neg">خطا در گرفتن لاگ</div>';}
+}
+function setView(v){logView=v;
+  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));loadLog();}
+function showTab(name){
+  ['dash','report','log'].forEach(t=>$('tab-'+t).hidden=name!==t);
+  document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
+  history.replaceState(null,'',location.pathname+location.search+(name==='dash'?'':'#'+name));
+  if(name==='report')loadReport();
+  if(name==='log')loadLog();
+}
+setInterval(()=>{if(!$('tab-report').hidden)loadReport();if(!$('tab-log').hidden)loadLog();},15000);
+showTab(['#report','#log'].includes(location.hash)?location.hash.slice(1):'dash');
 </script>
 </body>
 </html>

@@ -239,6 +239,7 @@ class LiveBot:
                 port=int(settings.get("dashboard.port", 8080)),
                 brand="GOLD M5 VIP",
                 token=dash_token,
+                log_path=str(settings.get("logging.path", "logs/bot_{time:YYYY-MM-DD}.log")),
             )
 
         # --- automatic daily digest state -------------------------------------
