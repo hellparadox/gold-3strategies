@@ -1,0 +1,53 @@
+# ============================================================================
+# AI pre-trade gate — نظر هوش مصنوعی قبل از هر ورود
+# ============================================================================
+# mode:
+#   off    → خاموش؛ ربات دقیقاً مثل قبل کار می‌کند.
+#   shadow → نظر گرفته و ثبت می‌شود ولی هیچ اثری روی معامله ندارد (برای جمع کردن آمار).
+#   live   → اگر هوش مصنوعی با اطمینان ≥ block_min_confidence بگوید SKIP، ورود انجام نمی‌شود.
+#
+# تغییر حالت:
+#   • همین فایل را ویرایش کن و ربات را ری‌استارت کن (همیشه برنده است)، یا
+#   • در تلگرام (ادمین): /aigate off | /aigate shadow | /aigate live   ← فوری، بعد از ری‌استارت هم می‌ماند
+#
+# کلید API فقط در فایل .env روی سرور (هرگز در این فایل یا گیت):
+#   AI_GATE_API_KEY=sk-...
+# بدون کلید یا بدون model، دروازه خودکار خاموش می‌ماند (یک هشدار در لاگ).
+#
+# ارزیابی: py -3.11 tools/ai_gate_report.py --strategy ichimoku_m15
+# ============================================================================
+version: 1
+
+defaults:
+  mode: "off"
+  provider: openai_compatible
+  base_url: "https://openrouter.ai/api/v1"   # هر API سازگار با OpenAI (OpenRouter، OpenAI، DeepSeek، …)
+  model: ""                                  # شناسهٔ مدل همان سرویس؛ خالی = غیرفعال
+  api_key_env: AI_GATE_API_KEY
+  response_format_json: true                 # اگر سرویس response_format را نمی‌شناسد: false
+  temperature: 0.0
+  max_output_tokens: 600
+  timeout_seconds: 20          # سقف کل هر درخواست، شامل تلاش دوباره
+  max_retries: 2
+  fail_policy: open            # فقط live — خطا/تأخیر: open = بدون نظر وارد شو، closed = وارد نشو
+  block_min_confidence: 60     # فقط live — SKIP فقط وقتی جلوی ورود را می‌گیرد که اطمینان ≥ این باشد
+  max_entry_drift_atr: 0.30    # فقط live — اگر قیمت در زمان انتظار بیش از این دور شد، ورود لغو
+  max_calls_per_day: 60        # 0 = بدون سقف
+  max_cost_usd_per_day: 2.0    # 0 = بدون سقف (هزینه از قیمت‌های زیر حساب می‌شود)
+  price_input_per_mtok: 0.0    # دلار برای هر ۱ میلیون توکن ورودی مدل انتخابی
+  price_output_per_mtok: 0.0   # دلار برای هر ۱ میلیون توکن خروجی
+  notify_telegram: true        # هر تصمیم برای ادمین‌ها فرستاده شود
+  prompt_file: config/ai_gate_prompt.md
+  journal_dir: data            # ژورنال: data/ai_gate_<strategy>.db
+  context:
+    trigger_bars: 48           # تعداد کندل تایم‌فریم سیگنال که به مدل داده می‌شود
+    h1_bars: 48
+    include_recent_trades: true
+    recent_trades: 20
+  base_rates: {}               # اختیاری، مثلاً {p_protect: 0.55}
+
+bots:                          # کلید = نام استراتژی
+  ichimoku_m15:
+    mode: "shadow"
+  orb_gold:
+    mode: "off"

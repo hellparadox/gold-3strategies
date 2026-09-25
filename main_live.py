@@ -6,6 +6,7 @@ Threads
 * main thread        : the 1-second execution loop (MT5 calls only)
 * mt5-heartbeat      : link watchdog inside :class:`MT5Client`
 * telegram-loop      : PTB v20 application + its own asyncio loop
+* ai-gate            : optional LLM pre-trade gate worker (core/ai_gate)
 
 The only cross-thread traffic is (a) the Telegram controller pulling telemetry
 through :class:`BotBridge` hooks, and (b) this module pushing broadcasts into
@@ -23,6 +24,7 @@ import subprocess
 import sys
 import threading
 import time
+from concurrent.futures import Future
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
@@ -32,6 +34,9 @@ from loguru import logger
 
 from backtest.engine import BacktestConfig, BacktestEngine, BacktestResult
 from core import Settings, setup_logging
+from core.ai_gate import AIGate, GateResult
+from core.ai_gate.context import TradePlan, build_context, server_offset_hours
+from core.ai_gate.gate import hash_key
 from core.chart_generator import ChartGenerator
 from core.database import Database
 from core.dashboard import DashboardServer
@@ -49,6 +54,13 @@ from core.signal_score import SignalScorer
 from core.telegram_bot import BotBridge, TelegramConfig, TelegramController
 from strategies import available_strategies, build_from_settings, build_strategy
 from strategies.base import BaseStrategy, Signal
+
+
+def _completed(result: Any) -> "Future[Any]":
+    """A finished Future holding ``result`` (uniform handling of instant verdicts)."""
+    fut: Future = Future()
+    fut.set_result(result)
+    return fut
 
 
 def shadow_pl(side: str, entry: float, exit_price: float, lot: float = 0.01) -> float:
@@ -119,6 +131,30 @@ class TrackedPosition:
             breakeven_done=self.breakeven_done,
             trailing_active=self.trailing_active,
         )
+
+
+@dataclass
+class PlannedTrade:
+    """Levels and execution identity for one signal, before any order is sent."""
+
+    levels: TradeLevels
+    entry_price: float
+    tick: Any
+    point: float
+    scope: str
+    signal_key: str
+
+
+@dataclass
+class PendingEntry:
+    """A live-mode entry waiting for the AI gate verdict (main loop keeps running)."""
+
+    signal: Signal
+    planned: PlannedTrade
+    prepared: Any
+    future: Any
+    key: str
+    deadline: float
 
 
 class LiveBot:
@@ -225,6 +261,13 @@ class LiveBot:
             str(settings.get("signal_score.file", "data/signal_scores.json"))
         )
 
+        # --- AI pre-trade gate (config/ai_gate.yaml; off = no effect at all) ---
+        self.ai_gate: AIGate = AIGate.create(
+            self.strategy.name,
+            notify=self.telegram.notify_admins if self.telegram is not None else None,
+        )
+        self._pending_entry: Optional[PendingEntry] = None
+
         # --- live web dashboard ----------------------------------------------
         self.dashboard: Optional[DashboardServer] = None
         if bool(settings.get("dashboard.enabled", False)):
@@ -240,6 +283,7 @@ class LiveBot:
                 brand="GOLD M5 VIP",
                 token=dash_token,
                 log_path=str(settings.get("logging.path", "logs/bot_{time:YYYY-MM-DD}.log")),
+                ai_gate_status=self.ai_gate.status,
             )
 
         # --- automatic daily digest state -------------------------------------
@@ -273,7 +317,17 @@ class LiveBot:
             bar_minutes=lambda: int(getattr(self.strategy, "bar_minutes", 5)),
             request_close=self._request_manual_close,
             open_position_count=self._hook_open_position_count,
+            get_ai_gate=self._hook_get_ai_gate,
+            set_ai_gate=self._hook_set_ai_gate,
         )
+
+    def _hook_get_ai_gate(self) -> Optional[Dict[str, Any]]:
+        gate = getattr(self, "ai_gate", None)
+        return None if gate is None else gate.status()
+
+    def _hook_set_ai_gate(self, mode: str) -> Optional[Dict[str, Any]]:
+        gate = getattr(self, "ai_gate", None)
+        return None if gate is None else gate.set_mode(mode)
 
     def _hook_open_position_count(self) -> int:
         """Broker positions_get for this symbol + this bot's magic only."""
@@ -625,6 +679,9 @@ class LiveBot:
         # failure leaves the mirror intact for the next reconciliation cycle.
         self._sync_daily()
         self.db.close_signal(ticket, close_price, profit, outcome)
+        gate = getattr(self, "ai_gate", None)
+        if gate is not None:
+            gate.record_outcome(ticket, profit)
         # Fill actual manual-close P/L into any armed shadow for this ticket.
         with self._lock:
             for s in self._shadows:
@@ -938,15 +995,29 @@ class LiveBot:
                 logger.info("📰 بلاک خبری فعال — ورود جدید ممنوع | {}", news_reason)
                 return
 
+        if getattr(self, "_pending_entry", None) is not None:
+            logger.info("AI gate: a live decision is still pending; new signal ignored")
+            return
+
+        gate = getattr(self, "ai_gate", None)
+        gate_inputs = {"prepared": prepared, "h1": h1}
+        if gate is not None and gate.active_mode() == "live":
+            # AI gate live: plan now, decide asynchronously, execute from the main
+            # loop (_process_pending_entry) — position management never waits.
+            self._begin_gated_entry(signal, gate_inputs)
+            return
+
         # FIX(#4): اول سفارش با سطوح واقعی ریسک‌منیجر ثبت می‌شود و بعد همان
         # سطوحِ اجراشده (entry/sl/tp/lot/ticket واقعی) به تلگرام می‌رود.
         # قبلاً broadcast سطوح متای استراتژی را با rr هاردکد ۲.۰ نشان می‌داد
         # که با معامله‌ای که واقعاً ثبت می‌شد یکی نبود؛ سفارش‌های ردشده هم
         # بی‌جهت به VIP مخابره می‌شدند.
-        levels = self._open_trade(signal)
+        levels = self._open_trade(signal, gate_inputs=gate_inputs)
         if levels is None:
             return
+        self._broadcast_entry(signal, levels, prepared)
 
+    def _broadcast_entry(self, signal: Signal, levels: TradeLevels, prepared: pd.DataFrame) -> None:
         # 🟢 مخابره سیگنال با سطوح واقعی به همراه چارت
         if self.telegram is not None:
             ref_time = getattr(signal, "ref_time", None)
@@ -995,8 +1066,26 @@ class LiveBot:
             return 0.0
         return abs(signal.tp - signal.entry) / sl_dist
 
-    def _open_trade(self, signal: Signal) -> Optional[TradeLevels]:
-        """سفارش را با سطوح ریسک‌منیجر ثبت می‌کند؛ در موفقیت levels برمی‌گرداند."""
+    def _open_trade(self, signal: Signal,
+                    gate_inputs: Optional[Dict[str, Any]] = None) -> Optional[TradeLevels]:
+        """سفارش را با سطوح ریسک‌منیجر ثبت می‌کند؛ در موفقیت levels برمی‌گرداند.
+
+        AI gate در حالت shadow: نظر در پس‌زمینه خواسته می‌شود و سفارش منتظر آن نمی‌ماند.
+        """
+        planned = self._plan_trade(signal)
+        if planned is None:
+            return None
+        gate = getattr(self, "ai_gate", None)
+        gate_key = None
+        if gate_inputs is not None and gate is not None and gate.active_mode() == "shadow":
+            gate_key, _ = self._gate_submit(signal, planned, gate_inputs)
+        levels = self._execute_trade(signal, planned)
+        if levels is not None and gate_key is not None:
+            gate.attach_ticket(gate_key, signal.ticket, signal.entry)
+        return levels
+
+    def _plan_trade(self, signal: Signal) -> Optional[PlannedTrade]:
+        """Levels from the RiskManager at the current tick; no order is sent."""
         info = self.client.symbol_info(refresh=True)
         if info is None:
             logger.error("cannot size trade: no symbol info")
@@ -1019,6 +1108,13 @@ class LiveBot:
         scope = json.dumps([str(getattr(account, "server", self.client.config.server)),
                             int(account.login), self.client.symbol, self.client.magic])
         signal_key = json.dumps([scope, signal.strategy, str(signal.ref_time), signal.side])
+        return PlannedTrade(levels=levels, entry_price=entry_price, tick=tick,
+                            point=float(getattr(info, "point", 0.01) or 0.01),
+                            scope=scope, signal_key=signal_key)
+
+    def _execute_trade(self, signal: Signal, planned: PlannedTrade) -> Optional[TradeLevels]:
+        """Claim the signal in the execution journal and send the market order."""
+        levels, scope, signal_key = planned.levels, planned.scope, planned.signal_key
         if not self.db.claim_execution(scope, signal_key):
             logger.warning("entry skipped: duplicate signal or unresolved order; inspect execution journal")
             return None
@@ -1120,6 +1216,162 @@ class LiveBot:
         )
         return levels
 
+    # ================================================================ AI gate
+    def _gate_submit(self, signal: Signal, planned: PlannedTrade,
+                     gate_inputs: Dict[str, Any]) -> tuple:
+        """Build the context and queue the request. Returns (journal_key, future|None).
+
+        Never raises: a context failure is logged and yields a ``None`` future.
+        """
+        key = hash_key(planned.signal_key)
+        try:
+            context, meta = self._gate_context(signal, planned, gate_inputs)
+        except Exception as exc:
+            logger.warning("AI gate context unavailable: {}", exc)
+            return key, None
+        return key, self.ai_gate.submit(context, key, meta)
+
+    def _gate_context(self, signal: Signal, planned: PlannedTrade,
+                      gate_inputs: Dict[str, Any]) -> tuple:
+        cfg = self.ai_gate.config
+        tick = planned.tick
+        tick_time = float(getattr(tick, "time", 0) or 0)
+        if tick_time > 0:
+            offset = server_offset_hours(tick_time, time.time())
+        else:
+            offset = float(getattr(getattr(self.news_filter, "config", None),
+                                   "server_utc_offset_hours", 0.0) or 0.0)
+        spread_points = (float(tick.ask) - float(tick.bid)) / planned.point if planned.point else 0.0
+        levels = planned.levels
+        plan = TradePlan(
+            side=signal.side, entry=float(levels.entry), sl=float(levels.sl), tp=float(levels.tp),
+            atr=float(signal.atr), risk_percent=float(self.risk_config.risk_percent),
+            be_trigger_atr=float(self.risk_config.breakeven_trigger_atr),
+            be_offset_points=float(self.risk_config.breakeven_buffer_points),
+            trail_trigger_atr=float(self.risk_config.trailing_trigger_atr),
+            trail_dist_atr=float(self.risk_config.trailing_distance_atr),
+            spread_points=spread_points, point=planned.point,
+        )
+        news = None
+        if getattr(self, "news_filter", None) is not None:
+            try:
+                news = self.news_filter.get_next_event()
+            except Exception:
+                news = None
+        recent = None
+        if cfg.context.include_recent_trades and cfg.context.recent_trades > 0:
+            recent = self.db.recent_signals(limit=max(200, cfg.context.recent_trades * 5))
+        context = build_context(
+            strategy=signal.strategy, layer=signal.reason, ref_time=signal.ref_time,
+            trigger=gate_inputs["prepared"], trigger_minutes=int(getattr(self.strategy, "bar_minutes", 5)),
+            h1=gate_inputs.get("h1"), plan=plan, offset_hours=offset,
+            decision_time_utc=datetime.now(timezone.utc),
+            trigger_bars=cfg.context.trigger_bars, h1_bars=cfg.context.h1_bars,
+            next_news=news, recent_trades=recent, recent_limit=cfg.context.recent_trades,
+            base_rates=cfg.base_rates,
+        )
+        meta = {
+            "strategy": signal.strategy, "side": signal.side, "layer": signal.reason,
+            "ref_time_server": str(signal.ref_time), "ref_time_utc": context["signal_bar_close_utc"],
+            "entry": float(levels.entry), "sl": float(levels.sl), "tp": float(levels.tp),
+            "atr": float(signal.atr), "spread_points": round(spread_points, 1),
+        }
+        return context, meta
+
+    def _begin_gated_entry(self, signal: Signal, gate_inputs: Dict[str, Any]) -> None:
+        planned = self._plan_trade(signal)
+        if planned is None:
+            return
+        key, future = self._gate_submit(signal, planned, gate_inputs)
+        if future is None:
+            future = _completed(GateResult(key, "live", "error", error="context unavailable"))
+        timeout = float(self.ai_gate.config.timeout_seconds)
+        self._pending_entry = PendingEntry(
+            signal=signal, planned=planned, prepared=gate_inputs.get("prepared"),
+            future=future, key=key, deadline=time.time() + timeout + 2.0,
+        )
+        logger.info("AI gate [live]: waiting for verdict on {} {} (max {:.0f}s)",
+                    signal.side, signal.reason, timeout)
+
+    def _entry_guard_reason(self) -> str:
+        """Why a delayed live entry must not be sent now ('' = all clear)."""
+        if not self.running:
+            return "engine paused"
+        halted, why = self._daily_guard()
+        if halted:
+            return f"daily guard: {why}"
+        if not self._session_open(self.client.server_time()) or not self._spread_ok():
+            return "session closed or spread too wide"
+        if getattr(self, "news_filter", None) is not None:
+            blocked, why = self.news_filter.is_news_active()
+            if blocked:
+                return f"news: {why}"
+        if self.client.open_position_count() >= self.risk_config.max_positions_per_symbol:
+            return "position limit reached"
+        return ""
+
+    def _process_pending_entry(self) -> None:
+        """Main-loop step: act on a finished (or overdue) live AI-gate decision."""
+        pending = getattr(self, "_pending_entry", None)
+        if pending is None:
+            return
+        if not pending.future.done() and time.time() < pending.deadline:
+            return
+        self._pending_entry = None
+        gate = self.ai_gate
+        if pending.future.done():
+            try:
+                result = pending.future.result()
+            except Exception as exc:  # worker crashed: treat as a gate error
+                result = GateResult(pending.key, "live", "error", error=str(exc)[:200])
+        else:
+            pending.future.cancel()
+            result = gate.timeout_result(pending.key, "live")
+
+        allow, action = gate.decide_live(result)
+        if not allow:
+            gate.finalize(result, action)
+            return
+        final = "cancelled_guard"
+        try:
+            reason = self._entry_guard_reason()
+            if reason:
+                logger.info("AI gate: delayed entry cancelled ({})", reason)
+                return
+            fresh = self._plan_trade(pending.signal)
+            if fresh is None:
+                return
+            drift = abs(float(fresh.entry_price) - float(pending.planned.entry_price))
+            limit = float(gate.config.max_entry_drift_atr) * float(pending.signal.atr or 0.0)
+            if limit > 0 and drift > limit:
+                final = "cancelled_drift"
+                logger.info("AI gate: delayed entry cancelled, price drift {:.2f} > {:.2f}", drift, limit)
+                return
+            levels = self._execute_trade(pending.signal, fresh)
+            if levels is None:
+                final = "order_failed"
+                return
+            final = action
+            gate.attach_ticket(pending.key, pending.signal.ticket, pending.signal.entry)
+            self._broadcast_entry(pending.signal, levels, pending.prepared)
+        finally:
+            gate.finalize(result, final)
+
+    def _cancel_pending_entry(self) -> None:
+        pending = getattr(self, "_pending_entry", None)
+        if pending is None:
+            return
+        self._pending_entry = None
+        if pending.future.done():
+            try:
+                result = pending.future.result()
+            except Exception as exc:
+                result = GateResult(pending.key, "live", "error", error=str(exc)[:200])
+        else:
+            pending.future.cancel()
+            result = self.ai_gate.timeout_result(pending.key, "live")
+        self.ai_gate.finalize(result, "cancelled_guard")
+
     # ===================================================================== run
     def run(self) -> None:
         setup_logging(self.settings)
@@ -1152,7 +1404,10 @@ class LiveBot:
                 "\U0001F680 <b>GOLD M5 BOT started</b>\n"
                 f"Symbol: <code>{self.client.symbol}</code>\n"
                 f"Strategy: <b>{self.strategy.name}</b>\n"
-                f"Risk: <b>{self.risk_config.risk_percent:.2f}%</b>"
+                f"Risk: <b>{self.risk_config.risk_percent:.2f}%</b>\n"
+                f"AI gate: <b>{self.ai_gate.mode}</b>"
+                + ("" if self.ai_gate.mode == "off" or self.ai_gate.active_mode() != "off"
+                   else " (inactive: API key/model missing)")
             )
 
         unresolved = self.db.unresolved_executions()
@@ -1190,6 +1445,9 @@ class LiveBot:
                     self._stop.wait(self.loop_sleep)
                     continue
 
+                # (1b) live AI gate: act on a finished verdict (never waits here)
+                self._process_pending_entry()
+
                 # (2) bar close only: hunt for new entries
                 frames = self._load_frames()
                 m5 = frames["m5"]
@@ -1219,6 +1477,11 @@ class LiveBot:
 
     def shutdown(self) -> None:
         logger.info("shutting down…")
+        if getattr(self, "ai_gate", None) is not None:
+            try:
+                self._cancel_pending_entry()
+            finally:
+                self.ai_gate.shutdown()
         if self.dashboard is not None:
             self.dashboard.stop()
         if self.telegram is not None:

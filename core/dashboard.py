@@ -31,6 +31,8 @@ from urllib.parse import parse_qs, urlparse
 
 from loguru import logger
 
+from core.ai_gate.gate import ACTIONS_FA
+
 __all__ = ["DashboardServer", "build_report", "translate_log_event"]
 
 _SNAPSHOT_TTL = 3.0  # seconds a telemetry snapshot stays fresh
@@ -52,8 +54,10 @@ class DashboardServer:
         brand: str = "GoldBot",
         token: str = "",
         log_path: Optional[str] = None,
+        ai_gate_status: Optional[Callable[[], Optional[Dict[str, Any]]]] = None,
     ) -> None:
         self._telemetry = telemetry_provider
+        self._ai_gate_status = ai_gate_status
         self._db = db
         self._host = host
         self._port = int(port)
@@ -204,7 +208,14 @@ class DashboardServer:
             events = list(self._events)
         now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
         started = datetime.fromtimestamp(self._started_at, tz=timezone.utc).replace(tzinfo=None)
-        payload = build_report(rows, events, snap.get("telemetry") or {}, now_utc, started)
+        ai_state = None
+        if self._ai_gate_status is not None:
+            try:
+                ai_state = self._ai_gate_status()
+            except Exception as exc:
+                logger.warning("dashboard report: ai gate status unavailable: {}", exc)
+        payload = build_report(rows, events, snap.get("telemetry") or {}, now_utc, started,
+                               ai_gate=ai_state)
         payload["brand"] = self._brand
         payload["strategy"] = (snap.get("telemetry") or {}).get("strategy", "")
         with self._cache_lock:
@@ -264,7 +275,35 @@ def _manage_text(what: str, ticket: str, old: str, new: str) -> str:
 
 _NEWS_OFFLINE = "تقویم اینترنتی خبرها در دسترس نبود؛ فایل خبرهای ذخیره‌شده استفاده می‌شود"
 
+def _ai_line(mode: str, label: str, conf: str, action: str, reason: str) -> str:
+    mode_fa = "سایه" if mode == "shadow" else ("فعال" if mode == "live" else mode)
+    if label == "TAKE":
+        verdict = f"ورود با اطمینان {conf}٪"
+    elif label == "SKIP":
+        verdict = f"رد با اطمینان {conf}٪"
+    else:
+        verdict = f"بدون نظر ({label})"
+    return f"هوش مصنوعی ({mode_fa}): {verdict} → {ACTIONS_FA.get(action, action)} — {reason}"
+
+
 _EVENT_RULES: List[tuple] = [
+    # ---- AI pre-trade gate (core/ai_gate)
+    ("🤖 AI gate [", "ai", _rx(r"🤖 AI gate \[(\w+)\] (\w+) (\d+)% → (\w+) \| (.*)$", _ai_line)),
+    ("AI gate [live]: waiting", "ai", "هوش مصنوعی (فعال): منتظر نظر برای ورود…"),
+    ("AI gate disabled", "ai", _rx(r"AI gate disabled: (.*)$",
+        lambda why: "هوش مصنوعی غیرفعال است: " + ("کلید API یا مدل تنظیم نشده"
+                                                  if "API key" in why else why))),
+    ("AI gate ready", "ai", _rx(r"mode=(\w+) \((\w+)\) \| model=(\S*)",
+        lambda m, src, model: f"هوش مصنوعی آماده است — حالت {m}، مدل {model}")),
+    ("AI gate mode", "ai", _rx(r"AI gate mode (\w+) -> (\w+)",
+        lambda a, b: f"حالت هوش مصنوعی از {a} به {b} تغییر کرد")),
+    ("AI gate: delayed entry cancelled", "ai", _rx(r"cancelled[ ,]*\(?(.*?)\)?$",
+        lambda why: f"ورود بعد از انتظار برای هوش مصنوعی لغو شد ({why})")),
+    ("AI gate: a live decision is still pending", "ai",
+     "سیگنال جدید نادیده گرفته شد: هنوز منتظر نظر هوش مصنوعی برای سیگنال قبلی"),
+    ("AI gate config invalid", "error", _rx(r"off: (.*)$",
+        lambda why: f"تنظیمات هوش مصنوعی نامعتبر است؛ خاموش ماند: {why}")),
+    ("AI gate", "ai", lambda msg: "هوش مصنوعی: " + msg.split("AI gate", 1)[1].lstrip(" :")[:200]),
     # ---- trading decisions (main_live / risk_manager)
     ("سیگنال شناسایی شد", "signal", _rx(r"شد:\s*(.+?)\s*→\s*(BUY|SELL)\s*\((.*)\)\s*$",
         lambda bar, side, why: f"سیگنال {_SIDE_FA.get(side, side)} ({why}) روی کندل {bar} (ساعت سرور)")),
@@ -333,9 +372,9 @@ _EVENT_RULES: List[tuple] = [
     ("signal scores loaded", "system", None),
 ]
 _LOG_SOURCES = ("__main__", "main_live", "core.risk_manager", "core.mt5_client",
-                "core.news_filter", "core.telegram_bot")
+                "core.news_filter", "core.telegram_bot", "core.ai_gate.gate", "core.ai_gate.config")
 IMPORTANT_KINDS = ("signal", "news", "guard", "risk", "error", "close", "manage", "open",
-                   "start", "stop", "conn")
+                   "start", "stop", "conn", "ai")
 _RE_TOKEN = re.compile(r"token=[^\s&]+")
 
 
@@ -457,6 +496,47 @@ def _stats(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
+_AI_MIN_SAMPLE = 20
+
+
+def _ai_gate_section(state: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Plain-Persian summary of the AI gate for the report tab (None = hide section)."""
+    if not state:
+        return None
+    source = "دستور تلگرام" if state.get("source") == "runtime" else "فایل تنظیمات"
+    lines = [f"حالت: {state.get('mode_fa') or state.get('mode')} (از {source})."]
+    if state.get("mode") != "off" and state.get("active_mode") == "off":
+        why = state.get("disabled_reason")
+        lines.append("⚠️ غیرفعال است: " + ("کلید API یا مدل تنظیم نشده."
+                                           if why == "no_key" else f"{why}."))
+    if state.get("model"):
+        lines.append(f"مدل: {state.get('model')}")
+    if state.get("mode") == "live":
+        policy = "بدون نظر وارد می‌شود" if state.get("fail_policy") == "open" else "وارد نمی‌شود"
+        lines.append(f"جلوی ورود را فقط وقتی می‌گیرد که با اطمینان ≥ {state.get('block_min_confidence')}٪ "
+                     f"بگوید «وارد نشو». اگر جواب ندهد، ربات {policy}.")
+    journal = state.get("journal") or {}
+    today = journal.get("today") or {}
+    if today.get("total"):
+        lines.append(f"امروز: {today['total']} درخواست — «وارد شو» {today['take']['n']}، "
+                     f"«وارد نشو» {today['skip']['n']}، خطا {today['errors']}، "
+                     f"هزینه {_money(float(today.get('cost') or 0)).replace('+', '')}.")
+    period = journal.get("period") or {}
+    rows = []
+    for key, name in (("take", "گفته «وارد شو»"), ("skip", "گفته «وارد نشو»")):
+        g = period.get(key) or {}
+        if not g:
+            continue
+        rows.append({
+            "name": name, "n": g.get("n", 0), "closed": g.get("closed", 0),
+            "net": g.get("net", 0.0), "avg": g.get("avg"),
+            "note": "نمونه کم است" if (g.get("closed") or 0) < _AI_MIN_SAMPLE else "",
+        })
+    if period.get("blocked"):
+        lines.append(f"در {journal.get('period_days', 30)} روز اخیر {period['blocked']} ورود را متوقف کرده است.")
+    return {"lines": lines, "rows": rows, "days": journal.get("period_days", 30)}
+
+
 def build_report(
     rows: List[Dict[str, Any]],
     events: List[Dict[str, Any]],
@@ -465,6 +545,7 @@ def build_report(
     started_utc: datetime,
     tz_minutes: int = _REPORT_TZ_MINUTES,
     tz_label: str = _REPORT_TZ_LABEL,
+    ai_gate: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Pure function: signals-table rows + log events -> plain-language report."""
     shift = timedelta(minutes=tz_minutes)
@@ -604,6 +685,7 @@ def build_report(
         return {k: v for k, v in t.items() if not k.startswith("_")}
 
     return {
+        "ai_gate": _ai_gate_section(ai_gate),
         "tz": tz_label,
         "generated": local_now.strftime("%Y-%m-%d %H:%M"),
         "headline": lines,
@@ -817,7 +899,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:16px 0}
 .ev:last-child{border-bottom:none}
 .k-signal{color:var(--gold)} .k-news{color:var(--blue)} .k-guard,.k-error{color:var(--down)}
 .k-close,.k-manage,.k-open,.k-conn{color:var(--up)} .k-start,.k-stop,.k-risk{color:var(--text)}
-.k-system,.k-raw{color:var(--muted)} .k-warn{color:#ffb74d}
+.k-system,.k-raw{color:var(--muted)} .k-warn{color:#ffb74d} .k-ai{color:#b39ddb}
 .day{color:var(--gold);font-size:13px;font-weight:700;padding:12px 0 4px}
 @media (max-width:600px){body{padding:10px} td,th{padding:6px 4px;font-size:12px}}
 </style>
@@ -878,6 +960,9 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:16px 0}
       <div class="card scroll" id="r-days"></div></section>
     <section><h2>به تفکیک جهت و نوع سیگنال (از ابتدا)</h2>
       <div class="card scroll" id="r-groups"></div></section>
+    <section id="r-ai-sec" hidden><h2>فیلتر هوش مصنوعی</h2>
+      <div class="card"><ul class="lines" id="r-ai-lines"></ul>
+      <div class="scroll" id="r-ai-table" style="margin-top:10px"></div></div></section>
     <section><h2>معاملات اخیر</h2>
       <div class="card scroll" id="r-trades"></div></section>
     <section><h2>کارهای ربات از آخرین روشن شدن</h2>
@@ -902,6 +987,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:16px 0}
     <div class="card small">
       رنگ‌ها: <span class="k-signal">سیگنال</span> · <span class="k-news">خبر</span> ·
       <span class="k-guard">گارد و خطا</span> · <span class="k-close">باز و بسته شدن و مدیریت پوزیشن</span> ·
+      <span class="k-ai">هوش مصنوعی</span> ·
       <span class="k-system">پیام فنی</span>. ساعت‌ها به وقت تهران است.
       این صفحه از فایل لاگ خود ربات خوانده می‌شود و با ری‌استارت پاک نمی‌شود (حدود چند روز اخیر).
       پیام‌های تکراری در فاصلهٔ ۱۵ دقیقه یک بار نشان داده می‌شوند.
@@ -1016,6 +1102,15 @@ function renderReport(d){
       fmt(x.entry)+' ← '+fmt(x.close_price),
       '<span class="'+pn(x.profit)+'">'+usd(x.profit)+'</span> <span class="muted">('+RES[x.result]+')</span>',
       esc(x.exit),x.duration])):'<div class="empty">هنوز معامله‌ی بسته‌ای نیست</div>';
+  const ai=d.ai_gate;
+  $('r-ai-sec').hidden=!ai;
+  if(ai){
+    $('r-ai-lines').innerHTML=(ai.lines||[]).map(x=>'<li>'+esc(x)+'</li>').join('');
+    const ar=ai.rows||[];
+    $('r-ai-table').innerHTML=ar.length?table(['نظر هوش مصنوعی ('+ai.days+' روز)','تعداد','بسته‌شده','جمع سود','میانگین هر معامله',''],
+      ar.map(x=>[esc(x.name),x.n,x.closed,'<span class="'+pn(x.net)+'">'+usd(x.net)+'</span>',
+        x.avg===null?'—':'<span class="'+pn(x.avg)+'">'+usd(x.avg)+'</span>','<span class="muted">'+esc(x.note)+'</span>'])):'';
+  }
   const ev=d.events||[];
   $('r-events').innerHTML=ev.length?ev.map(e=>'<div class="ev"><span class="muted">'+e.time+'</span> &nbsp; '+
     '<span class="k-'+e.kind+'">'+esc(e.text)+'</span></div>').join(''):

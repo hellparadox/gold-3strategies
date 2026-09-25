@@ -17,6 +17,7 @@ Audience tiers
 from __future__ import annotations
 
 import asyncio
+import html
 import io
 import os
 import threading
@@ -139,6 +140,9 @@ class BotBridge:
     ] = None
     # دقیقه‌های هر کندلِ استراتژی (برای برچسب درست cooldown) — 5 = M5
     bar_minutes: Optional[Callable[[], int]] = None
+    # دروازهٔ هوش مصنوعی (core/ai_gate): وضعیت و تغییر لحظه‌ای حالت off|shadow|live
+    get_ai_gate: Optional[Callable[[], Optional[Dict[str, Any]]]] = None
+    set_ai_gate: Optional[Callable[[str], Optional[Dict[str, Any]]]] = None
 
 
 class TelegramController:
@@ -376,6 +380,7 @@ class TelegramController:
         app.add_handler(CommandHandler("risk", self._cmd_risk))
         app.add_handler(CommandHandler("cooldown", self._cmd_cooldown))
         app.add_handler(CommandHandler("extension", self._cmd_extension))
+        app.add_handler(CommandHandler("aigate", self._cmd_aigate))
         app.add_handler(CallbackQueryHandler(self._on_callback))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._on_text))
         app.add_error_handler(self._on_error)
@@ -403,6 +408,7 @@ class TelegramController:
             BotCommand("risk", "تنظیم درصد ریسک"),
             BotCommand("cooldown", "وقفه معاملات"),
             BotCommand("extension", "فیلتر حرکت کشیده on/off"),
+            BotCommand("aigate", "هوش مصنوعی: off / shadow / live"),
             BotCommand("users", "آمار کاربران"),
             BotCommand("addvip", "افزودن اشتراک VIP"),
             BotCommand("removevip", "حذف اشتراک VIP"),
@@ -459,6 +465,7 @@ class TelegramController:
                 "<code>/risk 1.0</code> · set risk %\n"
                 "<code>/cooldown 12</code> · set cooldown bars\n"
                 "<code>/extension on|off</code> · anti-chase filter\n"
+                "<code>/aigate [off|shadow|live]</code> · AI pre-trade gate\n"
                 "<code>/toggle [on|off]</code> · kill switch\n"
                 "<code>/close [ticket]</code> · manual close + shadow verdict"
             )
@@ -815,6 +822,66 @@ class TelegramController:
             f"🚌 فیلتر حرکت کشیده: <b>{status}</b>\n"
             f"حد فاصله مجاز: <b>{float(state['max_atr']):.1f}×ATR</b>\n"
             "✅ همین حالا اعمال شد (بدون ری‌استارت) و ذخیره شد.",
+            parse_mode=ParseMode.HTML,
+        )
+
+    @staticmethod
+    def format_ai_gate_status(state: Dict[str, Any]) -> str:
+        """وضعیت دروازهٔ هوش مصنوعی به فارسی (HTML) — برای /aigate."""
+        source = "دستور تلگرام" if state.get("source") == "runtime" else "فایل تنظیمات"
+        lines = [
+            "🤖 <b>دروازهٔ هوش مصنوعی</b>",
+            f"حالت: <b>{html.escape(str(state.get('mode_fa') or state.get('mode')))}</b> (از {source})",
+        ]
+        if state.get("mode") != "off" and state.get("active_mode") == "off":
+            reason = state.get("disabled_reason") or "-"
+            hint = ("کلید API (AI_GATE_API_KEY در .env) یا model در config/ai_gate.yaml تنظیم نشده"
+                    if reason == "no_key" else html.escape(str(reason)))
+            lines.append(f"⚠️ غیرفعال: {hint}")
+        lines.append(f"مدل: <code>{html.escape(str(state.get('model') or '-'))}</code>")
+        if state.get("mode") == "live":
+            lines.append(f"مسدود کردن: SKIP با اطمینان ≥ {state.get('block_min_confidence')}٪ · "
+                         f"خطا/تأخیر: {'بدون نظر وارد شو' if state.get('fail_policy') == 'open' else 'وارد نشو'}")
+        journal = state.get("journal") or {}
+        today = journal.get("today") or {}
+        if today:
+            lines.append(
+                f"امروز: {today.get('total', 0)} درخواست · ورود {today.get('take', {}).get('n', 0)} · "
+                f"رد {today.get('skip', {}).get('n', 0)} · خطا {today.get('errors', 0)} · "
+                f"هزینه ${float(today.get('cost', 0) or 0):.3f}")
+        last = journal.get("last")
+        if last:
+            verdict = last.get("decision") or last.get("status")
+            lines.append(f"آخرین: {html.escape(str(last.get('side')))} → {html.escape(str(verdict))} "
+                         f"{last.get('confidence') or 0}٪ ({html.escape(str(last.get('action') or '-'))})")
+        lines.append("\n<code>/aigate off</code> · <code>/aigate shadow</code> · <code>/aigate live</code>")
+        return "\n".join(lines)
+
+    async def _cmd_aigate(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """/aigate → وضعیت؛ /aigate off|shadow|live → تغییر فوری (ذخیره، بعد از ری‌استارت هم می‌ماند)."""
+        if not await self._guard_admin(update) or update.message is None:
+            return
+        args = [a.lower() for a in (context.args or [])]
+        if not args:
+            state = self._safe(self.bridge.get_ai_gate, None)
+            if state is None:
+                await update.message.reply_text("⚠️ دروازهٔ هوش مصنوعی در این ربات در دسترس نیست.")
+                return
+            await update.message.reply_text(self.format_ai_gate_status(state), parse_mode=ParseMode.HTML)
+            return
+        mode = args[0]
+        if mode not in ("off", "shadow", "live") or len(args) > 1:
+            await update.message.reply_text("Usage: <code>/aigate off|shadow|live</code>",
+                                            parse_mode=ParseMode.HTML)
+            return
+        state = self._safe(self.bridge.set_ai_gate, None, mode)
+        if state is None:
+            await update.message.reply_text("❌ تغییر حالت انجام نشد (لاگ ربات را ببین).")
+            return
+        warn = ("\n\n⚠️ از این لحظه نظر هوش مصنوعی می‌تواند جلوی ورود را بگیرد."
+                if mode == "live" else "")
+        await update.message.reply_text(
+            "✅ همین حالا اعمال و ذخیره شد." + warn + "\n\n" + self.format_ai_gate_status(state),
             parse_mode=ParseMode.HTML,
         )
 
