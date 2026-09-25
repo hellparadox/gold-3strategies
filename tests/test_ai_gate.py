@@ -929,3 +929,152 @@ class ReportToolTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ================================================================ evaluation in the bot
+class StoredEvaluationTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(self.tmp.cleanup)
+        self.gate = AIGate(cfg(self.tmp.name), "ichimoku_m15", provider=FakeProvider(TAKE))
+        self.addCleanup(self.gate.shutdown)
+        self.rules = __import__("core.ai_gate.evaluate", fromlist=["ExitRules"]).ExitRules(1.0, 5, 1.3, 0.4)
+
+    def add(self, key, text, entry=100.0, side="BUY"):
+        self.gate._provider.text = text
+        meta = dict(META, side=side, entry=entry, sl=entry - 1.6 if side == "BUY" else entry + 1.6,
+                    tp=entry + 4.8 if side == "BUY" else entry - 4.8, atr=1.0, spread_points=0,
+                    ref_time_server="2026-09-09 12:00:00")
+        wait(self.gate.submit(ctx(), key, meta))
+
+    @staticmethod
+    def m1(rows, start="2026-09-09 12:15"):
+        idx = pd.date_range(start, periods=len(rows), freq="min")
+        return pd.DataFrame(rows, columns=["open", "high", "low", "close"], index=idx).assign(spread=0)
+
+    def test_journal_migrates_v1(self):
+        import sqlite3
+        path = os.path.join(self.tmp.name, "old.db")
+        from core.ai_gate import journal as jm
+        v1 = jm._DDL
+        for line in ("    sim_profit      REAL,\n", "    sim_exit        TEXT,\n", "    sim_protected   INTEGER,\n",
+                     "    sim_done        INTEGER NOT NULL DEFAULT 0,\n"):
+            v1 = v1.replace(line, "")
+        v1 = v1.replace("    result          TEXT,\n    sim_updated_utc TEXT\n", "    result          TEXT\n")
+        self.assertNotIn("sim_", v1)
+        con = sqlite3.connect(path)
+        con.executescript(v1)
+        con.execute("INSERT INTO decisions (signal_key, created_utc, mode, status) VALUES ('a','x','shadow','ok')")
+        con.commit(); con.close()
+        j = jm.DecisionJournal(path)
+        self.addCleanup(j.close)
+        cols = {r[1] for r in j._conn.execute("PRAGMA table_info(decisions)")}
+        self.assertTrue({"sim_profit", "sim_exit", "sim_protected", "sim_done", "sim_updated_utc"} <= cols)
+        self.assertEqual(j.get("a")["sim_done"], 0)
+        jm.DecisionJournal(path).close()                               # idempotent
+
+    def test_simulation_lifecycle_and_accuracy(self):
+        self.add("take_tp", TAKE)
+        self.add("skip_sl", SKIP_HI)
+        self.add("skip_open", SKIP_HI)
+        tp = self.m1([[100, 104.9, 99.9, 104.5]])
+        sl = self.m1([[100, 100.1, 98.0, 98.2]])
+        flat = self.m1([[100, 100.2, 99.9, 100.1]] * 30)
+        bars = {"take_tp": tp, "skip_sl": sl, "skip_open": flat}
+        order = iter(["take_tp", "skip_sl", "skip_open"])
+        fetch = lambda s, e: bars[next(order)]  # noqa: E731
+        # 5 minutes before the signal bar closes: nothing is due yet
+        self.assertEqual(self.gate.simulate_pending(fetch, self.rules, datetime(2026, 9, 9, 12, 10)), 0)
+        n = self.gate.simulate_pending(fetch, self.rules, datetime(2026, 9, 9, 13, 0))
+        self.assertEqual(n, 3)
+        j = self.gate._open_journal()
+        self.assertEqual((j.get("take_tp")["sim_exit"], j.get("take_tp")["sim_done"]), ("tp", 1))
+        self.assertEqual((j.get("skip_sl")["sim_exit"], j.get("skip_sl")["sim_done"]), ("sl", 1))
+        self.assertEqual((j.get("skip_open")["sim_exit"], j.get("skip_open")["sim_done"]), ("horizon", 0))
+        # 49 h later the open one is final at the horizon
+        n = self.gate.simulate_pending(lambda s, e: flat, self.rules, datetime(2026, 9, 11, 13, 16))
+        self.assertEqual(n, 1)
+        self.assertEqual(j.get("skip_open")["sim_done"], 1)
+
+        rep = self.gate.dashboard_report()
+        r = rep["report"]
+        self.assertEqual(r["accuracy"]["right"], 2)                     # TAKE→TP and SKIP→SL
+        self.assertEqual(r["accuracy"]["neutral"], 1)
+        self.assertEqual(r["accuracy"]["pct"], 100.0)
+        self.assertEqual(r["take"]["sum"], 4.8)
+        self.assertEqual(r["uplift"]["uplift"], 1.6 - 0.1)              # −(−1.6 + 0.1)
+        self.assertEqual(len(rep["items"]), 3)
+        self.assertEqual(rep["items"][0]["correct"], "neutral")         # newest first
+        self.assertEqual({i["correct"] for i in rep["items"]}, {"right", "neutral"})
+
+    def test_missing_history_eventually_final(self):
+        self.add("k", TAKE)
+        empty = lambda s, e: pd.DataFrame()  # noqa: E731
+        self.assertEqual(self.gate.simulate_pending(empty, self.rules, datetime(2026, 9, 9, 14, 0)), 0)
+        self.assertEqual(self.gate.simulate_pending(empty, self.rules, datetime(2026, 9, 20, 0, 0)), 1)
+        rep = self.gate.dashboard_report()["report"]
+        self.assertEqual(rep["pending"], 1)                             # no_data never counts
+        self.assertIsNone(rep["accuracy"]["pct"])
+
+    def test_no_journal_report(self):
+        g = AIGate(cfg(tempfile.mkdtemp(dir=self.tmp.name), mode="off"), "orb_gold")
+        self.addCleanup(g.shutdown)
+        rep = g.dashboard_report()
+        self.assertIsNone(rep["report"])
+        self.assertEqual(rep["status"]["mode"], "off")
+        self.assertEqual(g.simulate_pending(lambda s, e: None, self.rules, datetime(2026, 9, 9)), 0)
+
+
+class HousekeepingTests(LiveWiringBase):
+    MODE = "shadow"
+
+    def test_rate_limited_and_uses_m1_range(self):
+        b = self.bot
+        b._ai_sim_last = 0.0
+        b.client.server_time.return_value = datetime(2026, 9, 9, 13, 0)
+        b.client.get_rates_range.return_value = pd.DataFrame()
+        b._open_trade(self.signal, gate_inputs=self.inputs)
+        time.sleep(0.1)
+        b._ai_gate_housekeeping()
+        args = b.client.get_rates_range.call_args.args
+        self.assertEqual(args[0], "M1")
+        self.assertEqual(args[1], datetime(2026, 9, 9, 12, 15, tzinfo=timezone.utc))
+        b.client.get_rates_range.reset_mock()
+        b._ai_gate_housekeeping()                                       # within 5 minutes: skipped
+        b.client.get_rates_range.assert_not_called()
+
+    def test_failures_never_raise(self):
+        b = self.bot
+        b._ai_sim_last = 0.0
+        b.client.server_time.side_effect = RuntimeError("IPC")
+        b._open_trade(self.signal, gate_inputs=self.inputs)
+        b._ai_gate_housekeeping()                                       # no exception
+
+    def test_off_gate_does_nothing(self):
+        del self.bot.ai_gate
+        self.bot._ai_gate_housekeeping()
+
+
+class DashboardAITabTests(unittest.TestCase):
+    def test_endpoint(self):
+        from core.dashboard import DashboardServer
+
+        class DB:
+            def recent_signals(self, limit=10): return []
+            def signal_performance(self): return {}
+            def stats(self): return {}
+        payload = {"status": {"mode": "shadow"}, "report": None, "items": []}
+        server = DashboardServer(lambda: {"connected": True}, DB(), host="127.0.0.1", port=0, token="t",
+                                 ai_gate_report=lambda: payload)
+        self.assertTrue(server.start())
+        try:
+            base = f"http://127.0.0.1:{server._httpd.server_address[1]}"
+            got = json.loads(__import__("urllib.request").request.urlopen(base + "/api/ai?token=t").read())
+            self.assertEqual(got["status"]["mode"], "shadow")
+            self.assertTrue(got["available"])
+            page = __import__("urllib.request").request.urlopen(base + "/?token=t").read().decode()
+            self.assertIn('id="tab-ai"', page)
+        finally:
+            server.stop()
+        bare = DashboardServer(lambda: {}, DB(), host="127.0.0.1", port=0)
+        self.assertFalse(bare.ai_report()["available"])

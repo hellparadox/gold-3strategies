@@ -15,7 +15,10 @@ import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
+import pandas as pd
 
 from loguru import logger
 
@@ -23,6 +26,9 @@ from core.ai_gate.config import (
     MODES, AIGateConfig, ConfigError, load_config, resolve_mode, state_path, write_state,
 )
 from core.ai_gate.decision import InvalidDecision, parse_decision
+from core.ai_gate.evaluate import (
+    FINAL_EXITS, HORIZON_HOURS, ExitRules, correctness, evaluate, simulate,
+)
 from core.ai_gate.journal import DecisionJournal
 from core.ai_gate.prompt import build_user_message, load_system_prompt
 from core.ai_gate.provider import LLMProvider, OpenAICompatibleProvider, ProviderError, redact
@@ -373,6 +379,87 @@ class AIGate:
                 self._open_journal().record_outcome(int(ticket), float(profit))
         except Exception as exc:
             logger.warning("AI gate record_outcome failed: {}", exc)
+
+    # ------------------------------------------------------------ evaluation
+    def has_journal(self) -> bool:
+        with self._lock:
+            return not self._closed and (self._journal is not None or os.path.exists(self._journal_path))
+
+    def simulate_pending(self, fetch_bars: Callable[[pd.Timestamp, pd.Timestamp], pd.DataFrame],
+                         rules: ExitRules, server_now: datetime, limit: int = 30) -> int:
+        """Simulate the outcome of verdicts on broker M1 bars; returns rows updated.
+
+        Called from the bot's main loop (MT5 thread).  A simulation is final when the
+        simulated trade exited (tp/sl/be/trail) or the 48 h horizon has passed; until then
+        the partial state is stored so the dashboard can show it as in progress.
+        """
+        if not self.has_journal():
+            return 0
+        journal = self._open_journal()
+        now = pd.Timestamp(server_now)
+        horizon = timedelta(hours=HORIZON_HOURS)
+        updated = 0
+        for row in journal.pending_sims(limit):
+            try:
+                ctx = json.loads(row.get("context_json") or "{}")
+                tf = str(ctx.get("trigger_tf") or "M15")
+                minutes = int(tf[1:]) if tf[1:].isdigit() else 15
+                start = pd.Timestamp(row["ref_time_server"]) + timedelta(minutes=minutes)
+                if now < start + timedelta(minutes=1):
+                    continue
+                end = min(now, start + horizon)
+                bars = fetch_bars(start, end)
+                if bars is None or len(bars) == 0:
+                    if now > start + horizon + timedelta(days=5):   # history will not come back
+                        journal.store_sim(row["signal_key"], 0.0, "no_data", False, True)
+                        updated += 1
+                    continue
+                bars = bars.loc[(bars.index >= start) & (bars.index <= end)]
+                res = simulate(row["side"], float(row["entry_plan"]), float(row["sl_plan"]),
+                               float(row["tp_plan"]), float(row["atr"]), bars, rules,
+                               float(row.get("spread_points") or 0.0))
+                if res.exit == "no_data":
+                    continue
+                done = res.exit in FINAL_EXITS or end >= start + horizon
+                journal.store_sim(row["signal_key"], res.profit_usd, res.exit, res.protected, done)
+                updated += 1
+            except Exception as exc:
+                logger.warning("AI gate simulation failed for row {}: {}", row.get("id"), exc)
+        return updated
+
+    def dashboard_report(self, days: int = 90, tz_minutes: int = 210, max_items: int = 80) -> Dict[str, Any]:
+        """Everything the dashboard's AI tab shows (journal only; never touches MT5)."""
+        out: Dict[str, Any] = {"status": self.status(), "report": None, "items": [], "days": days}
+        if not self.has_journal():
+            return out
+        since = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+        rows = self._open_journal().rows(since)
+        rep = evaluate(rows)
+        rep.pop("items", None)
+        out["report"] = rep
+        shift = timedelta(minutes=tz_minutes)
+        items = []
+        for r in reversed(rows[-max_items:]):
+            try:
+                created = datetime.strptime(str(r["created_utc"])[:19], "%Y-%m-%d %H:%M:%S") + shift
+                when = created.strftime("%m-%d %H:%M")
+            except ValueError:
+                when = str(r.get("created_utc"))
+            sim = r.get("sim_profit") if r.get("sim_exit") != "no_data" else None
+            items.append({
+                "time": when, "side": r.get("side"), "layer": r.get("layer"), "mode": r.get("mode"),
+                "status": r.get("status"), "decision": r.get("decision"),
+                "confidence": r.get("confidence"), "p_protect": r.get("p_protect"),
+                "reasons": json.loads(r.get("reasons_json") or "[]"),
+                "action": r.get("action"), "action_fa": ACTIONS_FA.get(r.get("action") or "", r.get("action")),
+                "error": r.get("error") if r.get("status") != "ok" else "",
+                "actual_profit": r.get("profit"),
+                "sim_profit": sim, "sim_exit": r.get("sim_exit"), "sim_done": bool(r.get("sim_done")),
+                "correct": (correctness(r["decision"], sim)
+                            if r.get("status") == "ok" and r.get("sim_done") and sim is not None else None),
+            })
+        out["items"] = items
+        return out
 
     # ----------------------------------------------------------------- status
     def status(self) -> Dict[str, Any]:

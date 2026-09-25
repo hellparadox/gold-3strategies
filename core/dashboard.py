@@ -26,7 +26,7 @@ import time
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
 from loguru import logger
@@ -55,9 +55,12 @@ class DashboardServer:
         token: str = "",
         log_path: Optional[str] = None,
         ai_gate_status: Optional[Callable[[], Optional[Dict[str, Any]]]] = None,
+        ai_gate_report: Optional[Callable[[], Optional[Dict[str, Any]]]] = None,
     ) -> None:
         self._telemetry = telemetry_provider
         self._ai_gate_status = ai_gate_status
+        self._ai_gate_report = ai_gate_report
+        self._ai_cache: Optional[Tuple[float, Dict[str, Any]]] = None
         self._db = db
         self._host = host
         self._port = int(port)
@@ -223,6 +226,23 @@ class DashboardServer:
             self._report_ts = now
         return payload
 
+
+    def ai_report(self) -> Dict[str, Any]:
+        """AI tab payload (gate journal + stored simulations), cached briefly."""
+        now = time.time()
+        with self._cache_lock:
+            if self._ai_cache and (now - self._ai_cache[0]) < _REPORT_TTL:
+                return self._ai_cache[1]
+        payload: Dict[str, Any] = {"available": self._ai_gate_report is not None}
+        if self._ai_gate_report is not None:
+            try:
+                payload.update(self._ai_gate_report() or {})
+            except Exception as exc:
+                logger.warning("dashboard: ai gate report unavailable: {}", exc)
+                payload["error"] = "گزارش هوش مصنوعی در دسترس نیست"
+        with self._cache_lock:
+            self._ai_cache = (now, payload)
+        return payload
 
     def read_log(self, view: str = "important") -> Dict[str, Any]:
         """Translate the tail of the bot's own log file(s) for the log tab."""
@@ -814,7 +834,13 @@ class _BaseHandler(BaseHTTPRequestHandler):
             if supplied != self.dashboard._token:
                 self._send(403, "text/plain; charset=utf-8", b"forbidden")
                 return
-        if path_only.startswith("/api/log"):
+        if path_only.startswith("/api/ai"):
+            try:
+                body = json.dumps(self.dashboard.ai_report(), ensure_ascii=False, default=str).encode("utf-8")
+                self._send(200, "application/json; charset=utf-8", body)
+            except Exception as exc:
+                self._send(500, "application/json", json.dumps({"error": str(exc)}).encode())
+        elif path_only.startswith("/api/log"):
             try:
                 view = (parse_qs(urlparse(self.path).query).get("view") or ["important"])[0]
                 body = json.dumps(self.dashboard.read_log(view), ensure_ascii=False).encode("utf-8")
@@ -900,6 +926,9 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:16px 0}
 .k-signal{color:var(--gold)} .k-news{color:var(--blue)} .k-guard,.k-error{color:var(--down)}
 .k-close,.k-manage,.k-open,.k-conn{color:var(--up)} .k-start,.k-stop,.k-risk{color:var(--text)}
 .k-system,.k-raw{color:var(--muted)} .k-warn{color:#ffb74d} .k-ai{color:#b39ddb}
+#a-items table{min-width:880px} #a-groups table,#r-trades table{min-width:560px}
+.tab{white-space:nowrap} .tabs{flex-wrap:wrap}
+@media (max-width:600px){.tab{padding:7px 12px;font-size:13px}}
 .day{color:var(--gold);font-size:13px;font-weight:700;padding:12px 0 4px}
 @media (max-width:600px){body{padding:10px} td,th{padding:6px 4px;font-size:12px}}
 </style>
@@ -915,6 +944,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:16px 0}
     <button class="tab on" data-tab="dash" onclick="showTab('dash')">داشبورد</button>
     <button class="tab" data-tab="report" onclick="showTab('report')">گزارش</button>
     <button class="tab" data-tab="log" onclick="showTab('log')">لاگ</button>
+    <button class="tab" data-tab="ai" onclick="showTab('ai')">هوش مصنوعی</button>
   </nav>
 
   <div id="tab-dash">
@@ -991,6 +1021,30 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:16px 0}
       <span class="k-system">پیام فنی</span>. ساعت‌ها به وقت تهران است.
       این صفحه از فایل لاگ خود ربات خوانده می‌شود و با ری‌استارت پاک نمی‌شود (حدود چند روز اخیر).
       پیام‌های تکراری در فاصلهٔ ۱۵ دقیقه یک بار نشان داده می‌شوند.
+    </div>
+  </div>
+
+  <div id="tab-ai" hidden>
+    <section><h2>هوش مصنوعی — وضعیت</h2>
+      <div class="card"><ul class="lines" id="a-status"><li class="muted">در حال بارگذاری…</li></ul></div></section>
+    <section id="a-body-sec">
+      <h2>دقت و اثر نظرها</h2>
+      <div class="grid kpis" id="a-kpis"></div>
+    </section>
+    <section id="a-verdict-sec"><h2>آیا حالت live را روشن کنیم؟</h2>
+      <div class="card" id="a-verdict"></div></section>
+    <section id="a-groups-sec"><h2>«وارد شو» در برابر «وارد نشو»</h2>
+      <div class="card scroll" id="a-groups"></div></section>
+    <section id="a-buckets-sec"><h2>بر حسب میزان اطمینان</h2>
+      <div class="card scroll" id="a-buckets"></div></section>
+    <section><h2>تصمیم‌های اخیر</h2>
+      <div class="card scroll" id="a-items"></div></section>
+    <div class="card small">
+      راهنما: برای هر نظر، ربات همان معامله را با قوانین خودش (حد ضرر، حد سود، سربه‌سر و تریل، با اسپرد) روی
+      کندل‌های یک‌دقیقه‌ای بروکر شبیه‌سازی می‌کند — چه وارد شده باشد چه نه — تا «وارد شو» و «وارد نشو» منصفانه مقایسه شوند.
+      نظر «درست» است اگر «وارد شو» با سود بیش از ۵۰ سنت یا «وارد نشو» با ضرر بیش از ۵۰ سنت تمام شده باشد؛ نزدیک صفر = خنثی.
+      «اثر» یعنی اگر فقط «وارد شو»ها گرفته می‌شد، چقدر بیشتر (یا کمتر) سود می‌کردیم؛ بازهٔ ۹۰٪ نشان می‌دهد این عدد چقدر مطمئن است.
+      شبیه‌سازی هر ۵ دقیقه به‌روز می‌شود و تا بسته شدن معامله (حداکثر ۴۸ ساعت) «در جریان» است. ساعت‌ها به وقت تهران.
     </div>
   </div>
 
@@ -1138,15 +1192,70 @@ async function loadLog(){
 }
 function setView(v){logView=v;
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('on',b.dataset.view===v));loadLog();}
+const CORR={right:'<span class="pos">✔ درست</span>',wrong:'<span class="neg">✘ غلط</span>',neutral:'<span class="muted">خنثی</span>'};
+const EXIT_FA={tp:'حد سود',sl:'حد ضرر',be:'سربه‌سر',trail:'تریل',horizon:'۴۸ ساعت',no_data:'بدون داده'};
+function renderAI(d){
+  const st=d.status||null, rp=d.report||null;
+  const lines=[];
+  if(!d.available||!st){lines.push('هوش مصنوعی در این ربات در دسترس نیست.');}
+  else{
+    lines.push('حالت: '+esc(st.mode_fa||st.mode)+' (از '+(st.source==='runtime'?'دستور تلگرام':'فایل تنظیمات')+')');
+    if(st.mode==='off')lines.push('برای روشن کردن در تلگرام بزن: /aigate shadow');
+    if(st.mode!=='off'&&st.active_mode==='off')lines.push('⚠️ غیرفعال: '+(st.disabled_reason==='no_key'?'کلید API یا مدل تنظیم نشده':esc(st.disabled_reason)));
+    if(st.model)lines.push('مدل: '+esc(st.model));
+    if(st.mode==='live')lines.push('جلوی ورود را می‌گیرد اگر با اطمینان ≥ '+st.block_min_confidence+'٪ بگوید «وارد نشو». اگر جواب ندهد: '+(st.fail_policy==='open'?'بدون نظر وارد می‌شود':'وارد نمی‌شود')+'.');
+  }
+  if(d.error)lines.push('⚠️ '+esc(d.error));
+  $('a-status').innerHTML=lines.map(x=>'<li>'+esc(x)+'</li>').join('');
+  const has=!!rp;
+  ['a-body-sec','a-verdict-sec','a-groups-sec','a-buckets-sec'].forEach(id=>$(id).hidden=!has);
+  if(!has){$('a-items').innerHTML='<div class="empty">هنوز هیچ نظری ثبت نشده</div>';return;}
+  const acc=rp.accuracy||{}, up=rp.uplift||{};
+  const card=(t,v,sub,c)=>'<div class="card"><h3>'+t+'</h3><div class="big '+(c||'')+'">'+v+'</div><div class="muted">'+sub+'</div></div>';
+  $('a-kpis').innerHTML=
+    card('تصمیم‌ها',rp.ok,(rp.total-rp.ok)+' خطا/تأخیر · '+(rp.pending||0)+' در انتظار نتیجه')+
+    card('دقت',acc.pct===null||acc.pct===undefined?'—':iso(acc.pct+'%'),(acc.right||0)+' درست · '+(acc.wrong||0)+' غلط · '+(acc.neutral||0)+' خنثی',acc.pct>=50?'up':(acc.pct===null?'':'down'))+
+    card('اثر اگر به حرفش گوش می‌دادیم',usd(up.uplift||0),'بازهٔ ۹۰٪: '+usd(up.lo||0)+' تا '+usd(up.hi||0),(up.uplift||0)>0?'up':((up.uplift||0)<0?'down':''))+
+    card('هزینه و سرعت','$'+fmt(rp.cost||0),'تأخیر معمول: '+(rp.latency_p50===null?'—':(rp.latency_p50/1000).toFixed(1)+' ثانیه'));
+  const v=rp.verdict||{checks:[]};
+  $('a-verdict').innerHTML='<div class="big '+(v.go_live?'up':'')+'" style="font-size:18px;margin-bottom:8px">'+
+    (v.go_live?'✅ بله — شرایط از پیش تعیین‌شده برقرار است':'⏳ هنوز نه')+'</div>'+
+    v.checks.map(c=>'<div class="ev">'+(c.ok?'<span class="pos">✔</span> ':'<span class="neg">✘</span> ')+esc(c.text)+'</div>').join('');
+  const g=[['گفته «وارد شو»',rp.take,rp.actual.TAKE],['گفته «وارد نشو»',rp.skip,rp.actual.SKIP]];
+  $('a-groups').innerHTML=table(['نظر','تعداد ارزیابی‌شده','جمع (شبیه‌سازی)','میانگین هر معامله','نتیجهٔ واقعی (معاملات باز شده)'],
+    g.map(x=>[x[0],x[1].n,'<span class="'+pn(x[1].sum)+'">'+usd(x[1].sum)+'</span>',
+      x[1].mean===null?'—':'<span class="'+pn(x[1].mean)+'">'+usd(x[1].mean)+'</span>',
+      x[2].n?('<span class="'+pn(x[2].sum)+'">'+usd(x[2].sum)+'</span> <span class="muted">('+x[2].n+')</span>'):'—']));
+  const bk=rp.buckets||{}; const keys=Object.keys(bk);
+  $('a-buckets').innerHTML=keys.length?table(['اطمینان','«وارد شو» (تعداد · میانگین)','«وارد نشو» (تعداد · میانگین)'],
+    keys.map(k=>{const b=bk[k];const f=o=>o&&o.n?(o.n+' · <span class="'+pn(o.mean)+'">'+usd(o.mean)+'</span>'):'—';
+      return [iso(k+'٪'),f(b.TAKE),f(b.SKIP)];})):'<div class="empty">هنوز ارزیابی کاملی نیست</div>';
+  const it=d.items||[];
+  $('a-items').innerHTML=it.length?table(['زمان','جهت','نوع','نظر','دلیل اصلی','اقدام','نتیجهٔ واقعی','شبیه‌سازی','ارزیابی'],
+    it.map(x=>{
+      const verdict=x.status==='ok'?((x.decision==='TAKE'?'<span class="pos">ورود</span>':'<span class="neg">رد</span>')+' '+iso((x.confidence||0)+'٪'))
+        :'<span class="muted">بدون نظر ('+esc(x.status)+')</span>';
+      const sim=x.sim_profit===null||x.sim_profit===undefined?'<span class="muted">در انتظار</span>'
+        :'<span class="'+pn(x.sim_profit)+'">'+usd(x.sim_profit)+'</span> <span class="muted">('+(EXIT_FA[x.sim_exit]||esc(x.sim_exit))+(x.sim_done?'':' · در جریان')+')</span>';
+      return ['<span class="muted">'+x.time+'</span>','<span class="tag '+(x.side==='BUY'?'buy':'sell')+'">'+(x.side==='BUY'?'خرید':'فروش')+'</span>',
+        esc(x.layer||''),verdict,esc((x.reasons||[])[0]||x.error||''),esc(x.action_fa||'—'),
+        x.actual_profit===null||x.actual_profit===undefined?'—':'<span class="'+pn(x.actual_profit)+'">'+usd(x.actual_profit)+'</span>',
+        sim,x.correct?CORR[x.correct]:'<span class="muted">—</span>'];})):'<div class="empty">هنوز هیچ نظری ثبت نشده</div>';
+}
+async function loadAI(){
+  try{const r=await fetch('/api/ai'+location.search);const d=await r.json();if(d.error&&!d.status)throw new Error(d.error);renderAI(d);}
+  catch(e){$('a-status').innerHTML='<li class="neg">خطا در گرفتن گزارش هوش مصنوعی</li>';}
+}
 function showTab(name){
-  ['dash','report','log'].forEach(t=>$('tab-'+t).hidden=name!==t);
+  ['dash','report','log','ai'].forEach(t=>$('tab-'+t).hidden=name!==t);
   document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));
   history.replaceState(null,'',location.pathname+location.search+(name==='dash'?'':'#'+name));
   if(name==='report')loadReport();
   if(name==='log')loadLog();
+  if(name==='ai')loadAI();
 }
-setInterval(()=>{if(!$('tab-report').hidden)loadReport();if(!$('tab-log').hidden)loadLog();},15000);
-showTab(['#report','#log'].includes(location.hash)?location.hash.slice(1):'dash');
+setInterval(()=>{if(!$('tab-report').hidden)loadReport();if(!$('tab-log').hidden)loadLog();if(!$('tab-ai').hidden)loadAI();},15000);
+showTab(['#report','#log','#ai'].includes(location.hash)?location.hash.slice(1):'dash');
 </script>
 </body>
 </html>

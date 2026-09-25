@@ -36,6 +36,7 @@ from backtest.engine import BacktestConfig, BacktestEngine, BacktestResult
 from core import Settings, setup_logging
 from core.ai_gate import AIGate, GateResult
 from core.ai_gate.context import TradePlan, build_context, server_offset_hours
+from core.ai_gate.evaluate import ExitRules
 from core.ai_gate.gate import hash_key
 from core.chart_generator import ChartGenerator
 from core.database import Database
@@ -267,6 +268,7 @@ class LiveBot:
             notify=self.telegram.notify_admins if self.telegram is not None else None,
         )
         self._pending_entry: Optional[PendingEntry] = None
+        self._ai_sim_last = 0.0
 
         # --- live web dashboard ----------------------------------------------
         self.dashboard: Optional[DashboardServer] = None
@@ -284,6 +286,7 @@ class LiveBot:
                 token=dash_token,
                 log_path=str(settings.get("logging.path", "logs/bot_{time:YYYY-MM-DD}.log")),
                 ai_gate_status=self.ai_gate.status,
+                ai_gate_report=self.ai_gate.dashboard_report,
             )
 
         # --- automatic daily digest state -------------------------------------
@@ -1357,6 +1360,43 @@ class LiveBot:
         finally:
             gate.finalize(result, final)
 
+    AI_SIM_INTERVAL_S = 300.0
+
+    def _ai_gate_housekeeping(self) -> None:
+        """Every few minutes: simulate AI-gate verdict outcomes on broker M1 bars.
+
+        Runs in the main (MT5) thread; results are stored in the gate journal so the
+        dashboard can show accuracy without touching MT5.  Never raises.
+        """
+        gate = getattr(self, "ai_gate", None)
+        if gate is None or not gate.has_journal():
+            return
+        now = time.time()
+        if now - getattr(self, "_ai_sim_last", 0.0) < self.AI_SIM_INTERVAL_S:
+            return
+        self._ai_sim_last = now
+        try:
+            server_now = self.client.server_time()
+            if server_now is None:
+                return
+            rc = self.risk_config
+            rules = ExitRules(rc.breakeven_trigger_atr, rc.breakeven_buffer_points,
+                              rc.trailing_trigger_atr, rc.trailing_distance_atr,
+                              point=float(getattr(self.risk.spec, "point", 0.01) or 0.01))
+
+            def fetch(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
+                # MT5 python treats datetimes as UTC epochs while bar times are the
+                # server clock: pass the server wall clock tagged as UTC.
+                return self.client.get_rates_range(
+                    "M1", start.to_pydatetime().replace(tzinfo=timezone.utc),
+                    end.to_pydatetime().replace(tzinfo=timezone.utc))
+
+            updated = gate.simulate_pending(fetch, rules, server_now)
+            if updated:
+                logger.debug("AI gate: {} verdict simulation(s) updated", updated)
+        except Exception as exc:
+            logger.warning("AI gate evaluation step failed: {}", exc)
+
     def _cancel_pending_entry(self) -> None:
         pending = getattr(self, "_pending_entry", None)
         if pending is None:
@@ -1447,6 +1487,8 @@ class LiveBot:
 
                 # (1b) live AI gate: act on a finished verdict (never waits here)
                 self._process_pending_entry()
+                # (1c) AI gate evaluation: simulate verdict outcomes on M1 (every 5 min)
+                self._ai_gate_housekeeping()
 
                 # (2) bar close only: hunt for new entries
                 frames = self._load_frames()

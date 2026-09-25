@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 _BE_BAND = 0.5
 
 _DDL = """
@@ -48,7 +48,12 @@ CREATE TABLE IF NOT EXISTS decisions (
     entry_fill      REAL,
     closed_utc      TEXT,
     profit          REAL,
-    result          TEXT
+    result          TEXT,
+    sim_profit      REAL,
+    sim_exit        TEXT,
+    sim_protected   INTEGER,
+    sim_done        INTEGER NOT NULL DEFAULT 0,
+    sim_updated_utc TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_ai_created ON decisions (created_utc);
 CREATE INDEX IF NOT EXISTS idx_ai_ticket  ON decisions (ticket);
@@ -79,10 +84,19 @@ class DecisionJournal:
             if path != ":memory:":
                 self._conn.execute("PRAGMA journal_mode=WAL")
             self._conn.executescript(_DDL)
-            version = self._conn.execute("PRAGMA user_version").fetchone()[0]
-            if version < SCHEMA_VERSION:
-                self._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+            self._migrate()
             self._conn.commit()
+
+    _V2_COLUMNS = (("sim_profit", "REAL"), ("sim_exit", "TEXT"), ("sim_protected", "INTEGER"),
+                   ("sim_done", "INTEGER NOT NULL DEFAULT 0"), ("sim_updated_utc", "TEXT"))
+
+    def _migrate(self) -> None:
+        """v1 → v2: add the simulation columns (idempotent)."""
+        existing = {row[1] for row in self._conn.execute("PRAGMA table_info(decisions)")}
+        for name, decl in self._V2_COLUMNS:
+            if name not in existing:
+                self._conn.execute(f"ALTER TABLE decisions ADD COLUMN {name} {decl}")
+        self._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
 
     @contextmanager
     def _cursor(self) -> Iterator[sqlite3.Cursor]:
@@ -158,7 +172,24 @@ class DecisionJournal:
             )
             return cur.rowcount > 0
 
+    def store_sim(self, signal_key: str, profit: float, exit_kind: str, protected: bool, done: bool) -> None:
+        with self._cursor() as cur:
+            cur.execute(
+                """UPDATE decisions SET sim_profit=?, sim_exit=?, sim_protected=?, sim_done=?,
+                   sim_updated_utc=? WHERE signal_key=?""",
+                (round(float(profit), 2), exit_kind, int(bool(protected)), int(bool(done)),
+                 utc_now_str(), signal_key),
+            )
+
     # ------------------------------------------------------------------- reads
+    def pending_sims(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Verdicts (status ok or late) whose outcome simulation is not final yet, oldest first."""
+        with self._cursor() as cur:
+            cur.execute(
+                """SELECT * FROM decisions WHERE status IN ('ok','late') AND sim_done = 0
+                   AND entry_plan IS NOT NULL ORDER BY id LIMIT ?""", (int(limit),))
+            return [dict(r) for r in cur.fetchall()]
+
     def get(self, signal_key: str) -> Optional[Dict[str, Any]]:
         with self._cursor() as cur:
             cur.execute("SELECT * FROM decisions WHERE signal_key=?", (signal_key,))
