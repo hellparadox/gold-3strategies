@@ -35,7 +35,7 @@ from loguru import logger
 from backtest.engine import BacktestConfig, BacktestEngine, BacktestResult
 from core import Settings, setup_logging
 from core.ai_gate import AIGate, GateResult
-from core.ai_gate.context import TradePlan, build_context, server_offset_hours
+from core.ai_gate.context import TradePlan, build_context, eet_offset_hours, server_offset_hours
 from core.ai_gate.evaluate import ExitRules
 from core.ai_gate.gate import hash_key
 from core.chart_generator import ChartGenerator
@@ -1239,11 +1239,10 @@ class LiveBot:
         cfg = self.ai_gate.config
         tick = planned.tick
         tick_time = float(getattr(tick, "time", 0) or 0)
-        if tick_time > 0:
-            offset = server_offset_hours(tick_time, time.time())
-        else:
-            offset = float(getattr(getattr(self.news_filter, "config", None),
-                                   "server_utc_offset_hours", 0.0) or 0.0)
+        offset = server_offset_hours(tick_time, time.time()) if tick_time > 0 else None
+        if offset is None:
+            offset = eet_offset_hours(datetime.now(timezone.utc))
+            logger.warning("AI gate: broker clock offset not measurable (stale tick); using UTC{:+g}", offset)
         spread_points = (float(tick.ask) - float(tick.bid)) / planned.point if planned.point else 0.0
         levels = planned.levels
         plan = TradePlan(

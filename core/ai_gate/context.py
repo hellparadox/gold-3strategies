@@ -47,14 +47,35 @@ class TradePlan:
     point: float = 0.01
 
 
-def server_offset_hours(tick_time: float, now_epoch: float) -> float:
-    """Broker server clock offset vs UTC, rounded to 30 minutes.
+def server_offset_hours(tick_time: float, now_epoch: float) -> Optional[float]:
+    """Broker server clock offset vs UTC, rounded to 30 minutes; ``None`` if implausible.
 
     MT5 tick timestamps are the server's wall clock expressed as epoch seconds,
     so the difference to the real epoch is the server's UTC offset (handles the
-    broker's DST switch without configuration).
+    broker's DST switch without configuration).  The last tick is only fresh
+    while the market trades: over a weekend it can be ~2 days old and the
+    difference is meaningless, so anything outside UTC-12..UTC+14 is rejected
+    and the caller falls back to :func:`eet_offset_hours`.
     """
-    return round((float(tick_time) - float(now_epoch)) / 1800.0) * 0.5
+    offset = round((float(tick_time) - float(now_epoch)) / 1800.0) * 0.5
+    return offset if -12.0 <= offset <= 14.0 else None
+
+
+def _last_sunday(year: int, month: int) -> datetime:
+    day = datetime(year, month + 1, 1) - timedelta(days=1) if month < 12 else datetime(year, 12, 31)
+    return day - timedelta(days=(day.weekday() + 1) % 7)
+
+
+def eet_offset_hours(now_utc: datetime) -> float:
+    """UTC offset of a broker on EET/EEST (UTC+2 winter, UTC+3 summer, EU DST rules).
+
+    EU summer time runs from 01:00 UTC on the last Sunday of March to 01:00 UTC on
+    the last Sunday of October.  Used only as a fallback when the tick is stale.
+    """
+    now = now_utc.replace(tzinfo=None)
+    start = _last_sunday(now.year, 3) + timedelta(hours=1)
+    end = _last_sunday(now.year, 10) + timedelta(hours=1)
+    return 3.0 if start <= now < end else 2.0
 
 
 def session_name(hour_utc: int) -> str:

@@ -251,8 +251,41 @@ class ContextTests(unittest.TestCase):
         now = 1_790_000_000.0
         self.assertEqual(server_offset_hours(now + 3 * 3600 + 40, now), 3.0)
         self.assertEqual(server_offset_hours(now + 2 * 3600 - 70, now), 2.0)
+        self.assertIsNone(server_offset_hours(now - 19 * 3600, now))      # weekend: tick ~19 h old
+        self.assertIsNone(server_offset_hours(now + 20 * 3600, now))
         self.assertEqual([session_name(h) for h in (3, 8, 13, 17, 22)],
                          ["asia", "london", "overlap", "newyork", "late"])
+
+    def test_eet_fallback_follows_eu_dst(self):
+        from core.ai_gate.context import eet_offset_hours
+        cases = [(datetime(2026, 1, 15, 12), 2.0), (datetime(2026, 3, 29, 0, 59), 2.0),
+                 (datetime(2026, 3, 29, 1, 0), 3.0), (datetime(2026, 9, 26, 12), 3.0),
+                 (datetime(2026, 10, 25, 0, 59), 3.0), (datetime(2026, 10, 25, 1, 0), 2.0),
+                 (datetime(2026, 12, 31, 23), 2.0)]
+        for when, expected in cases:
+            with self.subTest(when=when):
+                self.assertEqual(eet_offset_hours(when.replace(tzinfo=timezone.utc)), expected)
+
+    def test_live_context_falls_back_when_tick_is_stale(self):
+        b = LiveBot.__new__(LiveBot)
+        b.news_filter = None
+        b.db = Database(":memory:")
+        self.addCleanup(b.db.close)
+        b.risk_config = RiskConfig.from_settings(Settings.load(os.path.join(ROOT, "config", "settings_ichimoku.yaml")))
+        b.strategy = NS(bar_minutes=15)
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            b.ai_gate = AIGate(cfg(tmp), "ichimoku_m15", provider=FakeProvider(TAKE))
+            self.addCleanup(b.ai_gate.shutdown)
+            from main_live import PlannedTrade
+            levels = NS(entry=101.28, sl=99.68, tp=106.08)
+            stale = NS(bid=101.2, ask=101.28, time=time.time() - 19 * 3600)
+            planned = PlannedTrade(levels, 101.28, stale, 0.01, "s", "k")
+            sig = NS(side="BUY", atr=1.0, strategy="ichimoku_m15", reason="Kijun pullback",
+                     ref_time=pd.Timestamp("2026-09-09 12:00"))
+            with patch("main_live.datetime") as fake_dt:
+                fake_dt.now.return_value = datetime(2026, 9, 9, 9, 20, tzinfo=timezone.utc)
+                c, _ = b._gate_context(sig, planned, {"prepared": make_trigger(), "h1": make_h1()})
+            self.assertEqual(c["signal_bar_close_utc"], "2026-09-09T09:15Z")     # EEST fallback = +3
 
     def test_missing_indicator_columns_are_null(self):
         c = ctx(trigger=make_trigger(with_ind=False))
