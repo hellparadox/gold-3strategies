@@ -6,8 +6,14 @@ M5, with the parameter set validated by walk-forward on ~2y of XAUUSD data
 
 Differences vs the M5 `kijun_pullback`:
     - Trading frame is the M15 data (signals/ATR/exits on M15 bars).
-    - Trend EMA200 anchor disabled; H1 EMA50 confluence kept.
-    - NY-session window 12:00-20:00 server time.
+    - H1 EMA50 confluence.  The EMA200 trend anchor of the parent class is
+      ALWAYS applied (kijun_pullback._base_layer / _tenkan_layer); every
+      walk-forward result and all live trading so far were produced with it.
+      (A former ``enable_trend_ema`` switch was never read by any code and
+      has been removed.)
+    - Default entry window 12:00-20:00 server time; the live config
+      (config/settings_ichimoku.yaml) overrides it — ``describe()`` reports
+      the values actually in force.
     - Cooldown 6 bars (M15 = 90 min).
 
 Staged partial exit (bank partial_frac at +partial_tp_rr, then risk-free the
@@ -44,10 +50,10 @@ class IchimokuM15Strategy(KijunPullbackStrategy):
         params.update(
             {
                 # walk-forward-validated M15 set
-                "enable_trend_ema": False,
+                # NOTE: the Kijun layer and the EMA200 anchor have no switch —
+                # both are always on (see module docstring).
                 "use_h1_filter": True,
                 "h1_ema_period": 50,
-                "enable_kijun": True,
                 "enable_tenkan": True,
                 "enable_sp2l": False,
                 "kijun_near_atr": 0.20,
@@ -68,13 +74,23 @@ class IchimokuM15Strategy(KijunPullbackStrategy):
         return params
 
     def min_bars(self) -> int:
+        # Gate on the M5 frame length in main_live.  The EMA200 needs >= 200 M15
+        # bars, which the live loader always provides (400); fewer bars would mean
+        # no signals at all (ema_200 NaN), not wrong ones.  Kept at 150 so that
+        # backtest start points stay identical to the validated runs.
         return 150
 
     def describe(self) -> str:
+        layers = ["Kijun pullback" + ("" if self.pb("enable_kijun_short", True) else " (long only)")]
+        if self.pb("enable_tenkan", True):
+            layers.append("Tenkan momentum" + ("" if self.pb("enable_tenkan_short", True) else " (long only)"))
+        h1 = (f"H1 EMA{self.pi('h1_ema_period', 50)} confluence"
+              if self.pb("use_h1_filter", True) else "no H1 filter")
         return (
-            "XAUUSD M15 Ichimoku (walk-forward set): Kijun pullback + "
-            "Tenkan momentum, H1 EMA50 confluence, NY session 12-20, "
-            "cooldown 6 bars, no trend-EMA anchor"
+            "XAUUSD M15 Ichimoku: " + " + ".join(layers)
+            + f", EMA{self.pi('ema_period', 200)} trend anchor, {h1}, "
+            f"entries {self.params.get('trade_start_hour')}-{self.params.get('trade_end_hour')} server time, "
+            f"cooldown {self.pi('cooldown_bars', 6)} bars"
         )
 
     # -------------------------------------------------------------- prepare

@@ -119,6 +119,12 @@ class KijunPullbackStrategy(BaseStrategy):
     ) -> None:
         merged = self.default_params()
         merged.update(params or {})
+        # Settings keys this strategy never reads are kept (harmless) but reported,
+        # so a dead switch in the yaml cannot silently look effective again.
+        ignored = sorted(set(params or {}) - set(self.default_params()))
+        if ignored:
+            logger.warning("{}: settings keys not used by this strategy (ignored): {}",
+                           self.name, ", ".join(ignored))
 
         if "atr_period" not in (params or {}):
             merged["atr_period"] = int(atr_period)
