@@ -11,6 +11,7 @@ Design notes
 """
 from __future__ import annotations
 
+import re
 import threading
 import time
 from dataclasses import dataclass, field
@@ -27,6 +28,22 @@ try:  # pragma: no cover - import guard keeps tooling/CI usable off-Windows
 except Exception as exc:  # pragma: no cover
     mt5 = None  # type: ignore[assignment]
     MT5_AVAILABLE = False
+
+
+# MT5 validates the order comment client-side; spaces, '+' and other symbols
+# (or a long text) make order_send() return None with last_error == -2
+# ("Invalid \"comment\" argument") -- the request never leaves the terminal.
+COMMENT_MAX_LEN = 25
+RES_E_INVALID_PARAMS = -2
+
+
+def safe_comment(text: Optional[str], fallback: str = "bot", limit: int = COMMENT_MAX_LEN) -> str:
+    """Return an order comment MT5 always accepts: [A-Za-z0-9_], <= ``limit`` chars."""
+    cleaned = re.sub(r"[^A-Za-z0-9_]+", "_", str(text or "")).strip("_")[:limit].strip("_")
+    if cleaned:
+        return cleaned
+    fb = re.sub(r"[^A-Za-z0-9_]+", "_", str(fallback or "")).strip("_")[:limit].strip("_")
+    return fb or "bot"
     logger.warning("MetaTrader5 package unavailable ({}); client is inert", exc)
 
 __all__ = [
@@ -620,7 +637,7 @@ class MT5Client:
             "price": self.normalize_price(price),
             "deviation": int(self.config.deviation_points),
             "magic": int(self.magic),
-            "comment": (comment or self.config.comment)[:31],
+            "comment": safe_comment(comment or self.config.comment, self.config.comment),
             "type_time": mt5.ORDER_TIME_GTC,
         }
         if sl is not None and sl > 0:
@@ -632,14 +649,20 @@ class MT5Client:
         for filling in self._filling_modes():
             request = dict(base, type_filling=filling)
             for attempt in range(1, int(self.config.max_send_retries) + 1):
+                raised = False
                 with self._lock:
                     try:
                         last = mt5.order_send(request)
                     except Exception as exc:
                         logger.error("order_send raised: {}", exc)
-                        last = None
+                        last, raised = None, True
                 if last is None:
                     self._capture_error("order_send")
+                    if not raised and self._last_error[0] == RES_E_INVALID_PARAMS:
+                        # rejected by the terminal's own argument check: nothing was sent
+                        return OrderResult(False, RES_E_INVALID_PARAMS,
+                                           f"rejected before send: {self._last_error[1]}",
+                                           request=request)
                     return OrderResult(False, comment="order outcome unknown; do not resend",
                                        request=request, uncertain=True)
                 if last.retcode in (10008, 10012, 10028, 10031):
@@ -743,7 +766,7 @@ class MT5Client:
             "price": self.normalize_price(tick.bid if is_buy else tick.ask),
             "deviation": int(self.config.deviation_points),
             "magic": int(self.magic),
-            "comment": comment[:31],
+            "comment": safe_comment(comment, "close"),
             "type_time": mt5.ORDER_TIME_GTC,
         }
         for filling in self._filling_modes():

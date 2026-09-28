@@ -36,7 +36,7 @@ import requests  # noqa: E402
 from loguru import logger  # noqa: E402
 
 from core import Settings  # noqa: E402
-from core.mt5_client import MT5Client, MT5Config  # noqa: E402
+from core.mt5_client import MT5Client, MT5Config, safe_comment  # noqa: E402
 
 try:                                   # ماژول تشخیص، کنار همین فایل یا در ریشه
     from tools.scout_setups import indicators, detect
@@ -50,6 +50,29 @@ JOURNAL_FIELDS = ["ts", "event", "alert", "setup", "n_setups", "side", "bar", "p
 
 
 # --------------------------------------------------------------------- telegram
+
+SETUP_ABBR = {
+    "kijun_pullback": "kp", "tenkan_momentum": "tm", "range_break": "rb",
+    "pullback_resume": "pr", "cloud_break": "cb", "tk_cross": "tk", "rejection": "rj",
+    "engulfing": "en", "ignition": "ig", "exhaustion": "ex",
+}
+
+
+def scout_comment(setup: str) -> str:
+    """Short MT5-safe order comment, e.g. 'cloud_break + kijun_pullback' -> 'scout_cb_kp'.
+
+    The Telegram text and the journal keep the full setup names; only the
+    broker-side comment is abbreviated (MT5 rejects spaces/'+'/long comments).
+    """
+    parts = []
+    for name in str(setup or "").split("+"):
+        name = name.strip()
+        if not name or name.isdigit():          # the '+N' overflow marker
+            continue
+        parts.append(SETUP_ABBR.get(name, name[:4]))
+    return safe_comment("scout_" + "_".join(parts), "scout")
+
+
 class TG:
     def __init__(self, token: str, chat_id: int) -> None:
         self.token, self.chat = token, int(chat_id)
@@ -238,7 +261,7 @@ class Scout:
                      price=px, sl=round(sl_now, 2))
             return
         res = self.client.send_market_order(r.side, self.lot, sl=round(sl_now, 2),
-                                            tp=None, comment=f"scout:{r.setup}"[:31])
+                                            tp=None, comment=scout_comment(r.setup))
         if not res.ok:
             self.tg.edit(p["mid"], p["txt"] + f"\n\n⚠️ <b>ثبت نشد</b>: {res.comment}")
             self.log(event="order_failed", alert=aid, setup=r.setup, side=r.side, note=res.comment)
