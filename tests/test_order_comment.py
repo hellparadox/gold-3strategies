@@ -95,5 +95,18 @@ class PreSendRejection(unittest.TestCase):
         self.assertEqual(self.api.order_send.call_args[0][0]["comment"], MT5Config().comment)
 
 
+class ModuleStructure(unittest.TestCase):
+    def test_no_dead_code_and_import_warning_in_place(self):
+        """Regression: the import-guard warning once ended up after safe_comment's return."""
+        import ast
+        import inspect
+        tree = ast.parse(inspect.getsource(module))
+        fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "safe_comment")
+        self.assertIsInstance(fn.body[-1], ast.Return)
+        guard = next(n for n in tree.body if isinstance(n, ast.Try))
+        handler_src = ast.unparse(guard.handlers[0])
+        self.assertIn("MetaTrader5 package unavailable", handler_src)
+
+
 if __name__ == "__main__":
     unittest.main()

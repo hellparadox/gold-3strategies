@@ -28,6 +28,7 @@ try:  # pragma: no cover - import guard keeps tooling/CI usable off-Windows
 except Exception as exc:  # pragma: no cover
     mt5 = None  # type: ignore[assignment]
     MT5_AVAILABLE = False
+    logger.warning("MetaTrader5 package unavailable ({}); client is inert", exc)
 
 
 # MT5 validates the order comment client-side; spaces, '+' and other symbols
@@ -44,7 +45,6 @@ def safe_comment(text: Optional[str], fallback: str = "bot", limit: int = COMMEN
         return cleaned
     fb = re.sub(r"[^A-Za-z0-9_]+", "_", str(fallback or "")).strip("_")[:limit].strip("_")
     return fb or "bot"
-    logger.warning("MetaTrader5 package unavailable ({}); client is inert", exc)
 
 __all__ = [
     "MT5_AVAILABLE",
