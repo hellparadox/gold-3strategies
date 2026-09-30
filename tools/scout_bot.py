@@ -1,8 +1,14 @@
 """SCOUT BOT — هر ستاپ را به تلگرام می‌فرستد و منتظر تأیید یا رد شما می‌ماند.
 
 - خودش وارد نمی‌شود. فقط بعد از «تأیید» شما سفارش می‌گذارد.
-- حد ضرر همیشه روی بروکر گذاشته می‌شود؛ حد سود گذاشته نمی‌شود (خروج با شماست).
-- بعد از ورود، در رسیدن به ۱ برابر ریسک و در شکست ساختار خبر می‌دهد، ولی نمی‌بندد.
+- حد ضرر نرم (scout.soft_stop، پیش‌فرض روشن): حد ضرر سیگنال فقط «هشدار» است و بستن فقط با
+  شماست. روی بروکر فقط یک حد ضرر اضطراری دور (scout.emergency_sl_mult × فاصلهٔ حد ضرر سیگنال)
+  گذاشته می‌شود تا قطعی VPS/اینترنت ضرر را بی‌سقف نکند. حد سود گذاشته نمی‌شود.
+- رسیدن به حد ضرر سیگنال: پیام با دکمهٔ «بستن / نگه دار»؛ تا تصمیم نگیرید هر
+  scout.sl_reminder_seconds یادآوری می‌شود.
+- گزارش زنده: یک پیام وضعیت برای هر پوزیشن تأییدشده، هر scout.status_every_seconds
+  (پیش‌فرض ۵ دقیقه) به‌روز می‌شود. رسیدن به ۱ برابر ریسک و شکست ساختار پیام جداگانه دارند.
+- پوزیشن‌های باز در scout.state_file نگه داشته می‌شوند و بعد از ری‌استارت دوباره دنبال می‌شوند.
 - بستن با دکمهٔ «بستن» یا دستور /close <ticket>.
 - مهلت پاسخ به هر هشدار: scout.expiry_seconds (پیش‌فرض ۳۰ دقیقه).
 - در لحظهٔ تأیید، ورود با قیمت همان لحظه است و حد ضرر با همان فاصلهٔ هشدار از این قیمت
@@ -42,6 +48,10 @@ try:                                   # ماژول تشخیص، کنار همی
     from tools.scout_setups import indicators, detect
 except Exception:                      # pragma: no cover
     from scout_setups import indicators, detect
+try:
+    from tools import scout_tracker as trk
+except Exception:                      # pragma: no cover
+    import scout_tracker as trk
 
 API = "https://api.telegram.org/bot{}/{}"
 # ستون‌های ثابت ژورنال — همهٔ رویدادها زیر یک سرستون (نسخهٔ قبل ستون‌ها را جابه‌جا می‌نوشت)
@@ -96,9 +106,12 @@ class TG:
         r = self._call("sendMessage", **kw)
         return r.get("message_id") if r else None
 
-    def edit(self, message_id: int, text: str) -> None:
-        self._call("editMessageText", chat_id=self.chat, message_id=message_id,
-                   text=text, parse_mode="HTML")
+    def edit(self, message_id: int, text: str, buttons: Optional[list] = None) -> bool:
+        kw: Dict[str, Any] = {"chat_id": self.chat, "message_id": message_id,
+                              "text": text, "parse_mode": "HTML"}
+        if buttons:
+            kw["reply_markup"] = {"inline_keyboard": buttons}
+        return self._call("editMessageText", **kw) is not None
 
     def ack(self, cb_id: str, text: str = "") -> None:
         self._call("answerCallbackQuery", callback_query_id=cb_id, text=text)
@@ -143,6 +156,12 @@ class Scout:
         self.merge_setups = bool(s.get("scout.merge_setups", True))
         self.beat_path = Path(str(s.get("scout.heartbeat", "data/heartbeat_scout.txt")))
         self._last_beat = 0.0
+        # حد ضرر نرم + گزارش زنده
+        self.soft_stop = bool(s.get("scout.soft_stop", True))
+        self.emerg_mult = float(s.get("scout.emergency_sl_mult", 3.0))
+        self.status_every = float(s.get("scout.status_every_seconds", 300))
+        self.remind_every = float(s.get("scout.sl_reminder_seconds", 300))
+        self.state_path = Path(str(s.get("scout.state_file", "data/scout_state.json")))
 
     # ---------------------------------------------------------------- journal
     def log(self, **row: Any) -> None:
@@ -260,7 +279,9 @@ class Scout:
             self.log(event="approved_dry", alert=aid, setup=r.setup, side=r.side,
                      price=px, sl=round(sl_now, 2))
             return
-        res = self.client.send_market_order(r.side, self.lot, sl=round(sl_now, 2),
+        broker_sl = (trk.emergency_sl(r.side, px, sl_now, self.emerg_mult)
+                     if self.soft_stop else round(sl_now, 2))
+        res = self.client.send_market_order(r.side, self.lot, sl=broker_sl,
                                             tp=None, comment=scout_comment(r.setup))
         if not res.ok:
             self.tg.edit(p["mid"], p["txt"] + f"\n\n⚠️ <b>ثبت نشد</b>: {res.comment}")
@@ -268,13 +289,20 @@ class Scout:
             return
         tk = res.position or res.order
         self.open[tk] = {"setup": r.setup, "side": r.side, "entry": res.price,
-                         "sl": sl_now, "risk": abs(res.price - sl_now), "r1": False,
-                         "opened": time.time(), "alert": aid}
+                         "sl": round(sl_now, 2), "risk": abs(res.price - sl_now), "r1": False,
+                         "opened": time.time(), "alert": aid,
+                         "emerg": broker_sl if self.soft_stop else None,
+                         "status_mid": None, "below": False, "hold": False, "warned": False}
+        self._save_state()
         self.tg.edit(p["mid"], p["txt"] + f"\n\n✅ <b>باز شد</b> #{tk} @ {res.price:.2f}\n{info_line}")
-        self.tg.send(f"پوزیشن #{tk} باز است. تا بسته نشود هشدار جدیدی نمی‌آید. هر وقت خواستید ببندید:",
+        soft_note = (f"\nحد ضرر سیگنال ({sl_now:.2f}) فقط هشدار است — بستن فقط با شما. "
+                     f"حد ضرر اضطراری روی بروکر: {broker_sl:.2f}" if self.soft_stop else "")
+        self.tg.send(f"پوزیشن #{tk} باز است. تا بسته نشود هشدار جدیدی نمی‌آید.{soft_note}\n"
+                     f"وضعیت هر {int(self.status_every // 60)} دقیقه در یک پیام زنده به‌روز می‌شود.",
                      [[{"text": "🔻 بستن", "callback_data": f"c|{tk}"}]])
         self.log(event="opened", alert=aid, setup=r.setup, side=r.side, ticket=tk,
-                 price=res.price, sl=round(sl_now, 2))
+                 price=res.price, sl=round(sl_now, 2),
+                 note=f"emergency_sl={broker_sl}" if self.soft_stop else None)
         self.cancel_pending("معامله‌ای باز شد")
 
     def cancel_pending(self, why: str) -> None:
@@ -317,29 +345,48 @@ class Scout:
                  price=res.price, ok=res.ok)
 
     # -------------------------------------------------------------- monitoring
+    def _close_buttons(self, tk: int, hold: bool = False) -> list:
+        row = [{"text": "🔻 بستن", "callback_data": f"c|{tk}"}]
+        if hold:
+            row.append({"text": "⏸ نگه دار", "callback_data": f"h|{tk}"})
+        return [row]
+
     def monitor(self, f: pd.DataFrame) -> None:
         live = {int(p.ticket): p for p in self.client.positions(magic_only=True)}
+        now = time.time()
+        server_now: Optional[float] = None
         for tk in list(self.open):
-            if tk not in live:                       # با حد ضرر یا دستی بسته شده
+            if tk not in live:                       # دستی یا با حد ضرر اضطراری بسته شده
                 pnl, px = self.realized(tk)
-                if pnl is None and time.time() - self.open[tk].get("gone_t", time.time()) < 30:
-                    self.open[tk].setdefault("gone_t", time.time())   # تاریخچه هنوز نیامده
+                if pnl is None and now - self.open[tk].get("gone_t", now) < 30:
+                    self.open[tk].setdefault("gone_t", now)   # تاریخچه هنوز نیامده
                     continue
                 info = self.open.pop(tk)
+                self._save_state()
                 res_txt = f" · نتیجه ${pnl:+.2f}" if pnl is not None else ""
-                self.tg.send(f"ℹ️ پوزیشن #{tk} ({info['setup']}) بسته شد{res_txt}."
+                emerg = info.get("emerg")
+                by_emerg = (emerg and px and info.get("risk")
+                            and abs(float(px) - float(emerg)) <= 0.5 * float(info["risk"]))
+                why = "\n🛑 با حد ضرر اضطراری بروکر بسته شد." if by_emerg else ""
+                self.tg.send(f"ℹ️ پوزیشن #{tk} ({info['setup']}) بسته شد{res_txt}.{why}"
                              + ("\n🔔 هشدارها دوباره فعال شد." if not self.open else ""))
+                if info.get("status_mid"):
+                    self.tg.edit(info["status_mid"],
+                                 f"📊 <b>#{tk}</b> · <code>{info['setup']}</code>\n"
+                                 f"✅ <b>بسته شد</b>{res_txt}" + (f" @ {px:.2f}" if px else ""))
                 self.log(event="gone", alert=info.get("alert"), ticket=tk, setup=info["setup"],
-                         side=info["side"], entry=round(info["entry"], 2), price=px, profit=pnl)
+                         side=info["side"], entry=round(float(info["entry"]), 2), price=px, profit=pnl,
+                         note="emergency_sl" if by_emerg else None)
                 continue
             p, info = live[tk], self.open[tk]
             profit = float(getattr(p, "profit", 0.0))
+            swap = float(getattr(p, "swap", 0.0) or 0.0)
             price = float(getattr(p, "price_current", 0.0))
-            d = (price - info["entry"]) if info["side"] == "BUY" else (info["entry"] - price)
+            d = trk.signed_move(info["side"], float(info["entry"]), price)
             if not info["r1"] and info["risk"] > 0 and d >= info["risk"]:
                 info["r1"] = True
                 self.tg.send(f"🎯 #{tk} ({info['setup']}) به ۱ برابر ریسک رسید. سود فعلی ${profit:.2f}",
-                             [[{"text": "🔻 بستن", "callback_data": f"c|{tk}"}]])
+                             self._close_buttons(tk))
                 self.log(event="reached_1R", ticket=tk, setup=info["setup"], profit=profit)
             last = f.iloc[-1]
             broke = (info["side"] == "BUY" and last.close < last.tenkan) or \
@@ -347,9 +394,122 @@ class Scout:
             if broke and not info.get("warned"):
                 info["warned"] = True
                 self.tg.send(f"⚠️ #{tk} ({info['setup']}) ساختار شکست — بسته شدن کندل خلاف جهت تنکان. "
-                             f"سود فعلی ${profit:.2f}",
-                             [[{"text": "🔻 بستن", "callback_data": f"c|{tk}"}]])
+                             f"سود فعلی ${profit:.2f}", self._close_buttons(tk))
                 self.log(event="structure_break", ticket=tk, setup=info["setup"], profit=profit)
+            if self.soft_stop and price > 0:
+                self._soft_stop(tk, info, price, profit, now)
+            if price > 0 and now - float(info.get("status_t", 0.0)) >= self.status_every:
+                if server_now is None:
+                    tick = None
+                    try:
+                        tick = self.client.get_tick()
+                    except Exception:                  # pragma: no cover
+                        pass
+                    server_now = float(getattr(tick, "time", 0) or 0) or None
+                opened_srv = float(getattr(p, "time", 0) or 0)
+                secs = (server_now - opened_srv) if (server_now and opened_srv) else None
+                self._push_status(tk, info, price, profit, swap, secs, server_now, now)
+
+    def _soft_stop(self, tk: int, info: dict, price: float, profit: float, now: float) -> None:
+        """حد ضرر سیگنال = هشدار. هیچ‌وقت خودش نمی‌بندد."""
+        if trk.beyond_soft_sl(info["side"], price, float(info["sl"])):
+            first = not info.get("below")
+            due = (not info.get("hold")) and now - float(info.get("remind_t", 0.0)) >= self.remind_every
+            if first or due:
+                info["below"], info["remind_t"] = True, now
+                if first:
+                    info["hold"] = False
+                head = "🛑 <b>قیمت به حد ضرر سیگنال رسید</b>" if first else "⏰ <b>یادآوری: هنوز زیر حد ضرر سیگنال</b>"
+                self.tg.send(f"{head}\n#{tk} · <code>{info['setup']}</code> · الان {price:.2f} · "
+                             f"حد ضرر سیگنال {float(info['sl']):.2f} · زیان ${profit:+.2f}\n"
+                             f"پوزیشن باز می‌ماند تا شما تصمیم بگیرید"
+                             + (f" (حد ضرر اضطراری {float(info['emerg']):.2f})." if info.get("emerg") else "."),
+                             self._close_buttons(tk, hold=True))
+                if first:
+                    self.log(event="soft_sl_hit", ticket=tk, setup=info["setup"], side=info["side"],
+                             price=price, sl=info["sl"], profit=profit)
+                self._save_state()
+        elif info.get("below") and trk.recovered(info["side"], price, float(info["sl"]), float(info["risk"])):
+            info["below"], info["hold"] = False, False       # دوباره مسلح: عبور بعدی دوباره خبر می‌دهد
+            self._save_state()
+
+    def _push_status(self, tk: int, info: dict, price: float, profit: float, swap: float,
+                     secs: Optional[float], server_now: Optional[float], now: float) -> None:
+        info["status_t"] = now
+        text = trk.status_text(tk, info, price, profit, swap, secs, server_now)
+        buttons = self._close_buttons(tk)
+        mid = info.get("status_mid")
+        if mid and self.tg.edit(mid, text, buttons):
+            return
+        new_mid = self.tg.send(text, buttons)
+        if new_mid:
+            info["status_mid"] = new_mid
+            self._save_state()
+
+    def hold(self, tk: int, cb: Optional[str] = None) -> None:
+        info = self.open.get(int(tk))
+        if info is None:
+            if cb:
+                self.tg.ack(cb, "این پوزیشن دیگر باز نیست")
+            return
+        info["hold"] = True
+        self._save_state()
+        if cb:
+            self.tg.ack(cb, "نگه داشته شد")
+        self.tg.send(f"⏸ #{tk} نگه داشته شد. تا وقتی زیر حد ضرر سیگنال است دیگر یادآوری نمی‌کنم؛ "
+                     "گزارش ۵ دقیقه‌ای ادامه دارد و هر وقت خواستید ببندید.", self._close_buttons(tk))
+        self.log(event="hold", ticket=tk, setup=info["setup"], side=info["side"])
+
+    # ------------------------------------------------------------------ state
+    def _save_state(self) -> None:
+        try:
+            trk.save_state(self.state_path, self.open)
+        except Exception as exc:                       # pragma: no cover
+            logger.warning("scout state save failed: {}", exc)
+
+    def restore(self) -> None:
+        """بعد از ری‌استارت: پوزیشن‌های باز اسکات دوباره دنبال می‌شوند."""
+        saved = trk.load_state(self.state_path)
+        try:
+            live = {int(p.ticket): p for p in self.client.positions(magic_only=True)}
+        except Exception as exc:
+            logger.warning("scout restore: positions unavailable ({}); keeping saved state", exc)
+            live = {}
+        for tk, info in saved.items():                 # بسته‌شده‌ها هم برگردند تا نتیجه ثبت شود
+            info.setdefault("r1", False)
+            info.setdefault("warned", False)
+            info.setdefault("status_mid", None)
+            info["risk"] = float(info.get("risk") or 0.0)
+            self.open[tk] = info
+        for tk, p in live.items():
+            if tk in self.open:
+                continue
+            side = "BUY" if int(getattr(p, "type", 0)) == 0 else "SELL"
+            entry = float(p.price_open)
+            soft = float(getattr(p, "sl", 0.0) or 0.0)
+            if soft <= 0:                              # بدون حد ضرر: ۱٪ قیمت به‌عنوان حد ضرر سیگنال
+                soft = round(entry * (0.99 if side == "BUY" else 1.01), 2)
+            info = {"setup": str(getattr(p, "comment", "") or "scout"), "side": side, "entry": entry,
+                    "sl": soft, "risk": abs(entry - soft), "r1": False, "warned": False,
+                    "opened": time.time(), "alert": None, "status_mid": None, "below": False,
+                    "hold": False, "adopted": True, "emerg": None}
+            if self.soft_stop and not self.dry:
+                emerg = trk.emergency_sl(side, entry, soft, self.emerg_mult)
+                res = self.client.modify_sltp(tk, sl=emerg)
+                if res.ok:
+                    info["emerg"] = emerg
+                else:
+                    logger.warning("scout adopt #{}: emergency SL not set ({})", tk, res.comment)
+            self.open[tk] = info
+            self.log(event="adopted", ticket=tk, setup=info["setup"], side=side, entry=entry,
+                     sl=soft, note=f"emergency_sl={info['emerg']}")
+            self.tg.send(f"🔁 پوزیشن #{tk} ({side} @ {entry:.2f}) دوباره تحت نظر است.\n"
+                         f"حد ضرر سیگنال {soft:.2f} از این به بعد فقط هشدار است"
+                         + (f"؛ حد ضرر اضطراری روی بروکر {info['emerg']:.2f}." if info["emerg"] else "."),
+                         self._close_buttons(tk))
+        if self.open:
+            self._save_state()
+            logger.info("scout tracking {} open position(s)", len(self.open))
 
     # -------------------------------------------------------------- heartbeat
     def beat(self) -> None:
@@ -398,6 +558,7 @@ class Scout:
                      f"موجودی ${getattr(acc,'balance',0):.2f}\nلات {self.lot} · انقضای هشدار "
                      f"{self.expiry//60} دقیقه")
         logger.info("scout online")
+        self.restore()
         if self.selftest:
             self.fire_selftest()
         while True:
@@ -412,6 +573,8 @@ class Scout:
                             self.decide(parts[1], parts[2] == "y", cq["id"])
                         elif parts[0] == "c" and len(parts) == 2:
                             self.close(int(parts[1]), cq["id"])
+                        elif parts[0] == "h" and len(parts) == 2:
+                            self.hold(int(parts[1]), cq["id"])
                     msg = (u.get("message") or {}).get("text", "")
                     if msg.startswith("/close"):
                         bits = msg.split()

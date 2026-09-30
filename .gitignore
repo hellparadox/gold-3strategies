@@ -11,6 +11,8 @@ subscriptions.db-shm
 subscriptions.db-wal
 *.db-journal
 bot_state.json
+data/scout_state.json
+data/scout_state.json.tmp
 snapshots/
 exports/
 
