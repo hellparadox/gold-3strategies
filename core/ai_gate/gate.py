@@ -34,6 +34,7 @@ from core.ai_gate.prompt import build_user_message, load_system_prompt
 from core.ai_gate.provider import LLMProvider, OpenAICompatibleProvider, ProviderError, redact
 
 MAX_INFLIGHT = 4
+FALLBACK_HTTP = {408, 429, 500, 502, 503, 504}     # overload/transient: try the next model
 _STATUS_LABEL = {
     "timeout": "TIMEOUT", "http_error": "ERROR", "error": "ERROR", "invalid": "INVALID",
     "budget": "BUDGET", "no_key": "NOKEY", "queue_full": "ERROR", "stale": "ERROR",
@@ -100,8 +101,10 @@ class AIGate:
     def __init__(self, cfg: AIGateConfig, strategy_name: str, *,
                  notify: Optional[Callable[[str], None]] = None,
                  provider: Optional[LLMProvider] = None,
+                 fallback_providers: Optional[List[LLMProvider]] = None,
                  clock: Callable[[], float] = time.time) -> None:
         self._yaml_cfg = cfg
+        self._fallbacks: List[LLMProvider] = list(fallback_providers or [])
         self.strategy_name = strategy_name
         self._notify = notify
         self._provider = provider
@@ -175,6 +178,11 @@ class AIGate:
                 self._provider = OpenAICompatibleProvider(
                     cfg.base_url, key, cfg.model, cfg.temperature, cfg.max_output_tokens,
                     cfg.response_format_json, cfg.max_retries)
+                self._fallbacks = [
+                    OpenAICompatibleProvider(cfg.base_url, key, m, cfg.temperature,
+                                             cfg.max_output_tokens, cfg.response_format_json,
+                                             min(int(cfg.max_retries), 1))
+                    for m in dict.fromkeys(cfg.fallback_models) if m and m != cfg.model]
             try:
                 self._system_prompt, self.prompt_version = load_system_prompt(cfg.prompt_file)
             except (OSError, ValueError) as exc:
@@ -185,8 +193,9 @@ class AIGate:
             if self._executor is None:
                 self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="ai-gate")
             self._ready, self._disabled_reason = True, ""
-            logger.info("AI gate ready | mode={} ({}) | model={} | prompt={}",
+            logger.info("AI gate ready | mode={} ({}) | model={} | fallback={} | prompt={}",
                         self._mode, self._source, getattr(self._provider, "model", cfg.model),
+                        ",".join(str(getattr(f, "model", "?")) for f in self._fallbacks) or "-",
                         self.prompt_version)
             return True
 
@@ -245,11 +254,34 @@ class AIGate:
             logger.warning("AI gate submit failed: {}", exc)
             return _done(GateResult(signal_key, mode, "error", error=str(exc)[:200]))
 
-    def _run(self, signal_key: str, mode: str, context: Dict[str, Any], deadline: float) -> GateResult:
+    def _complete(self, context: Dict[str, Any], deadline: float):
+        """Primary model, then each fallback model on overload (429/5xx) or timeout."""
+        providers = [self._provider] + list(self._fallbacks)
+        user = build_user_message(context)
+        last: Optional[ProviderError] = None
+        for i, provider in enumerate(providers):
+            remaining = deadline - self._clock()
+            # leave time for the fallbacks: a hanging primary must not eat the whole deadline
+            sub = deadline if i + 1 == len(providers) else self._clock() + remaining * 0.6
+            try:
+                return provider.complete(self._system_prompt, user, sub)
+            except ProviderError as exc:
+                last = exc
+                transient = exc.kind == "timeout" or exc.http_status in FALLBACK_HTTP
+                more = i + 1 < len(providers) and deadline - self._clock() > 3.0
+                if not (transient and more):
+                    raise
+                logger.warning("AI gate: model {} failed ({}); trying fallback {}",
+                               getattr(provider, "model", "?"), str(exc)[:80],
+                               getattr(providers[i + 1], "model", "?"))
+        raise last if last is not None else ProviderError("http_error", "no provider")
+
+    def _run(self, signal_key: str, mode: str, context: Dict[str, Any], deadline: float,
+             attempt: int = 1) -> GateResult:
         cfg = self._cfg()
         text, tokens_in, tokens_out, latency, model = "", 0, 0, 0, ""
         try:
-            response = self._provider.complete(self._system_prompt, build_user_message(context), deadline)
+            response = self._complete(context, deadline)
             text, model = response.text, response.model
             tokens_in, tokens_out, latency = response.tokens_in, response.tokens_out, response.latency_ms
             verdict = parse_decision(text)
@@ -273,8 +305,99 @@ class AIGate:
             with self._lock:
                 self._inflight = max(0, self._inflight - 1)
         if mode == "shadow":
-            self.finalize(result, "shadow_logged")
+            self._after_shadow(result, attempt)
         return result
+
+    # ------------------------------------------------------- shadow re-asks
+    def _retry_delays(self) -> Tuple[int, ...]:
+        return tuple(int(m) for m in self._cfg().shadow_retry_minutes)
+
+    @staticmethod
+    def _retryable(result: GateResult) -> bool:
+        if result.status == "timeout":
+            return True
+        if result.status != "http_error":
+            return False
+        err = result.error or ""
+        if err.startswith("HTTP "):
+            try:
+                return int(err[5:8]) in FALLBACK_HTTP
+            except ValueError:
+                return True
+        return True                                  # network error / malformed reply
+
+    def _after_shadow(self, result: GateResult, attempt: int) -> None:
+        """Journal the shadow action, schedule a re-ask on transient failure, notify once."""
+        delays = self._retry_delays()
+        max_attempts = 1 + len(delays)
+        retry_in: Optional[int] = None
+        if not result.ok and self._retryable(result) and attempt < max_attempts:
+            retry_in = delays[attempt - 1]
+            when = (datetime.now(timezone.utc) + timedelta(minutes=retry_in)).strftime("%Y-%m-%d %H:%M:%S")
+            try:
+                self._open_journal().schedule_retry(result.signal_key, attempt, when)
+            except Exception as exc:
+                logger.warning("AI gate retry scheduling failed: {}", exc)
+        else:
+            try:
+                self._open_journal().schedule_retry(result.signal_key, attempt, None)
+            except Exception as exc:
+                logger.warning("AI gate retry bookkeeping failed: {}", exc)
+        if attempt == 1:
+            self.finalize(result, "shadow_logged", retry_in=retry_in)
+        elif result.ok:
+            self.finalize(result, "shadow_logged", late_attempt=attempt)
+        elif retry_in is None:
+            self.finalize(result, "shadow_logged", late_attempt=attempt, gave_up=True)
+        else:
+            logger.info("🤖 AI gate [shadow] re-ask {} failed ({}); next try in {} min",
+                        attempt, result.label, retry_in)
+
+    def retry_failed_shadow(self, limit: int = 2) -> int:
+        """Re-ask due shadow verdicts that failed transiently (503/429/timeout).
+
+        Uses the context stored at signal time, so the model sees exactly what it
+        would have seen then; the verdict stays valid for the TAKE/SKIP evaluation.
+        Called from the bot's housekeeping; never raises.  Returns calls submitted.
+        """
+        try:
+            delays = self._retry_delays()
+            if not delays or self.active_mode() == "off" or not self.has_journal():
+                return 0
+            cfg = self._cfg()
+            journal = self._open_journal()
+            calls, cost = journal.today_usage()
+            if (cfg.max_calls_per_day > 0 and calls >= cfg.max_calls_per_day) or \
+                    (cfg.max_cost_usd_per_day > 0 and cost >= cfg.max_cost_usd_per_day):
+                return 0
+            now = datetime.now(timezone.utc)
+            since = (now - timedelta(hours=float(cfg.shadow_retry_max_age_hours))).strftime("%Y-%m-%d %H:%M:%S")
+            rows = journal.due_retries(now.strftime("%Y-%m-%d %H:%M:%S"), since, 1 + len(delays), limit)
+            submitted = 0
+            for row in rows:
+                err = str(row.get("error") or "")
+                if err.startswith("HTTP ") and err[5:8].isdigit() and int(err[5:8]) not in FALLBACK_HTTP:
+                    journal.schedule_retry(row["signal_key"], 1 + len(delays), None)   # permanent: stop
+                    continue
+                with self._lock:
+                    if self._inflight >= MAX_INFLIGHT or self._executor is None:
+                        break
+                    self._inflight += 1
+                attempt = int(row.get("attempts") or 1) + 1
+                # provisional: if this call dies silently it is retried after the next delay
+                nxt = delays[attempt - 1] if attempt - 1 < len(delays) else delays[-1]
+                journal.schedule_retry(row["signal_key"], attempt,
+                                       (now + timedelta(minutes=nxt)).strftime("%Y-%m-%d %H:%M:%S"))
+                context = json.loads(row["context_json"])
+                deadline = self._clock() + float(cfg.timeout_seconds)
+                logger.info("🤖 AI gate [shadow] re-ask {} for signal {} {} (stored context)",
+                            attempt, row.get("side"), row.get("ref_time_server"))
+                self._executor.submit(self._run, row["signal_key"], "shadow", context, deadline, attempt)
+                submitted += 1
+            return submitted
+        except Exception as exc:
+            logger.warning("AI gate retry step failed: {}", exc)
+            return 0
 
     def _finish(self, signal_key: str, mode: str, status: str, *, response_text: str = "",
                 model: str = "", error: str = "", decision: Optional[str] = None,
@@ -334,7 +457,8 @@ class AIGate:
             self._expired.add(signal_key)
         return self._finish(signal_key, mode, "timeout", error="decision deadline passed")
 
-    def finalize(self, result: GateResult, action: str) -> None:
+    def finalize(self, result: GateResult, action: str, *, retry_in: Optional[int] = None,
+                 late_attempt: int = 0, gave_up: bool = False) -> None:
         """Journal the action, write the fixed-format log line, notify admins."""
         try:
             journal = self._open_journal()
@@ -342,11 +466,29 @@ class AIGate:
         except Exception as exc:
             logger.warning("AI gate journal action failed: {}", exc)
         reason = result.headline.replace("\n", " ")[:160]
-        logger.info("🤖 AI gate [{}] {} {}% → {} | {}", result.mode, result.label,
-                    result.confidence if result.ok else 0, action, reason)
+        tag = f" (re-ask {late_attempt})" if late_attempt else ""
+        logger.info("🤖 AI gate [{}] {} {}% → {}{} | {}", result.mode, result.label,
+                    result.confidence if result.ok else 0, action, tag, reason)
         if self._notify is not None and self._cfg().notify_telegram:
             try:
-                self._notify(self._telegram_text(result, action))
+                text = self._telegram_text(result, action)
+                if late_attempt:
+                    row = None
+                    try:
+                        row = self._open_journal().get(result.signal_key)
+                    except Exception:
+                        pass
+                    sig = ""
+                    if row:
+                        sig = f"سیگنال {row.get('side') or ''} {str(row.get('ref_time_server') or '')[:16]}"
+                    head = (f"🔁 <b>نظر دیرهنگام</b> — تلاش {late_attempt}، با داده‌ی لحظه‌ی سیگنال"
+                            if not gave_up else
+                            f"🔁 <b>بعد از {late_attempt} تلاش نظری نیامد</b> — دیگر تلاش نمی‌شود")
+                    text = f"{head}\n{html.escape(sig)}\n{text}" if sig else f"{head}\n{text}"
+                elif retry_in is not None:
+                    text += (f"\n🔁 تلاش دوباره‌ی خودکار حدود {retry_in} دقیقه دیگر "
+                             "(با همان داده‌ی لحظه‌ی سیگنال)")
+                self._notify(text)
             except Exception as exc:
                 logger.warning("AI gate telegram notify failed: {}", exc)
 

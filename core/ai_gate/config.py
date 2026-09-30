@@ -64,6 +64,11 @@ class AIGateConfig:
     journal_dir: str = "data"
     context: ContextConfig = field(default_factory=ContextConfig)
     base_rates: Dict[str, Any] = field(default_factory=dict)
+    # resilience: other models of the same provider tried on 429/5xx/timeout, and
+    # (shadow only) automatic re-asks of a failed verdict with the stored signal-time context
+    fallback_models: Tuple[str, ...] = ()
+    shadow_retry_minutes: Tuple[int, ...] = (5, 15, 60)
+    shadow_retry_max_age_hours: float = 72.0
 
     # ------------------------------------------------------------ validation
     def validate(self) -> "AIGateConfig":
@@ -105,6 +110,13 @@ class AIGateConfig:
             problems.append("context.recent_trades must be within 0..200")
         if not isinstance(self.base_rates, dict):
             problems.append("base_rates must be a mapping")
+        if len(self.fallback_models) > 5 or any(not str(m).strip() for m in self.fallback_models):
+            problems.append("fallback_models: up to 5 non-empty model ids")
+        if len(self.shadow_retry_minutes) > 6 or any(
+                not 1 <= int(m) <= 1440 for m in self.shadow_retry_minutes):
+            problems.append("shadow_retry_minutes: up to 6 values within 1..1440")
+        if not 1.0 <= float(self.shadow_retry_max_age_hours) <= 240.0:
+            problems.append("shadow_retry_max_age_hours must be within 1..240")
         if problems:
             raise ConfigError("; ".join(problems))
         return self
@@ -146,6 +158,18 @@ def _from_mapping(raw: Mapping[str, Any]) -> AIGateConfig:
     values["fail_policy"] = str(values.get("fail_policy", "open")).strip().lower()
     values["model"] = str(values.get("model", "") or "").strip()
     values["base_rates"] = dict(values.get("base_rates") or {})
+    for key in ("fallback_models", "shadow_retry_minutes"):
+        if key in values:
+            raw_list = values[key]
+            if raw_list is None or raw_list is False:
+                raw_list = []
+            if isinstance(raw_list, (str, int)):
+                raw_list = [raw_list]
+            try:
+                values[key] = tuple(str(v).strip() if key == "fallback_models" else int(v)
+                                    for v in raw_list)
+            except (TypeError, ValueError):
+                raise ConfigError(f"{key} must be a list") from None
     return AIGateConfig(context=ContextConfig(**ctx), **values).validate()
 
 

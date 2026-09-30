@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 _BE_BAND = 0.5
 
 _DDL = """
@@ -89,11 +89,13 @@ class DecisionJournal:
 
     _V2_COLUMNS = (("sim_profit", "REAL"), ("sim_exit", "TEXT"), ("sim_protected", "INTEGER"),
                    ("sim_done", "INTEGER NOT NULL DEFAULT 0"), ("sim_updated_utc", "TEXT"))
+    # v3: provider-call attempts per signal and the earliest time of the next shadow re-ask
+    _V3_COLUMNS = (("attempts", "INTEGER NOT NULL DEFAULT 1"), ("retry_after_utc", "TEXT"))
 
     def _migrate(self) -> None:
-        """v1 → v2: add the simulation columns (idempotent)."""
+        """v1 → v2 → v3: add the simulation and retry columns (idempotent)."""
         existing = {row[1] for row in self._conn.execute("PRAGMA table_info(decisions)")}
-        for name, decl in self._V2_COLUMNS:
+        for name, decl in self._V2_COLUMNS + self._V3_COLUMNS:
             if name not in existing:
                 self._conn.execute(f"ALTER TABLE decisions ADD COLUMN {name} {decl}")
         self._conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
@@ -181,7 +183,25 @@ class DecisionJournal:
                  utc_now_str(), signal_key),
             )
 
+    def schedule_retry(self, signal_key: str, attempts: int, retry_after_utc: Optional[str]) -> None:
+        with self._cursor() as cur:
+            cur.execute("UPDATE decisions SET attempts=?, retry_after_utc=? WHERE signal_key=?",
+                        (int(attempts), retry_after_utc, signal_key))
+
     # ------------------------------------------------------------------- reads
+    RETRYABLE_STATUSES = ("http_error", "timeout")
+
+    def due_retries(self, now_utc: str, since_utc: str, max_attempts: int,
+                    limit: int = 2) -> List[Dict[str, Any]]:
+        """Shadow rows whose provider call failed transiently and whose re-ask is due."""
+        with self._cursor() as cur:
+            cur.execute(
+                """SELECT * FROM decisions WHERE mode='shadow' AND status IN ('http_error','timeout')
+                   AND context_json IS NOT NULL AND created_utc >= ? AND attempts < ?
+                   AND (retry_after_utc IS NULL OR retry_after_utc <= ?) ORDER BY id LIMIT ?""",
+                (since_utc, int(max_attempts), now_utc, int(limit)))
+            return [dict(r) for r in cur.fetchall()]
+
     def pending_sims(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Verdicts (status ok or late) whose outcome simulation is not final yet, oldest first."""
         with self._cursor() as cur:

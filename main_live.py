@@ -1375,6 +1375,10 @@ class LiveBot:
             return
         self._ai_sim_last = now
         try:
+            gate.retry_failed_shadow()          # re-ask shadow verdicts lost to 503/429/timeout
+        except Exception as exc:
+            logger.warning("AI gate retry step failed: {}", exc)
+        try:
             server_now = self.client.server_time()
             if server_now is None:
                 return
