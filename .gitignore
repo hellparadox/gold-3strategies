@@ -13,6 +13,8 @@ subscriptions.db-wal
 bot_state.json
 data/scout_state.json
 data/scout_state.json.tmp
+data/scout_mode.json
+data/scout_mode.json.tmp
 snapshots/
 exports/
 

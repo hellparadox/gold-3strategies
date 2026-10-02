@@ -1,8 +1,12 @@
 """Pure helpers for Scout's position tracking (no MT5, no Telegram) — unit-testable.
 
-Soft stop (owner's rule, 2026-09-30): the signal's stop-loss is only a *warning*.
-The position is closed only by the owner (button or /close).  A far "emergency"
-stop stays on the broker so a VPS/internet outage can never leave the loss uncapped.
+Stop policy (owner's rules, 2026-10-02):
+- The signal stop-loss is capped (scout.sl_cap_usd) and, by default, it is a real broker stop:
+  a position is never allowed past it unless the owner said «hold».
+- «Hold» (per position, or the global away mode «hold») moves the broker stop out to the
+  emergency level (scout.emergency_sl_mult × distance, capped at scout.emergency_cap_usd).
+- Away mode «ai»: broker stop at the emergency level; when price reaches the signal stop the
+  model decides HOLD or CLOSE (anything but a confident HOLD closes).
 """
 from __future__ import annotations
 
@@ -14,13 +18,45 @@ from typing import Any, Dict, Optional
 
 # fields persisted per open ticket (JSON-safe scalars only)
 STATE_KEYS = ("setup", "side", "entry", "sl", "emerg", "risk", "r1", "warned", "opened",
-              "alert", "status_mid", "below", "hold", "adopted")
+              "alert", "status_mid", "below", "hold", "adopted", "approach", "ai_next", "ai_note")
+POLICIES = ("close", "hold", "ai")
+POLICY_FA = {"close": "در حد ضرر بسته شود", "hold": "نگه داشته شود", "ai": "هوش مصنوعی تصمیم بگیرد"}
 
 
-def emergency_sl(side: str, entry: float, soft_sl: float, mult: float) -> float:
-    """Broker-side stop ``mult`` × the signal's stop distance away from entry."""
-    dist = abs(float(entry) - float(soft_sl)) * max(float(mult), 1.0)
+def emergency_sl(side: str, entry: float, soft_sl: float, mult: float,
+                 cap_dist: Optional[float] = None) -> float:
+    """Broker-side stop ``mult`` × the signal's stop distance, at most ``cap_dist`` from entry
+    (never tighter than the signal stop)."""
+    base = abs(float(entry) - float(soft_sl))
+    dist = base * max(float(mult), 1.0)
+    if cap_dist is not None and cap_dist > 0:
+        dist = max(min(dist, float(cap_dist)), base)
     return round(float(entry) - dist if side == "BUY" else float(entry) + dist, 2)
+
+
+def capped_sl(side: str, entry: float, soft_sl: float, cap_dist: Optional[float]) -> float:
+    """Signal stop moved closer to entry when its distance exceeds ``cap_dist``."""
+    dist = abs(float(entry) - float(soft_sl))
+    if cap_dist is not None and cap_dist > 0 and dist > cap_dist:
+        dist = float(cap_dist)
+    return round(float(entry) - dist if side == "BUY" else float(entry) + dist, 2)
+
+
+def effective_policy(info: Dict[str, Any], mode: str) -> str:
+    """Per-position «hold» always wins; otherwise the global away mode."""
+    return "hold" if info.get("hold") else (mode if mode in POLICIES else "close")
+
+
+def desired_broker_sl(info: Dict[str, Any], mode: str) -> float:
+    pol = effective_policy(info, mode)
+    return float(info["sl"]) if pol == "close" else float(info.get("emerg") or info["sl"])
+
+
+def adverse_fraction(side: str, entry: float, price: float, risk: float) -> float:
+    """How much of the planned risk is already lost (0 = at entry, 1 = at the stop)."""
+    if risk <= 0:
+        return 0.0
+    return -signed_move(side, entry, price) / float(risk)
 
 
 def signed_move(side: str, entry: float, price: float) -> float:
@@ -48,14 +84,15 @@ def fmt_duration(seconds: float) -> str:
 
 
 def status_text(tk: int, info: Dict[str, Any], price: float, profit: float, swap: float,
-                open_seconds: Optional[float], server_now: Optional[float]) -> str:
+                open_seconds: Optional[float], server_now: Optional[float],
+                mode: Optional[str] = None) -> str:
     side, entry, soft, risk = info["side"], float(info["entry"]), float(info["sl"]), float(info["risk"])
     move = signed_move(side, entry, price)
     r_mult = move / risk if risk > 0 else 0.0
     to_sl = signed_move(side, soft, price)            # >0: still above (BUY) / below (SELL) the stop
     if beyond_soft_sl(side, price, soft):
         state = "⏸ <b>زیر حد ضرر سیگنال — نگه داشته‌اید</b>" if info.get("hold") else \
-                "⚠️ <b>از حد ضرر سیگنال رد شده — تصمیم با شماست</b>"
+                "⚠️ <b>از حد ضرر سیگنال رد شده</b>"
     elif info.get("warned"):
         state = "⚠️ ساختار شکسته (بسته شدن خلاف تنکان)"
     else:
@@ -77,7 +114,30 @@ def status_text(tk: int, info: Dict[str, Any], price: float, profit: float, swap
     if tail:
         lines.append(" · ".join(tail))
     lines.append("وضعیت: " + state)
+    if mode is not None:
+        pol = effective_policy(info, mode)
+        why = "نگه دار (دستی)" if info.get("hold") else POLICY_FA.get(pol, pol)
+        lines.append(f"در حد ضرر: <b>{why}</b>")
+    if info.get("ai_note"):
+        lines.append(f"🤖 {info['ai_note']}")
     return "\n".join(lines)
+
+
+def save_mode(path: Path, mode: str) -> None:
+    if mode not in POLICIES:
+        raise ValueError(mode)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps({"mode": mode}), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def load_mode(path: Path, default: str = "close") -> str:
+    try:
+        mode = json.loads(path.read_text(encoding="utf-8")).get("mode")
+    except (OSError, ValueError, AttributeError):
+        return default
+    return mode if mode in POLICIES else default
 
 
 def save_state(path: Path, open_positions: Dict[int, Dict[str, Any]]) -> None:
