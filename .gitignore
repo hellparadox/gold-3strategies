@@ -15,6 +15,9 @@ data/scout_state.json
 data/scout_state.json.tmp
 data/scout_mode.json
 data/scout_mode.json.tmp
+data/scout_flags.json
+data/scout_flags.json.tmp
+data/scout.lock
 snapshots/
 exports/
 

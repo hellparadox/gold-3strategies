@@ -14,6 +14,10 @@
   (پیش‌فرض ۵ دقیقه) به‌روز می‌شود. رسیدن به ۱ برابر ریسک و شکست ساختار پیام جداگانه دارند.
 - پوزیشن‌های باز در scout.state_file نگه داشته می‌شوند و بعد از ری‌استارت دوباره دنبال می‌شوند.
 - بستن با دکمهٔ «بستن» یا دستور /close <ticket>.
+- پنل کنترل (/menu): قیمت لحظه‌ای، سلامت ربات و حساب، پوزیشن‌ها، حالت حد ضرر، توقف/ادامهٔ
+  هشدارها، ری‌استارت. فقط از admin_ids پذیرفته می‌شود. یک پیام «سالمم» روزانه
+  (scout.health_daily_utc_hour) و هشدار خودکار وقتی داده/قیمت از MT5 نمی‌رسد.
+- فقط یک نسخه از اسکات اجرا می‌شود (قفل فایل scout.lock_file).
 - مهلت پاسخ به هر هشدار: scout.expiry_seconds (پیش‌فرض ۳۰ دقیقه).
 - در لحظهٔ تأیید، ورود با قیمت همان لحظه است و حد ضرر با همان فاصلهٔ هشدار از این قیمت
   گذاشته می‌شود؛ اگر قیمت از حد ضرر هشدار رد شده باشد، سفارشی ثبت نمی‌شود.
@@ -33,10 +37,11 @@ import html
 import json
 import os
 import queue
+import subprocess
 import sys
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, Optional
@@ -57,9 +62,11 @@ except Exception:                      # pragma: no cover
 try:
     from tools import scout_tracker as trk
     from tools import scout_ai
+    from tools import scout_control as ctl
 except Exception:                      # pragma: no cover
     import scout_tracker as trk
     import scout_ai
+    import scout_control as ctl
 
 API = "https://api.telegram.org/bot{}/{}"
 # ستون‌های ثابت ژورنال — همهٔ رویدادها زیر یک سرستون (نسخهٔ قبل ستون‌ها را جابه‌جا می‌نوشت)
@@ -155,6 +162,7 @@ class Scout:
         token = os.environ.get(str(s.get("telegram.token_env", "TELEGRAM_TOKEN_SCOUT")), "")
         if not token:
             raise SystemExit("توکن تلگرام تنظیم نشده (TELEGRAM_TOKEN_SCOUT)")
+        self.admins = {int(x) for x in (s.get("telegram.admin_ids") or [])}
         self.tg = TG(token, (s.get("telegram.admin_ids") or [0])[0])
         self.pending: Dict[str, dict] = {}
         self.open: Dict[int, dict] = {}
@@ -185,6 +193,17 @@ class Scout:
         self._ai_pool = None
         self._ai_futs: Dict[int, Any] = {}
         self._sl_fail_t: Dict[int, float] = {}
+        # پنل کنترل و نگهبان سلامت
+        self.flags_path = Path(str(s.get("scout.flags_file", "data/scout_flags.json")))
+        self.paused = bool(ctl.load_flags(self.flags_path).get("paused", False))
+        self.started = time.time()
+        self.health_hour = int(s.get("scout.health_daily_utc_hour", 5))
+        self.stale_after = float(s.get("scout.feed_stale_seconds", 600))
+        self._last_data_ok = time.time()
+        self._feed_alert = False
+        self._health_day: Optional[str] = None
+        self._last_alert_t: Optional[float] = None
+        self.lock: Optional[ctl.InstanceLock] = None
 
     # ---------------------------------------------------------------- journal
     def log(self, **row: Any) -> None:
@@ -230,15 +249,16 @@ class Scout:
         r["tp_dist"] = 2.0 * self.sl_cap
         return r
 
-    def record_silent(self, r: pd.Series, spread_pts: float) -> None:
-        """معامله باز است: هشدار فرستاده نمی‌شود، فقط برای آمار ثبت می‌شود."""
+    def record_silent(self, r: pd.Series, spread_pts: float, note: Optional[str] = None) -> None:
+        """معامله باز است یا هشدارها متوقف‌اند: فقط برای آمار ثبت می‌شود."""
         entry, sl, tp, risk, n_set = self.levels(r)
         self.log(event="suppressed", setup=str(r.get("setups_all", r.setup)), n_setups=n_set,
                  side=r.side, bar=str(r.bar), price=entry, sl=round(sl, 2), tp=round(tp, 2),
-                 atr=round(r.atr, 3), spread=spread_pts, risk_usd=risk)
+                 atr=round(r.atr, 3), spread=spread_pts, risk_usd=risk, note=note)
 
     def alert(self, r: pd.Series, spread_pts: float) -> None:
         self.n += 1
+        self._last_alert_t = time.time()
         aid = f"{self.n}"
         entry, sl, tp, risk, n_set = self.levels(r)
         head = f"  ({n_set} ستاپ هم‌زمان)" if n_set > 1 else ""
@@ -683,6 +703,255 @@ class Scout:
             self._save_state()
             logger.info("scout tracking {} open position(s) | mode={}", len(self.open), self.mode)
 
+    # ------------------------------------------------------------- control panel
+    MENU_BUTTONS = [
+        [{"text": "💰 قیمت", "callback_data": "k|price"}, {"text": "📊 وضعیت", "callback_data": "k|status"}],
+        [{"text": "📋 پوزیشن‌ها", "callback_data": "k|pos"}, {"text": "⚙️ حالت حد ضرر", "callback_data": "k|mode"}],
+        [{"text": "⏸ توقف هشدارها", "callback_data": "k|pause"},
+         {"text": "▶️ ادامهٔ هشدارها", "callback_data": "k|resume"}],
+        [{"text": "🔄 ری‌استارت", "callback_data": "k|restart"}],
+    ]
+
+    def is_admin(self, u: dict) -> bool:
+        if not self.admins:
+            return True
+        cq = u.get("callback_query") or {}
+        who = (cq.get("from") or {}).get("id") or ((u.get("message") or {}).get("from") or {}).get("id")
+        try:
+            return int(who) in self.admins
+        except (TypeError, ValueError):
+            return False
+
+    def handle_update(self, u: dict) -> None:
+        if not self.is_admin(u):
+            logger.warning("scout: ignored telegram update from non-admin")
+            return
+        cq = u.get("callback_query")
+        if cq:
+            parts = str(cq.get("data", "")).split("|")
+            if parts[0] == "a" and len(parts) == 3:
+                self.decide(parts[1], parts[2] == "y", cq["id"])
+            elif parts[0] == "c" and len(parts) == 2:
+                self.close(int(parts[1]), cq["id"])
+            elif parts[0] == "h" and len(parts) == 2:
+                self.hold(int(parts[1]), cq["id"])
+            elif parts[0] == "u" and len(parts) == 2:
+                self.hold(int(parts[1]), cq["id"], on=False)
+            elif parts[0] == "m" and len(parts) == 2:
+                self.set_mode(parts[1], cq["id"])
+            elif parts[0] == "k" and len(parts) == 2:
+                self.tg.ack(cq["id"])
+                self.panel(parts[1])
+            return
+        msg = str((u.get("message") or {}).get("text", "") or "").strip()
+        cmd = msg.split()[0].split("@")[0].lower() if msg else ""
+        if cmd in ("/start", "/menu"):
+            self.panel("menu")
+        elif cmd in ("/mode", "/busy"):
+            self.mode_menu()
+        elif cmd in ("/price", "/status", "/positions", "/pause", "/resume", "/restart"):
+            self.panel({"/positions": "pos"}.get(cmd, cmd[1:]))
+        elif cmd == "/close":
+            bits = msg.split()
+            if len(bits) > 1 and bits[1].isdigit():
+                self.close(int(bits[1]))
+
+    def panel(self, what: str) -> None:
+        try:
+            if what == "menu":
+                self.tg.send(f"🎛 <b>پنل کنترل اسکات</b>\n{self._one_line_state()}", self.MENU_BUTTONS)
+            elif what == "price":
+                self.tg.send(self.price_text())
+            elif what == "status":
+                self.tg.send(self.status_text(), self.MENU_BUTTONS)
+            elif what == "pos":
+                self.positions_report()
+            elif what == "mode":
+                self.mode_menu()
+            elif what in ("pause", "resume"):
+                self.set_paused(what == "pause")
+            elif what == "restart":
+                self.tg.send("🔄 <b>ری‌استارت اسکات؟</b>\nپوزیشن‌های باز بسته نمی‌شوند و بعد از روشن شدن "
+                             "دوباره زیر نظر می‌آیند. حدود ۳۰ ثانیه طول می‌کشد.",
+                             [[{"text": "✅ بله، ری‌استارت", "callback_data": "k|restart_yes"},
+                               {"text": "❌ نه", "callback_data": "k|restart_no"}]])
+            elif what == "restart_yes":
+                self.restart()
+            elif what == "restart_no":
+                self.tg.send("ری‌استارت لغو شد.")
+        except Exception as exc:
+            logger.warning("scout panel {} failed: {}", what, exc)
+            self.tg.send(f"⚠️ {what}: {html.escape(str(exc))[:150]}")
+
+    def _one_line_state(self) -> str:
+        pause = "⏸ هشدارها متوقف" if self.paused else "🔔 هشدارها فعال"
+        return (f"{pause} · در حد ضرر: {trk.POLICY_FA[self.mode]} · پوزیشن باز: {len(self.open)} · "
+                f"روشن از {ctl.fmt_age(time.time() - self.started)} پیش")
+
+    def price_text(self) -> str:
+        tick = self.client.get_tick()
+        if tick is None:
+            return "⚠️ قیمت از MT5 نرسید."
+        bid, ask = float(tick.bid), float(tick.ask)
+        sp = self.client.spread_points()
+        srv = datetime.fromtimestamp(float(tick.time), timezone.utc).strftime("%H:%M:%S")
+        line = f"💰 <b>{self.client.symbol}</b>\nخرید (Ask): <b>{ask:.2f}</b> · فروش (Bid): <b>{bid:.2f}</b>\n"
+        line += f"اسپرد {sp:.0f} پوینت · ساعت سرور {srv}" if sp is not None else f"ساعت سرور {srv}"
+        try:
+            d1 = self.client.get_rates("D1", 2)
+            if d1 is not None and not d1.empty:
+                o, hi, lo = float(d1.open.iloc[-1]), float(d1.high.iloc[-1]), float(d1.low.iloc[-1])
+                line += f"\nامروز: باز {o:.2f} · سقف {hi:.2f} · کف {lo:.2f} · تغییر {bid - o:+.2f}"
+        except Exception:
+            pass
+        if self.open:
+            line += "\n" + "\n".join(
+                f"#{tk} {i['side']} از {float(i['entry']):.2f} → "
+                f"{trk.signed_move(i['side'], float(i['entry']), bid if i['side'] == 'BUY' else ask):+.2f}"
+                for tk, i in self.open.items())
+        return line
+
+    def status_text(self) -> str:
+        connected = False
+        try:
+            connected = bool(self.client.is_connected())
+        except Exception:
+            pass
+        tick = None
+        try:
+            tick = self.client.get_tick()
+        except Exception:
+            pass
+        acc = None
+        try:
+            acc = self.client.account_info()
+        except Exception:
+            pass
+        tick_age = None
+        if tick is not None and getattr(tick, "time", 0):
+            srv_now = None
+            try:
+                st = self.client.server_time()
+                srv_now = st.replace(tzinfo=timezone.utc).timestamp() if st is not None else None
+            except Exception:
+                srv_now = None
+            tick_age = (srv_now - float(tick.time)) if srv_now else None
+        js = ctl.journal_summary(self.journal, datetime.now() - timedelta(hours=24))
+        rev = "?"
+        try:
+            rev = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
+                                 timeout=5, cwd=str(Path(__file__).resolve().parents[1])).stdout.strip() or "?"
+        except Exception:
+            pass
+        lines = [
+            "✅ <b>اسکات سالم است</b>" if connected and not self._feed_alert else "⚠️ <b>مشکل در اتصال</b>",
+            f"نسخه {rev} · روشن از {ctl.fmt_age(time.time() - self.started)} پیش",
+            f"MT5: {'وصل' if connected else 'قطع'} · آخرین تیک {ctl.fmt_age(tick_age)} پیش"
+            + ("" if ctl.market_open_utc(datetime.now(timezone.utc)) else " (بازار بسته)"),
+        ]
+        if acc is not None:
+            lines.append(f"حساب {getattr(acc, 'login', '?')} · موجودی ${float(getattr(acc, 'balance', 0)):.2f}"
+                         f" · اکوئیتی ${float(getattr(acc, 'equity', 0)):.2f}")
+        lines.append(self._one_line_state())
+        if self._last_alert_t:
+            lines.append(f"آخرین هشدار: {ctl.fmt_age(time.time() - self._last_alert_t)} پیش")
+        lines.append("۲۴ ساعت اخیر: " + ctl.summary_line(js))
+        return "\n".join(lines)
+
+    def positions_report(self) -> None:
+        if not self.open:
+            self.tg.send("📋 پوزیشن بازی نیست.")
+            return
+        for tk in list(self.open):
+            info = self.open[tk]
+            info["status_t"] = 0.0                       # پیام وضعیت زنده همین حالا به‌روز شود
+            self.tg.send(f"📋 #{tk} {info['side']} · <code>{info['setup']}</code> · ورود {float(info['entry']):.2f}"
+                         f" · حد ضرر {float(info['sl']):.2f}", self._close_buttons(tk))
+
+    def set_paused(self, on: bool) -> None:
+        self.paused = bool(on)
+        try:
+            flags = ctl.load_flags(self.flags_path)
+            flags["paused"] = self.paused
+            ctl.save_flags(self.flags_path, flags)
+        except Exception as exc:                       # pragma: no cover
+            logger.warning("scout flags save failed: {}", exc)
+        if on:
+            self.cancel_pending("هشدارها متوقف شد")
+        self.tg.send("⏸ <b>هشدارهای جدید متوقف شد.</b> ستاپ‌ها فقط بی‌صدا ثبت می‌شوند؛ پوزیشن‌های باز "
+                     "مثل قبل مدیریت و گزارش می‌شوند. برای ادامه: /resume" if on else
+                     "▶️ <b>هشدارها دوباره فعال شد.</b>")
+        self.log(event="pause" if on else "resume")
+
+    def restart(self) -> None:
+        self.tg.send("🔄 اسکات در حال ری‌استارت است…")
+        self.log(event="restart")
+        self._save_state()
+        logger.warning("scout restart requested from telegram")
+        try:   # تأیید آپدیت‌های خوانده‌شده؛ وگرنه نسخهٔ جدید همین «بله، ری‌استارت» را دوباره می‌گیرد
+            self.tg._call("getUpdates", offset=self.tg._offset, timeout=0)
+        except Exception:                              # pragma: no cover
+            pass
+        if self.lock is not None:
+            self.lock.release()
+        try:
+            flags = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
+            subprocess.Popen([sys.executable, str(Path(__file__).resolve()), *sys.argv[1:]],
+                             cwd=str(Path(__file__).resolve().parents[1]), creationflags=flags)
+        except Exception as exc:
+            logger.error("scout relaunch failed: {}", exc)
+            self.tg.send(f"⚠️ ری‌استارت ناموفق: {html.escape(str(exc))[:150]}")
+            if self.lock is not None:
+                self.lock.acquire(wait=5)
+            return
+        try:
+            self.client.shutdown()
+        finally:
+            os._exit(0)
+
+    # ------------------------------------------------------------ health watch
+    def health_tick(self, data_ok: bool, now: Optional[float] = None) -> None:
+        """هشدار وقتی داده/تیک از MT5 نمی‌رسد، پیام بازگشت، و «سالمم» روزانه."""
+        now = time.time() if now is None else now
+        utc = datetime.fromtimestamp(now, timezone.utc)
+        stale_tick = getattr(self, "_stale_tick", False)
+        if not data_ok or not ctl.market_open_utc(utc):
+            stale_tick = False
+        elif now - getattr(self, "_tick_check_t", 0.0) >= 30.0:     # هر ۳۰ ثانیه، نه هر حلقه
+            self._tick_check_t = now
+            stale_tick = False
+            try:
+                tick = self.client.get_tick()
+                st = self.client.server_time()
+                if tick is not None and st is not None and getattr(tick, "time", 0):
+                    age = st.replace(tzinfo=timezone.utc).timestamp() - float(tick.time)
+                    stale_tick = age > self.stale_after
+            except Exception:
+                pass
+        self._stale_tick = stale_tick
+        if data_ok and not stale_tick:
+            self._last_data_ok = now
+            if self._feed_alert:
+                self._feed_alert = False
+                self.tg.send("✅ <b>اتصال اسکات به MT5 برگشت</b> — داده و قیمت دوباره می‌رسد.")
+                self.log(event="feed_ok")
+        elif not self._feed_alert and now - self._last_data_ok > self.stale_after:
+            self._feed_alert = True
+            why = "قیمت تازه نمی‌آید" if data_ok else "کندل‌ها از MT5 نمی‌رسد"
+            self.tg.send(f"⚠️ <b>اسکات: {why}</b> (بیش از {int(self.stale_after // 60)} دقیقه).\n"
+                         "ربات روشن است و خودش دوباره تلاش می‌کند؛ اگر ادامه داشت ترمینال MT5 را "
+                         "روی VPS بررسی کنید یا 🔄 ری‌استارت بزنید.", self.MENU_BUTTONS)
+            self.log(event="feed_stale", note=why)
+        day = utc.strftime("%Y-%m-%d")
+        if utc.hour >= self.health_hour and self._health_day != day:
+            first = self._health_day is None
+            self._health_day = day
+            if not first or utc.hour == self.health_hour:
+                js = ctl.journal_summary(self.journal, datetime.now() - timedelta(hours=24))
+                self.tg.send(("✅ <b>اسکات سالم است</b>" if not self._feed_alert else
+                              "⚠️ <b>اسکات روشن است ولی اتصال MT5 مشکل دارد</b>")
+                             + f"\n{self._one_line_state()}\n۲۴ ساعت اخیر: {ctl.summary_line(js)}")
+
     # -------------------------------------------------------------- heartbeat
     def beat(self) -> None:
         """هر دقیقه یک بار زمان را در فایل ضربان می‌نویسد تا نگهبان بفهمد زنده است."""
@@ -725,10 +994,11 @@ class Scout:
             raise SystemExit("MT5 connect failed")
         acc = self.client.account_info()
         self.tg.start()
+        self.tg._call("setMyCommands", commands=ctl.MENU_COMMANDS)
         self.tg.send(f"👀 <b>اسکات روشن شد</b>{' (آزمایشی)' if self.dry else ''}\n"
                      f"حساب {getattr(acc,'login','?')} · {getattr(acc,'server','?')} · "
                      f"موجودی ${getattr(acc,'balance',0):.2f}\nلات {self.lot} · انقضای هشدار "
-                     f"{self.expiry//60} دقیقه")
+                     f"{self.expiry//60} دقیقه\n{self._one_line_state()}", self.MENU_BUTTONS)
         logger.info("scout online")
         self.restore()
         if self.selftest:
@@ -737,30 +1007,11 @@ class Scout:
             try:
                 self.beat()
                 while not self.tg.q.empty():
-                    u = self.tg.q.get_nowait()
-                    cq = u.get("callback_query")
-                    if cq:
-                        parts = str(cq.get("data", "")).split("|")
-                        if parts[0] == "a" and len(parts) == 3:
-                            self.decide(parts[1], parts[2] == "y", cq["id"])
-                        elif parts[0] == "c" and len(parts) == 2:
-                            self.close(int(parts[1]), cq["id"])
-                        elif parts[0] == "h" and len(parts) == 2:
-                            self.hold(int(parts[1]), cq["id"])
-                        elif parts[0] == "u" and len(parts) == 2:
-                            self.hold(int(parts[1]), cq["id"], on=False)
-                        elif parts[0] == "m" and len(parts) == 2:
-                            self.set_mode(parts[1], cq["id"])
-                    msg = (u.get("message") or {}).get("text", "")
-                    if msg.startswith(("/mode", "/busy")):
-                        self.mode_menu()
-                    if msg.startswith("/close"):
-                        bits = msg.split()
-                        if len(bits) > 1 and bits[1].isdigit():
-                            self.close(int(bits[1]))
+                    self.handle_update(self.tg.q.get_nowait())
 
                 self.expire()
                 m15 = self.client.get_rates("M15", 700)
+                self.health_tick(m15 is not None and not m15.empty)
                 if m15 is None or m15.empty:
                     time.sleep(2); continue
                 m15 = m15.iloc[:-1]                      # فقط کندل‌های بسته
@@ -781,7 +1032,10 @@ class Scout:
                     rows = [self.cap_row(r) for r in rows]
                     quiet = self.busy() and not self.dry
                     for r in rows:
-                        (self.record_silent if quiet else self.alert)(r, sp)
+                        if self.paused:
+                            self.record_silent(r, sp, note="paused")
+                        else:
+                            (self.record_silent if quiet else self.alert)(r, sp)
                 time.sleep(float(self.s.get("scout.loop_seconds", 2)))
             except KeyboardInterrupt:
                 break
@@ -812,7 +1066,16 @@ def main() -> None:
                        encoding="utf-8")
         except Exception as exc:                       # pragma: no cover
             logger.warning("file log disabled: {}", exc)
-    Scout(st, a.dry or a.selftest, a.selftest).run()
+    lock = ctl.InstanceLock(Path(str(st.get("scout.lock_file", "data/scout.lock"))))
+    if not lock.acquire(wait=40):                      # ری‌استارت: صبر تا نسخهٔ قبلی قفل را آزاد کند
+        logger.error("another Scout instance is already running (lock {}); exiting", lock.path)
+        raise SystemExit(3)
+    try:
+        sc = Scout(st, a.dry or a.selftest, a.selftest)
+        sc.lock = lock
+        sc.run()
+    finally:
+        lock.release()
 
 
 if __name__ == "__main__":

@@ -59,6 +59,11 @@ scout:
   ai_timeout_seconds: 60
   status_every_seconds: 300    # پیام وضعیت زندهٔ هر پوزیشن تأییدشده هر ۵ دقیقه به‌روز می‌شود
   state_file: "data/scout_state.json"   # پوزیشن‌های تحت نظر؛ بعد از ری‌استارت ادامه می‌دهد
+  # پنل کنترل و نگهبان سلامت (/menu در تلگرام)
+  flags_file: "data/scout_flags.json"   # توقف/ادامهٔ هشدارها (بعد از ری‌استارت می‌ماند)
+  lock_file: "data/scout.lock"          # فقط یک نسخه از اسکات
+  health_daily_utc_hour: 5     # پیام «سالمم» روزانه ساعت ۵ UTC (حدود ۸:۳۰ تهران)
+  feed_stale_seconds: 600      # اگر ۱۰ دقیقه داده/قیمت از MT5 نیاید، هشدار
 
 telegram:
   enabled: true
