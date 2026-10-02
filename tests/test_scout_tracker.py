@@ -107,6 +107,10 @@ def make_scout(tmp: Path, mode="close") -> Scout:
     sc._ai, sc._ai_pool, sc._ai_futs, sc._sl_fail_t = None, None, {}, {}
     sc.journal = tmp / "journal.csv"
     sc.lot = 0.01
+    sc.block_hedge = True
+    sc.alert_while_open, sc.max_open, sc.max_total_risk = True, 2, 20.0
+    sc.expiry, sc.n = 1800, 0
+    sc._last_alert_t = None
     return sc
 
 

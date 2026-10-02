@@ -21,8 +21,10 @@
 - مهلت پاسخ به هر هشدار: scout.expiry_seconds (پیش‌فرض ۳۰ دقیقه).
 - در لحظهٔ تأیید، ورود با قیمت همان لحظه است و حد ضرر با همان فاصلهٔ هشدار از این قیمت
   گذاشته می‌شود؛ اگر قیمت از حد ضرر هشدار رد شده باشد، سفارشی ثبت نمی‌شود.
-- تا وقتی پوزیشن اسکات باز است، هشدار جدید فرستاده نمی‌شود؛ ستاپ‌ها بی‌صدا در ژورنال ثبت
-  می‌شوند (رویداد suppressed) و هشدارهای بی‌جوابِ قبلی لغو می‌شوند.
+- هشدار با پوزیشن باز (scout.alert_while_open، پیش‌فرض روشن، قاعدهٔ مالک ۲۰۲۶-۱۰-۰۲): همهٔ
+  هشدارها می‌آیند، با وضعیت پوزیشن‌های باز. تأیید فقط وقتی باز می‌شود که: پوزیشن خلاف جهت باز
+  نباشد، تعداد پوزیشن‌ها کمتر از scout.max_open باشد و ریسک کل (تا حد ضرر فعلی روی بروکر)
+  از scout.max_total_risk_usd بیشتر نشود. خاموش کردنش رفتار قبلی را برمی‌گرداند (بی‌صدا).
 - همه‌چیز در data/scout_journal_v2.csv با ستون‌های ثابت ثبت می‌شود؛ آمار: tools/scout_stats.py
 
 اجرا:
@@ -179,6 +181,9 @@ class Scout:
         self.last_bar: Optional[pd.Timestamp] = None
         self.n = 0
         self.block_hedge = bool(s.get("scout.block_hedge", True))
+        self.alert_while_open = bool(s.get("scout.alert_while_open", True))
+        self.max_open = int(s.get("scout.max_open", 2))
+        self.max_total_risk = float(s.get("scout.max_total_risk_usd", 20.0) or 0.0)
         self.merge_setups = bool(s.get("scout.merge_setups", True))
         self.beat_path = Path(str(s.get("scout.heartbeat", "data/heartbeat_scout.txt")))
         self._last_beat = 0.0
@@ -259,6 +264,55 @@ class Scout:
         r["tp_dist"] = 2.0 * self.sl_cap
         return r
 
+    def _usd(self, price_dist: float) -> float:
+        return round(abs(float(price_dist)) * 100.0 * self.lot, 2)
+
+    def open_risk_usd(self) -> float:
+        """ضرر هر پوزیشن باز اگر حد ضرر فعلی‌اش (طبق سیاست) روی بروکر بخورد."""
+        total = 0.0
+        for info in self.open.values():
+            try:
+                stop = trk.desired_broker_sl(info, self.mode) if self.soft_stop else float(info["sl"])
+                total += max(self._usd(float(info["entry"]) - stop), 0.0)
+            except (KeyError, TypeError, ValueError):
+                continue
+        return round(total, 2)
+
+    def new_risk_usd(self, side: str, entry: float, sl: float) -> float:
+        if not self.soft_stop:
+            return self._usd(entry - sl)
+        emerg = trk.emergency_sl(side, entry, sl, self.emerg_mult, self.emerg_cap)
+        stop = trk.desired_broker_sl({"sl": sl, "emerg": emerg, "hold": False}, self.mode)
+        return self._usd(entry - stop)
+
+    def entry_block(self, side: str, new_risk: float) -> Optional[str]:
+        """دلیل باز نشدن تأیید جدید، یا None."""
+        opposite = [tk for tk, i in self.open.items() if i["side"] != side]
+        if self.block_hedge and opposite:
+            return ("پوزیشن خلاف جهت باز است (" + "، ".join(f"#{t}" for t in opposite) + ") — "
+                    "خرید و فروش هم‌زمان همدیگر را خنثی می‌کنند و فقط اسپرد می‌دهید")
+        if self.max_open > 0 and len(self.open) >= self.max_open:
+            return f"سقف {self.max_open} پوزیشن هم‌زمان پر است"
+        used = self.open_risk_usd()
+        if self.max_total_risk > 0 and used + new_risk > self.max_total_risk + 0.01:
+            return (f"سقف ریسک کل {self.max_total_risk:.0f}$ پر می‌شود (باز: {used:.2f}$ + "
+                    f"این سیگنال: {new_risk:.2f}$)")
+        return None
+
+    def open_summary(self) -> str:
+        """یک خط دربارهٔ پوزیشن‌های باز برای پیام هشدار."""
+        live = {}
+        try:
+            live = {int(p.ticket): p for p in self.client.positions(magic_only=True)}
+        except Exception:
+            pass
+        parts = []
+        for tk, i in self.open.items():
+            p = live.get(int(tk))
+            pl = f" {float(p.profit):+.2f}$" if p is not None else ""
+            parts.append(f"#{tk} {i['side']}{pl}")
+        return "، ".join(parts)
+
     def record_silent(self, r: pd.Series, spread_pts: float, note: Optional[str] = None) -> None:
         """معامله باز است یا هشدارها متوقف‌اند: فقط برای آمار ثبت می‌شود."""
         entry, sl, tp, risk, n_set = self.levels(r)
@@ -280,6 +334,11 @@ class Scout:
                f"هدف پیشنهادی: {tp:.2f}  (۲ برابر ریسک)\n"
                f"ریسک: ${risk} · ATR {r.atr:.2f} · اسپرد {spread_pts:.0f}\n"
                f"<i>{self.expiry // 60} دقیقه فرصت پاسخ</i>")
+        if self.open:
+            block = self.entry_block(r.side, self.new_risk_usd(r.side, entry, sl))
+            txt += (f"\n⚠️ پوزیشن باز: {self.open_summary()}"
+                    + (f"\n🚫 <b>فعلاً قابل باز شدن نیست:</b> {block}" if block else
+                       f"\nبا تأیید، پوزیشن دوم باز می‌شود (ریسک کل حداکثر {self.max_total_risk:.0f}$)."))
         mid = self.tg.send(txt, [[{"text": "✅ تأیید", "callback_data": f"a|{aid}|y"},
                                   {"text": "❌ رد", "callback_data": f"a|{aid}|n"}]])
         self.pending[aid] = {"row": r, "sl": sl, "tp": tp, "mid": mid, "t": time.time(), "txt": txt}
@@ -308,17 +367,14 @@ class Scout:
             self.tg.edit(p["mid"], p["txt"] + "\n\n❌ <b>رد شد</b>")
             self.log(event="rejected", alert=aid, setup=r.setup, side=r.side)
             return
-        opposite = [tk for tk, i in self.open.items() if i["side"] != r.side]
-        if self.block_hedge and opposite and not self.dry:
-            names = "، ".join(f"#{t}" for t in opposite)
-            self.tg.ack(cb, "پوزیشن مخالف باز است")
-            self.tg.edit(p["mid"], p["txt"] +
-                         f"\n\n🚫 <b>ثبت نشد — پوزیشن مخالف باز است</b> ({names})\n"
-                         "خرید و فروش هم‌زمان همدیگر را خنثی می‌کنند و فقط اسپرد می‌دهید. "
-                         "اول آن را ببندید.")
-            self.log(event="blocked_hedge", alert=aid, setup=r.setup, side=r.side,
-                     note=names)
-            return
+        if self.open and not self.dry:
+            block = self.entry_block(r.side, self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"])))
+            if block:
+                self.tg.ack(cb, "ثبت نشد")
+                self.tg.edit(p["mid"], p["txt"] + f"\n\n🚫 <b>ثبت نشد</b> — {block}.")
+                kind = "blocked_hedge" if block.startswith("پوزیشن خلاف") else "blocked_limit"
+                self.log(event=kind, alert=aid, setup=r.setup, side=r.side, note=block[:200])
+                return
         # قیمت لحظهٔ تأیید؛ حد ضرر با همان فاصلهٔ هشدار نسبت به این قیمت
         ref = float(r.ref_close); dist = abs(ref - p["sl"])
         tick = None
@@ -366,14 +422,17 @@ class Scout:
         soft_note = (f"\nحد ضرر {sl_now:.2f} · اگر برسد: <b>{trk.POLICY_FA[self.mode]}</b>"
                      f" (حالت /mode). با «نگه دار» حد ضرر به سطح اضطراری {emerg:.2f} می‌رود."
                      if self.soft_stop else "")
-        self.tg.send(f"پوزیشن #{tk} باز است. تا بسته نشود هشدار جدیدی نمی‌آید.{soft_note}\n"
+        more = ("هشدارهای جدید همچنان می‌آیند." if self.alert_while_open
+                else "تا بسته نشود هشدار جدیدی نمی‌آید.")
+        self.tg.send(f"پوزیشن #{tk} باز است. {more}{soft_note}\n"
                      f"وضعیت هر {int(self.status_every // 60)} دقیقه در یک پیام زنده به‌روز می‌شود.",
                      self._close_buttons(tk))
         self.log(event="opened", alert=aid, setup=r.setup, side=r.side, ticket=tk,
                  price=res.price, sl=round(sl_now, 2),
                  note=f"broker_sl={broker_sl};emergency_sl={emerg};mode={self.mode}"
                  if self.soft_stop else None)
-        self.cancel_pending("معامله‌ای باز شد")
+        if not self.alert_while_open:
+            self.cancel_pending("معامله‌ای باز شد")
 
     def cancel_pending(self, why: str) -> None:
         for aid in list(self.pending):
@@ -1071,7 +1130,7 @@ class Scout:
                             if self.merge_setups and not sig.empty
                             else [r for _, r in sig.iterrows()])
                     rows = [self.cap_row(r) for r in rows]
-                    quiet = self.busy() and not self.dry
+                    quiet = (not self.alert_while_open) and self.busy() and not self.dry
                     for r in rows:
                         if self.paused:
                             self.record_silent(r, sp, note="paused")
