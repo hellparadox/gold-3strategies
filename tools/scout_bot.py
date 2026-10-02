@@ -842,7 +842,8 @@ class Scout:
     def status_text(self) -> str:
         connected = False
         try:
-            connected = bool(self.client.is_connected())
+            probe = self.client.is_connected            # MT5Client: property (bool), not a method
+            connected = bool(probe() if callable(probe) else probe)
         except Exception:
             pass
         tick = None

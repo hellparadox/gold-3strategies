@@ -45,7 +45,7 @@ def scout(tmp: Path):
     sc.client.server_time.return_value = datetime.utcfromtimestamp(1_790_000_005)
     sc.client.get_rates.return_value = pd.DataFrame({"open": [4150.0], "high": [4180.0], "low": [4140.0],
                                                      "close": [4170.0]})
-    sc.client.is_connected.return_value = True
+    sc.client.is_connected = True                  # property on the real MT5Client
     sc.client.account_info.return_value = NS(login=20277252, balance=426.01, equity=420.5)
     return sc
 
@@ -96,6 +96,14 @@ class Panel(unittest.TestCase):
         t = self.sc.tg.sent[-1][0]
         for part in ("اسکات سالم است", "MT5: وصل", "426.01", "۲۴ ساعت اخیر"):
             self.assertIn(part, t)
+
+    def test_status_with_real_client_property(self):
+        """Regression 2026-10-02: is_connected is a property; calling it showed 'قطع' while connected."""
+        from core.mt5_client import MT5Client
+        self.assertIsInstance(MT5Client.__dict__["is_connected"], property)
+        self.sc.client.is_connected = False
+        self.sc.handle_update(msg("/status"))
+        self.assertIn("MT5: قطع", self.sc.tg.sent[-1][0])
 
     def test_pause_resume_persisted_and_alerts_silenced(self):
         self.sc.pending["1"] = {"row": NS(setup="x", side="BUY"), "mid": 1, "txt": "t", "t": 0}
