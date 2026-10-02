@@ -74,6 +74,23 @@ class Panel(unittest.TestCase):
         for part in ("4170.37", "4170.10", "27 پوینت", "تغییر +20.10"):
             self.assertIn(part, t)
 
+    def test_bottom_keyboard_buttons(self):
+        self.sc.handle_update(msg("/menu"))
+        self.assertEqual(self.sc.tg.keyboards[-1], self.sc.KEYBOARD)
+        self.assertTrue(self.sc.KEYBOARD["is_persistent"])
+        self.sc.open[5] = {"setup": "tk_cross", "side": "SELL", "entry": 4171.23, "sl": 4181.23,
+                           "emerg": 4191.23, "risk": 10.0, "hold": True}
+        self.sc.client.positions.return_value = [NS(ticket=5, price_current=4180.0, profit=-8.77, magic=735777)]
+        self.sc.handle_update(msg("📋 پوزیشن‌ها"))
+        text, buttons = self.sc.tg.sent[-1]
+        for part in ("#5", "4180.00", "-8.77$", "نگه داشته شده"):
+            self.assertIn(part, text)
+        self.assertEqual([b["callback_data"] for b in buttons[0]], ["c|5", "u|5"])
+        self.sc.handle_update(msg("💰 قیمت"))
+        self.assertIn("4170.37", self.sc.tg.sent[-1][0])
+        self.sc.handle_update(msg("📋 پوزیشن‌ها", who=999))      # still admin-only
+        self.assertIn("4170.37", self.sc.tg.sent[-1][0])
+
     def test_status(self):
         self.sc.handle_update(msg("/status"))
         t = self.sc.tg.sent[-1][0]

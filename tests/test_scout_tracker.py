@@ -63,13 +63,20 @@ class Pure(unittest.TestCase):
 
 class FakeTG:
     def __init__(self):
-        self.sent, self.edits, self.acks = [], [], []
+        self.sent, self.edits, self.acks, self.deleted, self.keyboards = [], [], [], [], []
         self._mid = 100
+        self.last_mid = None
 
-    def send(self, text, buttons=None):
+    def send(self, text, buttons=None, keyboard=None):
         self._mid += 1
         self.sent.append((text, buttons))
+        if keyboard:
+            self.keyboards.append(keyboard)
+        self.last_mid = self._mid
         return self._mid
+
+    def delete(self, mid):
+        self.deleted.append(mid)
 
     def edit(self, mid, text, buttons=None):
         self.edits.append((mid, text, buttons))
@@ -140,6 +147,19 @@ class Behaviour(unittest.TestCase):
         self.run_at(1301.0, 4179.0)
         self.assertEqual(self.sc.tg.edits[-1][0], mid)
 
+    def test_status_moves_to_bottom_when_buried(self):
+        self.run_at(1000.0, 4178.0)
+        old = self.sc.open[5]["status_mid"]
+        self.sc.tg.send("another message")              # status is no longer the last message
+        self.run_at(1301.0, 4179.0)
+        new = self.sc.open[5]["status_mid"]
+        self.assertNotEqual(new, old)
+        self.assertEqual(self.sc.tg.deleted, [old])
+        self.assertEqual(self.sc.tg.edits, [])
+        texts = [t for t, b in self.sc.tg.sent if "📊" in t]
+        self.assertEqual(len(texts), 2)
+        self.assertEqual([b["callback_data"] for b in self.sc.tg.sent[-1][1][0]], ["c|5", "h|5"])
+
     def test_close_mode_never_passes_the_stop(self):
         self.run_at(1000.0, 4169.5)                     # beyond the signal SL, no hold
         self.sc.client.close_position.assert_called_once()
@@ -209,6 +229,7 @@ class Behaviour(unittest.TestCase):
         info = sc2.open[7]
         self.assertEqual((info["sl"], info["emerg"]), (4181.23, 4191.23))
         self.assertTrue(info["hold"])
+        self.assertEqual(info["status_t"], 0.0)          # fresh status message with buttons right away
 
     def test_restore_adopts_untracked_position(self):
         sc = make_scout(self.tmp)

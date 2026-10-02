@@ -104,6 +104,7 @@ class TG:
         self.q: "queue.Queue[dict]" = queue.Queue()
         self._offset = 0
         self._stop = threading.Event()
+        self.last_mid: Optional[int] = None
 
     def _call(self, method: str, **kw: Any) -> Optional[dict]:
         try:
@@ -114,12 +115,21 @@ class TG:
             logger.warning("telegram {} failed: {}", method, exc)
             return None
 
-    def send(self, text: str, buttons: Optional[list] = None) -> Optional[int]:
+    def send(self, text: str, buttons: Optional[list] = None,
+             keyboard: Optional[dict] = None) -> Optional[int]:
         kw: Dict[str, Any] = {"chat_id": self.chat, "text": text, "parse_mode": "HTML"}
         if buttons:
             kw["reply_markup"] = {"inline_keyboard": buttons}
+        elif keyboard:
+            kw["reply_markup"] = keyboard
         r = self._call("sendMessage", **kw)
-        return r.get("message_id") if r else None
+        mid = r.get("message_id") if r else None
+        if mid:
+            self.last_mid = mid
+        return mid
+
+    def delete(self, message_id: int) -> None:
+        self._call("deleteMessage", chat_id=self.chat, message_id=message_id)
 
     def edit(self, message_id: int, text: str, buttons: Optional[list] = None) -> bool:
         kw: Dict[str, Any] = {"chat_id": self.chat, "message_id": message_id,
@@ -591,10 +601,16 @@ class Scout:
         text = trk.status_text(tk, info, price, profit, swap, secs, server_now, self.mode)
         buttons = self._close_buttons(tk)
         mid = info.get("status_mid")
-        if mid and self.tg.edit(mid, text, buttons):
+        # فقط وقتی آخرین پیام چت است ویرایش شود؛ وگرنه پیام تازه پایین چت (با دکمه‌ها) و حذف قبلی
+        if mid and getattr(self.tg, "last_mid", None) == mid and self.tg.edit(mid, text, buttons):
             return
         new_mid = self.tg.send(text, buttons)
         if new_mid:
+            if mid and mid != new_mid:
+                try:
+                    self.tg.delete(mid)
+                except Exception:                      # pragma: no cover
+                    pass
             info["status_mid"] = new_mid
             self._save_state()
 
@@ -700,6 +716,8 @@ class Scout:
                          f"حد ضرر {info['sl']:.2f} · اضطراری {info['emerg']:.2f} · در حد ضرر: "
                          f"<b>{trk.POLICY_FA[self.mode]}</b>", self._close_buttons(tk))
         if self.open:
+            for info in self.open.values():
+                info["status_t"] = 0.0                   # پیام وضعیت تازه با دکمه‌ها همین الان
             self._save_state()
             logger.info("scout tracking {} open position(s) | mode={}", len(self.open), self.mode)
 
@@ -711,6 +729,12 @@ class Scout:
          {"text": "▶️ ادامهٔ هشدارها", "callback_data": "k|resume"}],
         [{"text": "🔄 ری‌استارت", "callback_data": "k|restart"}],
     ]
+
+    # دکمه‌های ثابت پایین صفحهٔ تلگرام — همیشه در دسترس، بدون نیاز به دانستن دستورها
+    KEYBOARD = {"keyboard": [[{"text": "📋 پوزیشن‌ها"}, {"text": "💰 قیمت"}],
+                             [{"text": "📊 وضعیت"}, {"text": "🎛 منو"}]],
+                "is_persistent": True, "resize_keyboard": True}
+    KEYBOARD_ACTIONS = {"📋 پوزیشن‌ها": "pos", "💰 قیمت": "price", "📊 وضعیت": "status", "🎛 منو": "menu"}
 
     def is_admin(self, u: dict) -> bool:
         if not self.admins:
@@ -744,6 +768,9 @@ class Scout:
                 self.panel(parts[1])
             return
         msg = str((u.get("message") or {}).get("text", "") or "").strip()
+        if msg in self.KEYBOARD_ACTIONS:
+            self.panel(self.KEYBOARD_ACTIONS[msg])
+            return
         cmd = msg.split()[0].split("@")[0].lower() if msg else ""
         if cmd in ("/start", "/menu"):
             self.panel("menu")
@@ -759,6 +786,7 @@ class Scout:
     def panel(self, what: str) -> None:
         try:
             if what == "menu":
+                self.tg.send("⌨️ دکمه‌های پایین صفحه فعال است.", keyboard=self.KEYBOARD)
                 self.tg.send(f"🎛 <b>پنل کنترل اسکات</b>\n{self._one_line_state()}", self.MENU_BUTTONS)
             elif what == "price":
                 self.tg.send(self.price_text())
@@ -862,11 +890,21 @@ class Scout:
         if not self.open:
             self.tg.send("📋 پوزیشن بازی نیست.")
             return
+        live = {}
+        try:
+            live = {int(p.ticket): p for p in self.client.positions(magic_only=True)}
+        except Exception:
+            pass
         for tk in list(self.open):
             info = self.open[tk]
-            info["status_t"] = 0.0                       # پیام وضعیت زنده همین حالا به‌روز شود
-            self.tg.send(f"📋 #{tk} {info['side']} · <code>{info['setup']}</code> · ورود {float(info['entry']):.2f}"
-                         f" · حد ضرر {float(info['sl']):.2f}", self._close_buttons(tk))
+            p = live.get(int(tk))
+            now_txt = (f" · الان {float(p.price_current):.2f} · سود/زیان <b>{float(p.profit):+.2f}$</b>"
+                       if p is not None else "")
+            held = " · ⏸ نگه داشته شده" if info.get("hold") else ""
+            self.tg.send(f"📋 <b>#{tk}</b> {info['side']} · <code>{info['setup']}</code> · ورود "
+                         f"{float(info['entry']):.2f}{now_txt}\nحد ضرر {float(info['sl']):.2f}"
+                         f" · اضطراری {float(info.get('emerg') or info['sl']):.2f}{held}",
+                         self._close_buttons(tk))
 
     def set_paused(self, on: bool) -> None:
         self.paused = bool(on)
@@ -998,7 +1036,9 @@ class Scout:
         self.tg.send(f"👀 <b>اسکات روشن شد</b>{' (آزمایشی)' if self.dry else ''}\n"
                      f"حساب {getattr(acc,'login','?')} · {getattr(acc,'server','?')} · "
                      f"موجودی ${getattr(acc,'balance',0):.2f}\nلات {self.lot} · انقضای هشدار "
-                     f"{self.expiry//60} دقیقه\n{self._one_line_state()}", self.MENU_BUTTONS)
+                     f"{self.expiry//60} دقیقه\n{self._one_line_state()}\n"
+                     "دکمه‌های پایین صفحه: 📋 پوزیشن‌ها (بستن/نگه داشتن) · 💰 قیمت · 📊 وضعیت · 🎛 منو",
+                     keyboard=self.KEYBOARD)
         logger.info("scout online")
         self.restore()
         if self.selftest:
