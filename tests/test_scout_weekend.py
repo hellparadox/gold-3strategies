@@ -23,7 +23,7 @@ class Weekend(unittest.TestCase):
     def tearDown(self):
         self._d.cleanup()
 
-    def run_at(self, t, price=4178.0, broker_sl=4157.62):
+    def run_at(self, t, price=4178.0, broker_sl=SOFT):
         self.sc.client.positions.return_value = [pos(price=price, profit=-1.0, sl=broker_sl)]
         with unittest.mock.patch("tools.scout_bot.time.time", return_value=t):
             self.sc.monitor(FRAME)
@@ -49,6 +49,11 @@ class Weekend(unittest.TestCase):
         self.assertNotIn("closed_note", self.sc.open[5])
         self.sc.client.modify_sltp.assert_called_once()
 
+    def test_tiny_sl_difference_is_ignored(self):
+        self.mkt = True
+        self.run_at(1000.0, broker_sl=4157.62)          # ۵ سنت با سطح اضطراری 4157.57 فرق دارد
+        self.sc.client.modify_sltp.assert_not_called()
+
     def test_edit_not_modified_is_not_an_error(self):
         tg = scout_bot.TG.__new__(scout_bot.TG)
         tg.token, tg.chat = "x", 1
@@ -57,6 +62,9 @@ class Weekend(unittest.TestCase):
             self.assertTrue(tg.edit(7, "same text"))
         resp = NS(json=lambda: {"ok": False, "description": "Bad Request: message to edit not found"})
         with unittest.mock.patch("tools.scout_bot.requests.post", return_value=resp):
+            self.assertFalse(tg.edit(7, "same text"))
+        with unittest.mock.patch("tools.scout_bot.requests.post", side_effect=OSError("network down")):
+            tg.last_error = "message is not modified"     # خطای کهنه از ویرایش قبلی
             self.assertFalse(tg.edit(7, "same text"))
 
 

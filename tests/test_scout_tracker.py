@@ -114,6 +114,8 @@ def make_scout(tmp: Path, mode="close") -> Scout:
     sc._last_alert_t = None
     sc._an_pool, sc._an_futs, sc._an_cache, sc._frame, sc._closing_t = None, {}, {}, None, {}
     sc.market_open = lambda: True
+    sc._live, sc._an_short, sc.dashboard = {}, {}, None
+    sc._virtual_rows, sc._actual_map = None, {}
     return sc
 
 

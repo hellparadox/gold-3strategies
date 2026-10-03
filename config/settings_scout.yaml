@@ -67,6 +67,15 @@ scout:
   lock_file: "data/scout.lock"          # فقط یک نسخه از اسکات
   health_daily_utc_hour: 5     # پیام «سالمم» روزانه ساعت ۵ UTC (حدود ۸:۳۰ تهران)
   feed_stale_seconds: 600      # اگر ۱۰ دقیقه داده/قیمت از MT5 نیاید، هشدار
+  # داشبورد وب: http://SERVER_IP:8082/?token=...  (مثل داشبورد دو ربات دیگر؛ پورت را در فایروال باز کنید)
+  # توکن از .env خوانده می‌شود: DASHBOARD_TOKEN_SCOUT، وگرنه همان DASHBOARD_TOKEN دو داشبورد دیگر.
+  # بدون توکن داشبورد روشن نمی‌شود. فقط خواندنی است؛ هیچ سفارشی از آن داده نمی‌شود.
+  dashboard:
+    enabled: true
+    host: "0.0.0.0"
+    port: 8082
+    token: ""                  # خالی بگذارید؛ از .env می‌آید
+    stats_minutes: 60          # نتیجهٔ فرضی ستاپ‌ها هر ۶۰ دقیقه دوباره حساب می‌شود
 
 telegram:
   enabled: true

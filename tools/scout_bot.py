@@ -27,6 +27,9 @@
   هشدارها می‌آیند، با وضعیت پوزیشن‌های باز. تأیید فقط وقتی باز می‌شود که: پوزیشن خلاف جهت باز
   نباشد، تعداد پوزیشن‌ها کمتر از scout.max_open باشد و ریسک کل (تا حد ضرر فعلی روی بروکر)
   از scout.max_total_risk_usd بیشتر نشود. خاموش کردنش رفتار قبلی را برمی‌گرداند (بی‌صدا).
+- داشبورد وب (scout.dashboard، پیش‌فرض پورت 8082): وضعیت، پوزیشن‌ها، هشدارهای منتظر، سود و زیان
+  روزانه، کارنامهٔ ستاپ‌ها و رویدادها؛ فقط خواندنی و فقط با توکن (env DASHBOARD_TOKEN_SCOUT یا
+  DASHBOARD_TOKEN). نتیجهٔ فرضی ستاپ‌ها هر scout.dashboard.stats_minutes دوباره حساب می‌شود.
 - همه‌چیز در data/scout_journal_v2.csv با ستون‌های ثابت ثبت می‌شود؛ آمار: tools/scout_stats.py
 
 اجرا:
@@ -67,10 +70,14 @@ try:
     from tools import scout_tracker as trk
     from tools import scout_ai
     from tools import scout_control as ctl
+    from tools import scout_dashboard as dash
+    from tools import scout_stats
 except Exception:                      # pragma: no cover
     import scout_tracker as trk
     import scout_ai
     import scout_control as ctl
+    import scout_dashboard as dash
+    import scout_stats
 
 API = "https://api.telegram.org/bot{}/{}"
 # ستون‌های ثابت ژورنال — همهٔ رویدادها زیر یک سرستون (نسخهٔ قبل ستون‌ها را جابه‌جا می‌نوشت)
@@ -117,6 +124,7 @@ class TG:
             self.last_error = "" if d.get("ok") else str(d.get("description") or "")
             return d.get("result") if d.get("ok") else None
         except Exception as exc:
+            self.last_error = str(exc)                 # خطای قبلی («not modified») نماند
             logger.warning("telegram {} failed: {}", method, exc)
             return None
 
@@ -233,6 +241,22 @@ class Scout:
         self._an_cache: Dict[str, str] = {}
         self._frame: Optional[pd.DataFrame] = None
         self._closing_t: Dict[int, float] = {}
+        self._an_short: Dict[str, str] = {}
+        # داشبورد وب
+        self.dash_enabled = bool(s.get("scout.dashboard.enabled", True))
+        self.dash_port = int(s.get("scout.dashboard.port", 8082))
+        self.dash_host = str(s.get("scout.dashboard.host", "0.0.0.0"))
+        self.dash_token = (os.environ.get("DASHBOARD_TOKEN_SCOUT") or os.environ.get("DASHBOARD_TOKEN")
+                           or str(s.get("scout.dashboard.token", "") or ""))
+        self.stats_every = float(s.get("scout.dashboard.stats_minutes", 60)) * 60.0
+        self.dashboard: Optional[Any] = None
+        self._dash_snap: Dict[str, Any] = {}
+        self._dash_t = 0.0
+        self._live: Dict[int, dict] = {}
+        self._virtual_rows: Optional[list] = None
+        self._actual_map: Dict[str, float] = {}
+        self._virt_t = 0.0
+        self.version = ""
 
     # ---------------------------------------------------------------- journal
     def log(self, **row: Any) -> None:
@@ -427,6 +451,7 @@ class Scout:
                 text = (f"{title}\nنظر: <b>{verdict}</b> · اطمینان {a.confidence}٪\n{body}{tip}\n"
                         f"<i>فقط راهنماست؛ تصمیم با شماست · {html.escape(a.model or '')}</i>")
                 self._an_cache[aid] = text
+                self._an_short[aid] = f"{'ورود' if a.decision == 'TAKE' else 'صبر'} · اطمینان {a.confidence}٪"
             else:
                 text = (f"{title}\n⚠️ تحلیل الان در دسترس نیست ({html.escape(a.error[:80])}). "
                         "می‌توانید دوباره «🤖 تحلیل» را بزنید.")
@@ -603,6 +628,7 @@ class Scout:
                     continue
                 info = self.open.pop(tk)
                 self._ai_futs.pop(tk, None)
+                self._live.pop(tk, None)
                 self._save_state()
                 res_txt = f" · نتیجه ${pnl:+.2f}" if pnl is not None else ""
                 emerg, risk = info.get("emerg"), float(info.get("risk") or 0.0)
@@ -628,6 +654,8 @@ class Scout:
             profit = float(getattr(p, "profit", 0.0))
             swap = float(getattr(p, "swap", 0.0) or 0.0)
             price = float(getattr(p, "price_current", 0.0))
+            self._live[tk] = {"price": price, "profit": profit + swap,
+                              "broker_sl": float(getattr(p, "sl", 0.0) or 0.0)}
             d = trk.signed_move(info["side"], float(info["entry"]), price)
             if not info["r1"] and info["risk"] > 0 and d >= info["risk"]:
                 info["r1"] = True
@@ -692,7 +720,7 @@ class Scout:
         # (۴) حد ضرر بروکر = سطح درستِ همین سیاست
         want = round(trk.desired_broker_sl(info, self.mode), 2)
         have = float(getattr(p, "sl", 0.0) or 0.0)
-        if abs(want - have) > 0.009 and now - self._sl_fail_t.get(tk, 0.0) > 60:
+        if abs(want - have) > 0.095 and now - self._sl_fail_t.get(tk, 0.0) > 60:   # زیر ۱۰ سنت = همان
             wrong_side = trk.beyond_soft_sl(side, price, want)
             if wrong_side:                              # حتی سطح اضطراری رد شده
                 self._close_at_stop(tk, info, price, profit, "عبور از حد ضرر اضطراری")
@@ -1129,6 +1157,99 @@ class Scout:
         finally:
             os._exit(0)
 
+    # ------------------------------------------------------------- dashboard
+    def start_dashboard(self) -> None:
+        if not self.dash_enabled:
+            return
+        try:
+            self.version = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True,
+                                          text=True, timeout=5,
+                                          cwd=str(Path(__file__).resolve().parents[1])).stdout.strip()
+        except Exception:
+            self.version = ""
+        self.dashboard = dash.ScoutDashboard(lambda: self._dash_snap, self.dash_stats, self.dash_token,
+                                             self.dash_host, self.dash_port)
+        if not self.dashboard.start():
+            self.dashboard = None
+
+    def dash_stats(self) -> Dict[str, Any]:
+        """از نخ وب صدا زده می‌شود: فقط دیسک و حافظه، بدون MT5."""
+        return dash.build_stats(dash.read_journal(self.journal), virtual=self._virtual_rows,
+                                actual_by_ticket=self._actual_map)
+
+    def refresh_virtual(self) -> None:
+        """نتیجهٔ فرضی همهٔ ستاپ‌ها (مثل scout_stats) — در حلقهٔ اصلی، چون M1 از MT5 می‌آید."""
+        legacy = self.journal.with_name("scout_journal.csv")
+        df = scout_stats.build(scout_stats.read_events(self.journal, legacy))
+        if df.empty:
+            self._virtual_rows = []
+            return
+        m1 = self.client.get_rates("M1", 60000)
+        df = scout_stats.attach_actual(scout_stats.virtual(df, m1, 24.0), self.client.deals_for_position)
+        self._virtual_rows = [{"setup": r.setup, "side": r.side, "status": r.status, "R": r.R}
+                              for r in df.itertuples()]
+        self._actual_map = {str(r.ticket): float(r.actual) for r in df.itertuples()
+                            if r.status == "opened" and r.ticket and r.actual == r.actual}
+
+    def dash_snapshot(self, now: float) -> Dict[str, Any]:
+        acc = self.client.account_info()
+        tick = self.client.get_tick()
+        utc = datetime.fromtimestamp(now, timezone.utc)
+        opened = []
+        for tk, info in list(self.open.items()):
+            lv = self._live.get(tk, {})
+            price = lv.get("price") or 0.0
+            risk = float(info.get("risk") or 0.0)
+            r = trk.signed_move(info["side"], float(info["entry"]), price) / risk if price and risk else None
+            opened.append({"ticket": tk, "side": info["side"], "setup": info.get("setup", ""),
+                           "entry": float(info["entry"]), "sl": float(info["sl"]), "price": price or None,
+                           "profit": lv.get("profit"), "broker_sl": lv.get("broker_sl") or None,
+                           "r": round(r, 2) if r is not None else None, "hold": bool(info.get("hold")),
+                           "warned": bool(info.get("warned"))})
+        pending = []
+        for aid, p in list(self.pending.items()):
+            row = p["row"]
+            try:
+                entry, sl, _tp, risk, _n = self.levels(row)
+            except Exception:
+                entry, sl, risk = 0.0, float(p.get("sl") or 0.0), 0.0
+            pending.append({"id": aid, "side": row.side, "setup": str(row.get("setups_all", row.setup)),
+                            "price": float(entry), "sl": float(sl), "risk": float(risk or 0.0),
+                            "left_min": max(0, int((self.expiry - (now - p["t"])) // 60)),
+                            "analysis": self._an_short.get(aid, "")})
+        return {
+            "status": {"alive": True, "mt5": bool(self.client.is_connected), "market": ctl.market_open_utc(utc),
+                       "paused": self.paused, "mode": self.mode, "mode_fa": trk.POLICY_FA.get(self.mode, self.mode),
+                       "now_tehran": utc.astimezone(dash.TEHRAN).strftime("%H:%M:%S"),
+                       "up_min": int((now - self.started) // 60), "version": self.version},
+            "account": {"balance": getattr(acc, "balance", None), "equity": getattr(acc, "equity", None),
+                        "profit": getattr(acc, "profit", None)} if acc is not None else {},
+            "price": {"bid": float(tick.bid), "ask": float(tick.ask)} if tick is not None else None,
+            "open": opened, "open_risk": self.open_risk_usd(), "pending": pending,
+            "rules": {"lot": self.lot, "sl_cap": round((self.sl_cap or 0) * 100 * self.lot, 2),
+                      "emerg_cap": round((self.emerg_cap or 0) * 100 * self.lot, 2),
+                      "approach": int(self.approach_frac * 100), "max_open": self.max_open,
+                      "max_risk": self.max_total_risk, "expiry_min": self.expiry // 60,
+                      "status_min": int(self.status_every // 60)},
+        }
+
+    def dash_tick(self, now: Optional[float] = None) -> None:
+        if self.dashboard is None:
+            return
+        now = time.time() if now is None else now
+        if now - self._dash_t >= 5.0:
+            self._dash_t = now
+            try:
+                self._dash_snap = self.dash_snapshot(now)
+            except Exception as exc:
+                logger.warning("scout dashboard snapshot failed: {}", exc)
+        if now - self._virt_t >= self.stats_every:
+            self._virt_t = now
+            try:
+                self.refresh_virtual()
+            except Exception as exc:
+                logger.warning("scout dashboard stats refresh failed: {}", exc)
+
     # ------------------------------------------------------------ health watch
     def health_tick(self, data_ok: bool, now: Optional[float] = None) -> None:
         """هشدار وقتی داده/تیک از MT5 نمی‌رسد، پیام بازگشت، و «سالمم» روزانه."""
@@ -1223,6 +1344,7 @@ class Scout:
                      keyboard=self.KEYBOARD)
         logger.info("scout online")
         self.restore()
+        self.start_dashboard()
         if self.selftest:
             self.fire_selftest()
         while True:
@@ -1242,6 +1364,7 @@ class Scout:
                 self._frame = f
                 self.monitor(f)
                 self.poll_analyses()
+                self.dash_tick()
                 bar = f.index[-1]
                 if self.last_bar is None:
                     self.last_bar = bar
