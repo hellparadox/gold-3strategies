@@ -127,6 +127,7 @@ class BotWiring(unittest.TestCase):
         self.sc.stats_every = 3600.0
         self.sc._dash_t = self.sc._virt_t = 0.0
         self.sc.dash_tick(now=5000.0)
+        self.sc.stats_tick(now=5000.0)                             # جدا از داشبورد (کارنامهٔ هشدار هم لازمش دارد)
         snap = self.sc._dash_snap
         self.assertEqual(snap["account"]["balance"], 391.06)
         self.assertEqual(snap["open"][0]["ticket"], 5)
@@ -136,6 +137,7 @@ class BotWiring(unittest.TestCase):
         self.sc.refresh_virtual.assert_called_once()
         n = self.sc.client.account_info.call_count
         self.sc.dash_tick(now=5002.0)                              # کمتر از ۵ ثانیه: دوباره MT5 نه
+        self.sc.stats_tick(now=5002.0)
         self.assertEqual(self.sc.client.account_info.call_count, n)
         self.sc.refresh_virtual.assert_called_once()
 

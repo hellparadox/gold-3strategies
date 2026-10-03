@@ -30,6 +30,13 @@
 - داشبورد وب (scout.dashboard، پیش‌فرض پورت 8082): وضعیت، پوزیشن‌ها، هشدارهای منتظر، سود و زیان
   روزانه، کارنامهٔ ستاپ‌ها و رویدادها؛ فقط خواندنی و فقط با توکن (env DASHBOARD_TOKEN_SCOUT یا
   DASHBOARD_TOKEN). نتیجهٔ فرضی ستاپ‌ها هر scout.dashboard.stats_minutes دوباره حساب می‌شود.
+- بستن ناموفق در حد ضرر: هر scout.close_retry_seconds بی‌صدا دوباره تلاش می‌شود؛ پیام تلگرام بار اول و
+  بعد حداکثر هر scout.close_fail_notify_minutes (قبلاً هر ۲ ثانیه یک پیام).
+- سفارش با نتیجهٔ نامشخص («ثبت نشد» گفته نمی‌شود) و هر پوزیشن اسکات که در فهرست نیست: هر
+  scout.reconcile_seconds پیدا و تحت نظر گرفته می‌شود.
+- تحلیل 🤖 با کندل‌ها و قیمت لحظهٔ زدن دکمه ساخته می‌شود.
+- زیر هشدار فقط برای اطلاع: کارنامهٔ ستاپ (میانگین فرضی آخرین scout.record_n نمونه؛ زیر
+  scout.record_warn_r با ⚠️) و خبر پراهمیت دلار (scout.news.mode: warn | off). هیچ سیگنالی حذف نمی‌شود.
 - همه‌چیز در data/scout_journal_v2.csv با ستون‌های ثابت ثبت می‌شود؛ آمار: tools/scout_stats.py
 
 اجرا:
@@ -257,6 +264,19 @@ class Scout:
         self._actual_map: Dict[str, float] = {}
         self._virt_t = 0.0
         self.version = ""
+        # بستن ناموفق، یافتن پوزیشن، خطوط اطلاعاتی هشدار
+        self.recon_every = float(s.get("scout.reconcile_seconds", 60) or 60.0)
+        self.close_retry = float(s.get("scout.close_retry_seconds", 15) or 15.0)
+        self.close_fail_every = float(s.get("scout.close_fail_notify_minutes", 10) or 10.0) * 60.0
+        self.news_mode = "warn" if str(s.get("scout.news.mode", "warn") or "off").lower() == "warn" else "off"
+        self.news_before = int(s.get("scout.news.minutes_before", 15))
+        self.news_after = int(s.get("scout.news.minutes_after", 15))
+        self.record_n = int(s.get("scout.record_n", 30))
+        self.record_warn = float(s.get("scout.record_warn_r", -0.5))
+        self._news: Optional[Any] = None
+        self._recon_t = 0.0
+        self._close_try_t: Dict[int, float] = {}
+        self._close_note_t: Dict[int, float] = {}
 
     # ---------------------------------------------------------------- journal
     def log(self, **row: Any) -> None:
@@ -351,6 +371,50 @@ class Scout:
             parts.append(f"#{tk} {i['side']}{pl}")
         return "، ".join(parts)
 
+    # ------------------------------------------------------- info lines
+    @staticmethod
+    def account_kind(acc: Any) -> str:
+        """فقط برای نمایش در پیام روشن شدن؛ جلوی هیچ کاری را نمی‌گیرد."""
+        return {0: "دمو", 1: "مسابقه", 2: "واقعی"}.get(getattr(acc, "trade_mode", None), "نوع نامعلوم")
+
+    def news_note(self) -> str:
+        """خبر پراهمیت دلار نزدیک است؟ فقط متن برای زیر هشدار؛ هیچ سیگنالی حذف نمی‌شود."""
+        if self.news_mode == "off":
+            return ""
+        if self._news is None:
+            try:
+                from core.news_filter import NewsFilter, NewsFilterConfig
+                self._news = NewsFilter(NewsFilterConfig(
+                    enabled=True, currencies=["USD"], min_impact="High",
+                    pause_minutes_before=self.news_before, pause_minutes_after=self.news_after))
+                self._news.start()
+            except Exception as exc:
+                logger.warning("scout news calendar unavailable: {}", exc)
+                self._news = False
+        if not self._news:
+            return ""
+        try:
+            active, why = self._news.is_news_active()
+        except Exception:                              # pragma: no cover
+            return ""
+        return str(why) if active else ""
+
+    def setup_record(self, setup: str) -> Optional[tuple]:
+        """(تعداد، میانگین R) آخرین record_n نتیجهٔ فرضی همین ستاپ، یا None (کمتر از ۱۰ نمونه)."""
+        key = dash._first_setup(setup)
+        vals = []
+        for r in self._virtual_rows or []:
+            try:
+                v = float(r.get("R"))
+            except (TypeError, ValueError):
+                continue
+            if v == v and dash._first_setup(r.get("setup")) == key:
+                vals.append(v)
+        vals = vals[-self.record_n:]
+        if len(vals) < 10:
+            return None
+        return len(vals), round(sum(vals) / len(vals), 2)
+
     def record_silent(self, r: pd.Series, spread_pts: float, note: Optional[str] = None) -> None:
         """معامله باز است یا هشدارها متوقف‌اند: فقط برای آمار ثبت می‌شود."""
         entry, sl, tp, risk, n_set = self.levels(r)
@@ -358,7 +422,7 @@ class Scout:
                  side=r.side, bar=str(r.bar), price=entry, sl=round(sl, 2), tp=round(tp, 2),
                  atr=round(r.atr, 3), spread=spread_pts, risk_usd=risk, note=note)
 
-    def alert(self, r: pd.Series, spread_pts: float) -> None:
+    def alert(self, r: pd.Series, spread_pts: float, news: str = "") -> None:
         self.n += 1
         self._last_alert_t = time.time()
         aid = f"{self.n}"
@@ -372,6 +436,15 @@ class Scout:
                f"هدف پیشنهادی: {tp:.2f}  (۲ برابر ریسک)\n"
                f"ریسک: ${risk} · ATR {r.atr:.2f} · اسپرد {spread_pts:.0f}\n"
                f"<i>{self.expiry // 60} دقیقه فرصت پاسخ</i>")
+        rec = self.setup_record(str(r.setup))
+        if rec:
+            n_rec, avg = rec
+            warn = avg < self.record_warn
+            txt += (f"\n{'⚠️' if warn else '📈'} کارنامهٔ <code>{dash._first_setup(r.setup)}</code>: "
+                    f"میانگین فرضی {avg:+.2f}R در {n_rec} نمونهٔ آخر"
+                    + (" — این ستاپ اخیراً ضعیف بوده" if warn else ""))
+        if news:
+            txt += f"\n📰 <b>خبر مهم نزدیک است</b>: {html.escape(news)}"
         if self.open:
             block = self.entry_block(r.side, self.new_risk_usd(r.side, entry, sl))
             txt += (f"\n⚠️ پوزیشن باز: {self.open_summary()}"
@@ -428,10 +501,26 @@ class Scout:
             return
         if self._an_pool is None:
             self._an_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="scout-an")
-        self._an_futs[aid] = self._an_pool.submit(self._ai.analyze, p["ctx"])
+        self._an_futs[aid] = self._an_pool.submit(self._ai.analyze, self.fresh_context(aid, p))
         if cb:
             self.tg.ack(cb, "در حال تحلیل… چند ثانیه")
         logger.info("scout: AI analysis requested for alert {}", aid)
+
+    def fresh_context(self, aid: str, p: dict) -> str:
+        """متن تحلیل با کندل‌ها و قیمت همین لحظه (هشدار ممکن است ۲۵ دقیقه پیش آمده باشد)."""
+        try:
+            r = p["row"]
+            entry, sl, tp, risk, _n = self.levels(r)
+            tick = self.client.get_tick()
+            now_px = float(getattr(tick, "ask" if r.side == "BUY" else "bid", 0.0) or 0.0) if tick else 0.0
+            sp = self.client.spread_points() or 0.0
+            return scout_ai.build_entry_message(
+                r.side, str(r.get("setups_all", r.setup)), entry, sl, tp, risk, float(r.atr), float(sp),
+                self._frame, self.open_summary() if self.open else "",
+                price_now=now_px or None, age_min=(time.time() - p["t"]) / 60.0)
+        except Exception as exc:
+            logger.warning("scout: fresh analysis context failed ({}); using alert-time context", exc)
+            return p.get("ctx", "")
 
     def poll_analyses(self) -> None:
         for aid in [k for k, f in self._an_futs.items() if f.done()]:
@@ -521,6 +610,15 @@ class Scout:
                      if self.soft_stop else round(sl_now, 2))
         res = self.client.send_market_order(r.side, self.lot, sl=broker_sl,
                                             tp=None, comment=scout_comment(r.setup))
+        if not res.ok and getattr(res, "uncertain", False):
+            # ممکن است سفارش روی بروکر باز شده باشد: «ثبت نشد» نگوییم؛ بررسی خودکار فوری
+            self._recon_t = 0.0
+            self.tg.edit(p["mid"], p["txt"] + (
+                f"\n\n❓ <b>نتیجهٔ سفارش نامشخص است</b> ({html.escape(str(res.comment))[:80]}). "
+                "ممکن است باز شده باشد؛ اسکات چند ثانیه دیگر خودش بررسی می‌کند و اگر پیدا شد تحت نظر "
+                "می‌گیرد. لطفاً در MT5 هم نگاه کنید و دوباره تأیید نکنید."))
+            self.log(event="order_uncertain", alert=aid, setup=r.setup, side=r.side, note=str(res.comment)[:200])
+            return
         if not res.ok:
             self.tg.edit(p["mid"], p["txt"] + f"\n\n⚠️ <b>ثبت نشد</b>: {res.comment}")
             self.log(event="order_failed", alert=aid, setup=r.setup, side=r.side, note=res.comment)
@@ -711,8 +809,9 @@ class Scout:
             info["approach"] = False
         # (۲) سیاست «بستن»: پوزیشن از حد مجاز ضرر رد نمی‌شود
         if pol == "close" and beyond:
-            self._close_at_stop(tk, info, price, profit, "رسیدن به حد ضرر سیگنال")
-            return True
+            if self._close_at_stop(tk, info, price, profit, "رسیدن به حد ضرر سیگنال"):
+                return True
+            return False                                  # تلاش بعدی با فاصله؛ پیام با محدودیت
         # (۳) هوش مصنوعی: در حد ضرر بپرسد (هر ai_recheck یک بار تا وقتی آن طرف است)
         if pol == "ai":
             if self._ai_step(tk, info, price, profit, now, beyond, f):
@@ -723,8 +822,7 @@ class Scout:
         if abs(want - have) > 0.095 and now - self._sl_fail_t.get(tk, 0.0) > 60:   # زیر ۱۰ سنت = همان
             wrong_side = trk.beyond_soft_sl(side, price, want)
             if wrong_side:                              # حتی سطح اضطراری رد شده
-                self._close_at_stop(tk, info, price, profit, "عبور از حد ضرر اضطراری")
-                return True
+                return self._close_at_stop(tk, info, price, profit, "عبور از حد ضرر اضطراری")
             res = self.client.modify_sltp(tk, sl=want)
             if res.ok:
                 self._sl_fail_t.pop(tk, None)
@@ -734,16 +832,33 @@ class Scout:
                 logger.warning("scout #{} broker SL {} not set: {}", tk, want, res.comment)
         return False
 
-    def _close_at_stop(self, tk: int, info: dict, price: float, profit: float, why: str) -> None:
+    def _close_at_stop(self, tk: int, info: dict, price: float, profit: float, why: str) -> bool:
+        """True = بسته شد. تلاش ناموفق هر close_retry ثانیه بی‌صدا تکرار می‌شود و پیامش
+        فقط بار اول و بعد حداکثر هر close_fail_notify_minutes می‌آید."""
+        now = time.time()
+        if now - self._close_try_t.get(tk, -1e18) < self.close_retry:
+            return False
+        self._close_try_t[tk] = now
         res = self.client.close_position(int(tk), comment="scout_sl")
-        self.log(event="sl_close", ticket=tk, setup=info["setup"], side=info["side"],
-                 price=res.price or price, sl=info["sl"], profit=profit, ok=res.ok, note=why)
         if res.ok:
+            self._close_try_t.pop(tk, None)
+            self._close_note_t.pop(tk, None)
+            self.log(event="sl_close", ticket=tk, setup=info["setup"], side=info["side"],
+                     price=res.price or price, sl=info["sl"], profit=profit, ok=True, note=why)
             logger.info("scout #{} closed at stop ({})", tk, why)
-        else:
-            self._sl_fail_t[tk] = time.time()
-            self.tg.send(f"⚠️ بستن #{tk} در حد ضرر انجام نشد: {res.comment}. دوباره تلاش می‌شود؛ "
-                         "حد ضرر اضطراری روی بروکر برقرار است.", self._close_buttons(tk))
+            return True
+        self._sl_fail_t[tk] = now
+        logger.warning("scout #{} close at stop failed: {}", tk, res.comment)
+        if now - self._close_note_t.get(tk, -1e18) >= self.close_fail_every:
+            first = tk not in self._close_note_t
+            self._close_note_t[tk] = now
+            self.log(event="sl_close", ticket=tk, setup=info["setup"], side=info["side"],
+                     price=res.price or price, sl=info["sl"], profit=profit, ok=False, note=why)
+            self.tg.send(f"⚠️ بستن #{tk} در حد ضرر انجام نشد: {html.escape(str(res.comment))[:80]}. "
+                         f"هر {int(self.close_retry)} ثانیه بی‌صدا دوباره تلاش می‌شود"
+                         + (f" (پیام بعدی حداکثر هر {int(self.close_fail_every // 60)} دقیقه)" if first else "")
+                         + "؛ حد ضرر اضطراری روی بروکر برقرار است.", self._close_buttons(tk))
+        return False
 
     def _ai_step(self, tk: int, info: dict, price: float, profit: float, now: float,
                  beyond: bool, f: Optional[pd.DataFrame]) -> bool:
@@ -771,16 +886,18 @@ class Scout:
                 return False
             why = (f"هوش مصنوعی گفت ببند ({v.confidence}٪): {v.reason}" if not v.error
                    else f"هوش مصنوعی جواب نداد ({v.error[:60]}) — طبق قاعده بسته شد")
-            self.tg.send(f"🤖 <b>#{tk} بسته شد</b> · {html.escape(why)}")
-            self._close_at_stop(tk, info, price, profit, why)
-            return True
+            if self._close_at_stop(tk, info, price, profit, why):
+                self.tg.send(f"🤖 <b>#{tk} بسته شد</b> · {html.escape(why)}")
+                return True
+            return False
         if beyond and now >= float(info.get("ai_next") or 0.0):
             if self._ai is None:
                 self._ai = scout_ai.ScoutAI.from_gate_config(self.ai_timeout) or False
             if not self._ai:
-                self.tg.send(f"🤖 #{tk}: هوش مصنوعی تنظیم نیست — طبق قاعده در حد ضرر بسته شد.")
-                self._close_at_stop(tk, info, price, profit, "هوش مصنوعی در دسترس نیست")
-                return True
+                if not info.get("noai_sent"):            # یک بار، نه هر حلقه
+                    info["noai_sent"] = True
+                    self.tg.send(f"🤖 #{tk}: هوش مصنوعی تنظیم نیست — طبق قاعده در حد ضرر بسته می‌شود.")
+                return self._close_at_stop(tk, info, price, profit, "هوش مصنوعی در دسترس نیست")
             if self._ai_pool is None:
                 self._ai_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="scout-ai")
             msg = scout_ai.build_message(info, price, profit, f)
@@ -894,29 +1011,53 @@ class Scout:
             self._apply_caps(info)
             self.open[tk] = info
         for tk, p in live.items():
-            if tk in self.open:
-                continue
-            side = "BUY" if int(getattr(p, "type", 0)) == 0 else "SELL"
-            entry = float(p.price_open)
-            soft = float(getattr(p, "sl", 0.0) or 0.0)
-            if soft <= 0:                              # بدون حد ضرر: سقف دلاری یا ۱٪ قیمت
-                soft = round(entry * (0.99 if side == "BUY" else 1.01), 2)
-            info = {"setup": str(getattr(p, "comment", "") or "scout"), "side": side, "entry": entry,
-                    "sl": soft, "risk": 0.0, "r1": False, "warned": False, "opened": time.time(),
-                    "alert": None, "status_mid": None, "below": False, "hold": False,
-                    "adopted": True, "emerg": None, "approach": False, "ai_next": 0.0, "ai_note": ""}
-            self._apply_caps(info)
-            self.open[tk] = info
-            self.log(event="adopted", ticket=tk, setup=info["setup"], side=side, entry=entry,
-                     sl=info["sl"], note=f"emergency_sl={info['emerg']}")
-            self.tg.send(f"🔁 پوزیشن #{tk} ({side} @ {entry:.2f}) دوباره تحت نظر است.\n"
-                         f"حد ضرر {info['sl']:.2f} · اضطراری {info['emerg']:.2f} · در حد ضرر: "
-                         f"<b>{trk.POLICY_FA[self.mode]}</b>", self._close_buttons(tk))
+            if tk not in self.open:
+                self._adopt(tk, p, "🔁 پوزیشن #{tk} ({side} @ {entry:.2f}) دوباره تحت نظر است.")
         if self.open:
             for info in self.open.values():
                 info["status_t"] = 0.0                   # پیام وضعیت تازه با دکمه‌ها همین الان
             self._save_state()
             logger.info("scout tracking {} open position(s) | mode={}", len(self.open), self.mode)
+
+    def _adopt(self, tk: int, p: Any, head: str, note: Optional[str] = None) -> None:
+        side = "BUY" if int(getattr(p, "type", 0)) == 0 else "SELL"
+        entry = float(p.price_open)
+        soft = float(getattr(p, "sl", 0.0) or 0.0)
+        if soft <= 0:                              # بدون حد ضرر: سقف دلاری یا ۱٪ قیمت
+            soft = round(entry * (0.99 if side == "BUY" else 1.01), 2)
+        info = {"setup": str(getattr(p, "comment", "") or "scout"), "side": side, "entry": entry,
+                "sl": soft, "risk": 0.0, "r1": False, "warned": False, "opened": time.time(),
+                "alert": None, "status_mid": None, "below": False, "hold": False,
+                "adopted": True, "emerg": None, "approach": False, "ai_next": 0.0, "ai_note": ""}
+        self._apply_caps(info)
+        self.open[tk] = info
+        self.log(event="adopted", ticket=tk, setup=info["setup"], side=side, entry=entry,
+                 sl=info["sl"], note=note or f"emergency_sl={info['emerg']}")
+        self.tg.send(head.format(tk=tk, side=side, entry=entry) + "\n"
+                     f"حد ضرر {info['sl']:.2f} · اضطراری {info['emerg']:.2f} · در حد ضرر: "
+                     f"<b>{trk.POLICY_FA[self.mode]}</b>", self._close_buttons(tk))
+
+    def reconcile(self, now: Optional[float] = None) -> None:
+        """هر reconcile_seconds: پوزیشن‌های باز با مجیک اسکات که در فهرست نیستند (مثلاً سفارش با
+        نتیجهٔ نامشخص) تحت نظر گرفته می‌شوند تا مدیریت شوند و در سقف ریسک حساب شوند."""
+        if self.dry:
+            return
+        now = time.time() if now is None else now
+        if now - self._recon_t < self.recon_every:
+            return
+        self._recon_t = now
+        try:
+            live = {int(p.ticket): p for p in self.client.positions(magic_only=True)}
+        except Exception as exc:
+            logger.warning("scout reconcile: positions unavailable ({})", exc)
+            return
+        found = [tk for tk in live if tk not in self.open]
+        for tk in found:
+            self._adopt(tk, live[tk], "🔎 پوزیشن #{tk} ({side} @ {entry:.2f}) روی بروکر باز بود ولی اسکات "
+                        "دنبالش نمی‌کرد (احتمالاً سفارش با نتیجهٔ نامشخص). از این به بعد تحت نظر است.",
+                        note="reconcile")
+        if found:
+            self._save_state()
 
     # ------------------------------------------------------------- control panel
     MENU_BUTTONS = [
@@ -1233,6 +1374,16 @@ class Scout:
                       "status_min": int(self.status_every // 60)},
         }
 
+    def stats_tick(self, now: Optional[float] = None) -> None:
+        """نتیجهٔ فرضی ستاپ‌ها (برای کارنامهٔ زیر هشدار و داشبورد) هر stats_minutes."""
+        now = time.time() if now is None else now
+        if now - self._virt_t >= self.stats_every:
+            self._virt_t = now
+            try:
+                self.refresh_virtual()
+            except Exception as exc:
+                logger.warning("scout stats refresh failed: {}", exc)
+
     def dash_tick(self, now: Optional[float] = None) -> None:
         if self.dashboard is None:
             return
@@ -1243,12 +1394,6 @@ class Scout:
                 self._dash_snap = self.dash_snapshot(now)
             except Exception as exc:
                 logger.warning("scout dashboard snapshot failed: {}", exc)
-        if now - self._virt_t >= self.stats_every:
-            self._virt_t = now
-            try:
-                self.refresh_virtual()
-            except Exception as exc:
-                logger.warning("scout dashboard stats refresh failed: {}", exc)
 
     # ------------------------------------------------------------ health watch
     def health_tick(self, data_ok: bool, now: Optional[float] = None) -> None:
@@ -1337,7 +1482,7 @@ class Scout:
         self.tg.start()
         self.tg._call("setMyCommands", commands=ctl.MENU_COMMANDS)
         self.tg.send(f"👀 <b>اسکات روشن شد</b>{' (آزمایشی)' if self.dry else ''}\n"
-                     f"حساب {getattr(acc,'login','?')} · {getattr(acc,'server','?')} · "
+                     f"حساب {getattr(acc,'login','?')} ({self.account_kind(acc)}) · {getattr(acc,'server','?')} · "
                      f"موجودی ${getattr(acc,'balance',0):.2f}\nلات {self.lot} · انقضای هشدار "
                      f"{self.expiry//60} دقیقه\n{self._one_line_state()}\n"
                      "دکمه‌های پایین صفحه: 📋 پوزیشن‌ها (بستن/نگه داشتن) · 💰 قیمت · 📊 وضعیت · 🎛 منو",
@@ -1345,6 +1490,7 @@ class Scout:
         logger.info("scout online")
         self.restore()
         self.start_dashboard()
+        self.news_note()                                # تقویم خبر همین‌جا بار شود، نه وسط اولین هشدار
         if self.selftest:
             self.fire_selftest()
         while True:
@@ -1363,8 +1509,10 @@ class Scout:
                 f = indicators(m15, h1, int(self.s.get("scout.h1_ema_period", 20)))
                 self._frame = f
                 self.monitor(f)
+                self.reconcile()
                 self.poll_analyses()
                 self.dash_tick()
+                self.stats_tick()
                 bar = f.index[-1]
                 if self.last_bar is None:
                     self.last_bar = bar
@@ -1381,8 +1529,10 @@ class Scout:
                     for r in rows:
                         if self.paused:
                             self.record_silent(r, sp, note="paused")
+                        elif quiet:
+                            self.record_silent(r, sp)
                         else:
-                            (self.record_silent if quiet else self.alert)(r, sp)
+                            self.alert(r, sp, news=self.news_note())
                 time.sleep(float(self.s.get("scout.loop_seconds", 2)))
             except KeyboardInterrupt:
                 break

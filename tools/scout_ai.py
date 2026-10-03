@@ -57,11 +57,18 @@ class EntryAnalysis:
 
 def build_entry_message(side: str, setup: str, entry: float, sl: float, tp: float, risk_usd: float,
                         atr: float, spread: float, f: Optional[pd.DataFrame],
-                        open_positions: str = "", bars: int = 24) -> str:
+                        open_positions: str = "", bars: int = 24,
+                        price_now: Optional[float] = None, age_min: Optional[float] = None) -> str:
     lines = [f"setup: {side} {setup}",
              f"entry {entry:.2f}, stop {sl:.2f} (risk {risk_usd:.2f} USD at 0.01 lot), 2R target {tp:.2f}, "
              f"ATR(M15) {atr:.2f}, spread {spread:.0f} points",
              f"open positions: {open_positions or 'none'}"]
+    if price_now:                       # تحلیل در لحظهٔ زدن دکمه، نه لحظهٔ هشدار
+        dist = abs(entry - sl) or 1.0
+        fav = (price_now - entry) if side == "BUY" else (entry - price_now)
+        lines.append(f"price NOW {price_now:.2f}: moved {fav:+.2f} ({fav / dist:+.2f}R) in the trade direction "
+                     f"since the alert" + (f", alert age {age_min:.0f} min" if age_min is not None else "")
+                     + "; an entry now would use the same stop distance from the current price")
     if f is not None and not f.empty:
         last = f.iloc[-1]
         a = float(last.get("atr") or atr or 1.0) or 1.0
