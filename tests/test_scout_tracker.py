@@ -122,6 +122,11 @@ def make_scout(tmp: Path, mode="close") -> Scout:
     sc._recon_t, sc._close_try_t, sc._close_note_t = 0.0, {}, {}
     sc._dash_snap, sc._dash_t, sc._virt_t, sc.stats_every = {}, 0.0, 0.0, 3600.0
     sc.compare_bots = []
+    sc.chart_enabled, sc.chart_bars, sc._chart_pool = False, 64, None
+    sc.whatif_enabled, sc.whatif_path, sc.whatif_every = False, tmp / "whatif.json", 30.0
+    sc._whatif, sc._whatif_t = [], 0.0
+    sc.score_enabled, sc.score_time = False, "23:55"
+    sc.palerts_path, sc._palerts = tmp / "palerts.json", []
     return sc
 
 

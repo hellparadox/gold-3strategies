@@ -37,6 +37,12 @@
 - تحلیل 🤖 با کندل‌ها و قیمت لحظهٔ زدن دکمه ساخته می‌شود.
 - زیر هشدار فقط برای اطلاع: کارنامهٔ ستاپ (میانگین فرضی آخرین scout.record_n نمونه؛ زیر
   scout.record_warn_r با ⚠️) و خبر پراهمیت دلار (scout.news.mode: warn | off). هیچ سیگنالی حذف نمی‌شود.
+- 📊 نمودار هر هشدار (scout.chart): کندل‌ها با محدودهٔ سود (سبز)، ضرر (قرمز) و خنثی (کهربایی)، به‌صورت
+  جواب زیر همان هشدار، در نخ پس‌زمینه (هشدار و دکمه‌ها منتظر نمودار نمی‌مانند).
+- 🔮 «اگر گرفته بودید…» (scout.whatif): هشدار ردشده/منقضی/بازنشده بی‌صدا دنبال می‌شود و وقتی به هدف یا
+  حد ضرر رسید، نتیجه با دلیلش (روند، ابر، خبر، مسیر قیمت) گفته می‌شود.
+- 🏁 جدول امتیاز شبانه (scout.scoreboard): شما + اسکات در برابر ORB و ایچیموکو، با R.
+- 🔔 هشدار قیمت: /alert 4150 [یادداشت] · /alerts فهرست و حذف.
 - همه‌چیز در data/scout_journal_v2.csv با ستون‌های ثابت ثبت می‌شود؛ آمار: tools/scout_stats.py
 
 اجرا:
@@ -79,12 +85,14 @@ try:
     from tools import scout_control as ctl
     from tools import scout_dashboard as dash
     from tools import scout_stats
+    from tools import scout_followup as fu
 except Exception:                      # pragma: no cover
     import scout_tracker as trk
     import scout_ai
     import scout_control as ctl
     import scout_dashboard as dash
     import scout_stats
+    import scout_followup as fu
 
 API = "https://api.telegram.org/bot{}/{}"
 # ستون‌های ثابت ژورنال — همهٔ رویدادها زیر یک سرستون (نسخهٔ قبل ستون‌ها را جابه‌جا می‌نوشت)
@@ -149,6 +157,22 @@ class TG:
         if mid:
             self.last_mid = mid
         return mid
+
+    def send_photo(self, png: bytes, caption: str = "", reply_to: Optional[int] = None) -> Optional[int]:
+        data: Dict[str, Any] = {"chat_id": self.chat, "caption": caption[:1000], "parse_mode": "HTML"}
+        if reply_to:
+            data["reply_parameters"] = json.dumps({"message_id": int(reply_to), "allow_sending_without_reply": True})
+        try:
+            r = requests.post(API.format(self.token, "sendPhoto"), data=data,
+                              files={"photo": ("scout.png", png, "image/png")}, timeout=30)
+            d = r.json()
+            if not d.get("ok"):
+                logger.warning("telegram sendPhoto failed: {}", d.get("description"))
+                return None
+            return (d.get("result") or {}).get("message_id")
+        except Exception as exc:
+            logger.warning("telegram sendPhoto failed: {}", exc)
+            return None
 
     def delete(self, message_id: int) -> None:
         self._call("deleteMessage", chat_id=self.chat, message_id=message_id)
@@ -279,6 +303,19 @@ class Scout:
         self._recon_t = 0.0
         self._close_try_t: Dict[int, float] = {}
         self._close_note_t: Dict[int, float] = {}
+        # نمودار، «اگر گرفته بودید»، جدول امتیاز، هشدار قیمت
+        self.chart_enabled = bool(s.get("scout.chart.enabled", True))
+        self.chart_bars = int(s.get("scout.chart.bars", 64))
+        self._chart_pool: Optional[ThreadPoolExecutor] = None
+        self.whatif_enabled = bool(s.get("scout.whatif.enabled", True))
+        self.whatif_path = Path(str(s.get("scout.whatif.file", "data/scout_whatif.json")))
+        self.whatif_every = float(s.get("scout.whatif.check_seconds", 30))
+        self._whatif: list = fu.load_json(self.whatif_path, []) if self.whatif_enabled else []
+        self._whatif_t = 0.0
+        self.score_enabled = bool(s.get("scout.scoreboard.enabled", True))
+        self.score_time = str(s.get("scout.scoreboard.tehran_time", "23:55"))
+        self.palerts_path = Path(str(s.get("scout.price_alerts_file", "data/scout_price_alerts.json")))
+        self._palerts: list = fu.load_json(self.palerts_path, [])
 
     # ---------------------------------------------------------------- journal
     def log(self, **row: Any) -> None:
@@ -373,6 +410,194 @@ class Scout:
             parts.append(f"#{tk} {i['side']}{pl}")
         return "، ".join(parts)
 
+    # ------------------------------------------------------- chart
+    def send_chart(self, aid: str, mid: Optional[int], r: pd.Series, entry: float, sl: float, tp: float,
+                   risk: float) -> None:
+        """نمودار در نخ پس‌زمینه ساخته و به‌صورت جواب زیر هشدار فرستاده می‌شود."""
+        if not self.chart_enabled or self._frame is None or not mid:
+            return
+        try:
+            tick = self.client.get_tick()
+            spread_price = float(tick.ask - tick.bid) if tick is not None else 0.0
+        except Exception:                              # pragma: no cover
+            spread_price = 0.0
+        frame = self._frame.tail(self.chart_bars).copy()
+        setup = str(r.get("setups_all", r.setup))
+        if self._chart_pool is None:
+            self._chart_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="scout-chart")
+        self._chart_pool.submit(self._chart_job, aid, mid, frame, str(r.side), float(entry), float(sl),
+                                float(tp), setup, float(risk), spread_price)
+
+    def _chart_job(self, aid, mid, frame, side, entry, sl, tp, setup, risk, spread_price) -> None:
+        try:
+            from tools.scout_chart import render_alert_chart
+        except Exception:                              # pragma: no cover
+            from scout_chart import render_alert_chart
+        try:
+            png = render_alert_chart(frame, side, entry, sl, tp, setup, risk, spread_price,
+                                     bars=self.chart_bars, alert_id=aid)
+        except Exception as exc:
+            logger.warning("scout chart #{} failed: {}", aid, exc)
+            return
+        self.tg.send_photo(png, f"📊 هشدار #{aid} · 🟩 محدودهٔ سود تا هدف 2R · 🟥 محدودهٔ ضرر تا حد ضرر · "
+                                f"🟨 محدودهٔ خنثی (بستن آن‌جا تقریباً سر به سر است)", reply_to=mid)
+
+    # ------------------------------------------------------- what-if
+    def track_whatif(self, aid: str, p: dict, decision: str) -> None:
+        if not self.whatif_enabled:
+            return
+        try:
+            r = p["row"]
+            entry, sl, tp, risk, _n = self.levels(r)
+            item = fu.new_whatif(aid, str(r.get("setups_all", r.setup)), r.side, entry, sl, tp, r.bar,
+                                 decision, risk, p.get("wctx") or {})
+            item["mid"] = p.get("mid")
+            self._whatif = (self._whatif + [item])[-200:]      # سقف حافظه
+            fu.save_json(self.whatif_path, self._whatif)
+        except Exception as exc:
+            logger.warning("scout what-if track failed: {}", exc)
+
+    def whatif_tick(self, now: Optional[float] = None) -> None:
+        if not self._whatif:
+            return
+        now = time.time() if now is None else now
+        if now - self._whatif_t < self.whatif_every:
+            return
+        self._whatif_t = now
+        m1 = self.client.get_rates("M1", 1600)            # بیش از ۲۴ ساعت
+        keep = []
+        for item in self._whatif:
+            try:
+                res = fu.evaluate(item, m1)
+            except Exception as exc:                   # pragma: no cover
+                logger.warning("scout what-if eval failed: {}", exc)
+                res = None
+            if res is None:
+                keep.append(item)
+                continue
+            self.tg.send(fu.whatif_message(item, res, self.setup_record(item["setup"])),
+                         reply_to=item.get("mid"))
+            self.log(event="whatif", alert=item["aid"], setup=item["setup"], side=item["side"],
+                     price=item["entry"], sl=round(item["sl"], 2), tp=round(item["tp"], 2),
+                     profit=round(item["risk_usd"] * res["R"], 2),
+                     note=f"{fu.outcome_kind(item, res)};{res['exit']};R={res['R']};{item['decision']}")
+        if len(keep) != len(self._whatif):
+            self._whatif = keep
+            fu.save_json(self.whatif_path, self._whatif)
+
+    # ------------------------------------------------------- price alerts
+    def price_alert_cmd(self, msg: str) -> None:
+        parsed = fu.parse_alert(msg)
+        if not parsed:
+            self.tg.send("🔔 <b>هشدار قیمت</b>\nبنویسید: <code>/alert 4150</code> یا با یادداشت: "
+                         "<code>/alert 4150 مقاومت روزانه</code>\nفهرست و حذف: /alerts")
+            return
+        level, note = parsed
+        tick = self.client.get_tick()
+        if tick is None:
+            self.tg.send("⚠️ قیمت از MT5 نرسید؛ چند ثانیه بعد دوباره امتحان کنید.")
+            return
+        a = fu.add_price_alert(self._palerts, level, float(tick.bid), note, time.time())
+        if a is None:
+            self.tg.send("⚠️ حداکثر ۲۰ هشدار قیمت؛ اول چندتا را از /alerts حذف کنید.")
+            return
+        fu.save_json(self.palerts_path, self._palerts)
+        way = "بالا برود" if a["dir"] == "up" else "پایین بیاید"
+        self.tg.send(f"🔔 ثبت شد: وقتی طلا تا <b>{a['level']:.2f}</b> {way} خبرتان می‌کنم "
+                     f"(الان {float(tick.bid):.2f})." + (f"\n📝 {html.escape(note)}" if note else ""),
+                     [[{"text": "❌ حذف این هشدار", "callback_data": f"p|{a['id']}"}]])
+
+    def price_alerts_list(self) -> None:
+        if not self._palerts:
+            self.tg.send("🔔 هشدار قیمتی ندارید.\nبرای ساختن: <code>/alert 4150</code> یا "
+                         "<code>/alert 4150 یادداشت</code>")
+            return
+        rows = [[{"text": f"❌ {a['level']:.2f} {'⬆' if a['dir'] == 'up' else '⬇'}",
+                  "callback_data": f"p|{a['id']}"}] for a in self._palerts]
+        lines = [f"{'⬆' if a['dir'] == 'up' else '⬇'} <b>{a['level']:.2f}</b>"
+                 + (f" · {html.escape(a['note'])}" if a.get("note") else "") for a in self._palerts]
+        self.tg.send("🔔 <b>هشدارهای قیمت</b>\n" + "\n".join(lines) + "\nبرای حذف، دکمه‌اش را بزنید.", rows)
+
+    def price_alert_delete(self, aid: str, cb: Optional[str] = None) -> None:
+        before = len(self._palerts)
+        self._palerts = [a for a in self._palerts if str(a.get("id")) != str(aid)]
+        fu.save_json(self.palerts_path, self._palerts)
+        if cb:
+            self.tg.ack(cb, "حذف شد" if len(self._palerts) < before else "قبلاً حذف شده")
+
+    def price_alert_tick(self) -> None:
+        if not self._palerts:
+            return
+        tick = self.client.get_tick()
+        if tick is None:
+            return
+        bid = float(tick.bid)
+        due = fu.due_price_alerts(self._palerts, bid)
+        if not due:
+            return
+        for a in due:
+            way = "بالا رفت و" if a["dir"] == "up" else "پایین آمد و"
+            self.tg.send(f"🔔 <b>هشدار قیمت</b>: طلا {way} به <b>{a['level']:.2f}</b> رسید (الان {bid:.2f})"
+                         + (f"\n📝 {html.escape(a['note'])}" if a.get("note") else ""))
+            self.log(event="price_alert", price=bid, note=f"level={a['level']};{a.get('note', '')}"[:200])
+        ids = {a["id"] for a in due}
+        self._palerts = [a for a in self._palerts if a["id"] not in ids]
+        fu.save_json(self.palerts_path, self._palerts)
+
+    # ------------------------------------------------------- scoreboard
+    def scoreboard_tick(self, now: Optional[float] = None) -> None:
+        if not self.score_enabled:
+            return
+        now = time.time() if now is None else now
+        t = datetime.fromtimestamp(now, timezone.utc).astimezone(dash.TEHRAN)
+        try:
+            hh, mm = (int(x) for x in self.score_time.split(":"))
+        except ValueError:
+            hh, mm = 23, 55
+        if (t.hour, t.minute) < (hh, mm):
+            return
+        day = t.date().isoformat()
+        flags = ctl.load_flags(self.flags_path)
+        if flags.get("scoreboard_day") == day:
+            return
+        flags["scoreboard_day"] = day
+        ctl.save_flags(self.flags_path, flags)
+        self.send_scoreboard(now=now)
+
+    def send_scoreboard(self, now: Optional[float] = None, force: bool = False) -> None:
+        """جدول امتیاز امروز (روز تهران). بدون فعالیت، فقط وقتی خودتان بخواهید فرستاده می‌شود."""
+        now = time.time() if now is None else now
+        t = datetime.fromtimestamp(now, timezone.utc).astimezone(dash.TEHRAN)
+        midnight = t.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+        events = dash.read_journal(self.journal)
+        bots: Dict[str, list] = {}
+        for b in self.compare_bots:
+            try:
+                bots[str(b.get("name"))] = dash.bot_trades(b.get("db", ""))
+            except Exception as exc:
+                logger.warning("scout scoreboard: {} results unavailable ({})", b.get("name"), exc)
+        scout = dash.scout_trades(events, self.lot)
+        today = dash.compare_since(scout, bots, midnight)
+        week = dash.compare_since(scout, bots, midnight - timedelta(days=6))
+        tday = t.date()
+        alerts_today = taken_today = 0
+        passes: Dict[str, int] = {}
+        for e in events:
+            et = dash._tehran(e.get("ts", ""))
+            if et is None or et.date() != tday:
+                continue
+            ev = e.get("event")
+            if ev == "alert":
+                alerts_today += 1
+            elif ev == "opened":
+                taken_today += 1
+            elif ev == "whatif":
+                kind = str(e.get("note") or "").split(";")[0]
+                passes[kind] = passes.get(kind, 0) + 1
+        if not force and alerts_today == 0 and not any(r["n"] for r in today):
+            return                                     # روز بی‌فعالیت (آخر هفته): پیامی نمی‌آید
+        self.tg.send(fu.scoreboard_text(tday, today, week, alerts_today, taken_today, passes))
+
     # ------------------------------------------------------- info lines
     @staticmethod
     def account_kind(acc: Any) -> str:
@@ -460,8 +685,12 @@ class Scout:
         except Exception as exc:                       # pragma: no cover
             logger.warning("scout: analysis context failed: {}", exc)
             ctx = ""
+        wctx = fu.context_flags(self._frame, r.side)
+        if news:
+            wctx["news"] = True
         self.pending[aid] = {"row": r, "sl": sl, "tp": tp, "mid": mid, "t": time.time(), "txt": txt,
-                             "ctx": ctx}
+                             "ctx": ctx, "wctx": wctx}
+        self.send_chart(aid, mid, r, entry, sl, tp, risk)
         self.log(event="alert", alert=aid, setup=str(r.get("setups_all", r.setup)),
                  n_setups=n_set, side=r.side, bar=str(r.bar),
                  price=entry, sl=round(sl, 2), tp=round(tp, 2), atr=round(r.atr, 3),
@@ -560,6 +789,7 @@ class Scout:
             if p["mid"]:
                 self.tg.edit(p["mid"], p["txt"] + "\n\n⏳ <b>منقضی شد</b>")
             self.log(event="expired", alert=aid, setup=p["row"].setup, side=p["row"].side)
+            self.track_whatif(aid, p, "expired")
 
     # ---------------------------------------------------------------- decision
     def decide(self, aid: str, yes: bool, cb: str) -> None:
@@ -572,6 +802,7 @@ class Scout:
             self.tg.ack(cb, "رد شد")
             self.tg.edit(p["mid"], p["txt"] + "\n\n❌ <b>رد شد</b>")
             self.log(event="rejected", alert=aid, setup=r.setup, side=r.side)
+            self.track_whatif(aid, p, "rejected")
             return
         if self.open and not self.dry:
             block = self.entry_block(r.side, self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"])))
@@ -580,6 +811,7 @@ class Scout:
                 self.tg.edit(p["mid"], p["txt"] + f"\n\n🚫 <b>ثبت نشد</b> — {block}.")
                 kind = "blocked_hedge" if block.startswith("پوزیشن خلاف") else "blocked_limit"
                 self.log(event=kind, alert=aid, setup=r.setup, side=r.side, note=block[:200])
+                self.track_whatif(aid, p, kind)
                 return
         # قیمت لحظهٔ تأیید؛ حد ضرر با همان فاصلهٔ هشدار نسبت به این قیمت
         ref = float(r.ref_close); dist = abs(ref - p["sl"])
@@ -1067,6 +1299,8 @@ class Scout:
         [{"text": "📋 پوزیشن‌ها", "callback_data": "k|pos"}, {"text": "⚙️ حالت حد ضرر", "callback_data": "k|mode"}],
         [{"text": "⏸ توقف هشدارها", "callback_data": "k|pause"},
          {"text": "▶️ ادامهٔ هشدارها", "callback_data": "k|resume"}],
+        [{"text": "🔔 هشدار قیمت", "callback_data": "k|palert"},
+         {"text": "🏁 جدول امتیاز", "callback_data": "k|score"}],
         [{"text": "🔄 ری‌استارت", "callback_data": "k|restart"},
          {"text": "❓ راهنما", "callback_data": "k|help"}],
     ]
@@ -1108,6 +1342,8 @@ class Scout:
                 self.set_mode(parts[1], cq["id"])
             elif parts[0] == "x" and len(parts) == 2:
                 self.analyze(parts[1], cq["id"])
+            elif parts[0] == "p" and len(parts) == 2:
+                self.price_alert_delete(parts[1], cq["id"])
             elif parts[0] == "k" and len(parts) == 2:
                 self.tg.ack(cq["id"])
                 self.panel(parts[1])
@@ -1125,6 +1361,10 @@ class Scout:
             self.panel("help")
         elif cmd in ("/price", "/status", "/positions", "/pause", "/resume", "/restart"):
             self.panel({"/positions": "pos"}.get(cmd, cmd[1:]))
+        elif cmd == "/alert":
+            self.price_alert_cmd(msg)
+        elif cmd == "/alerts":
+            self.price_alerts_list()
         elif cmd == "/close":
             bits = msg.split()
             if len(bits) > 1 and bits[1].isdigit():
@@ -1152,6 +1392,10 @@ class Scout:
                                {"text": "❌ نه", "callback_data": "k|restart_no"}]])
             elif what == "restart_yes":
                 self.restart()
+            elif what == "palert":
+                self.price_alerts_list()
+            elif what == "score":
+                self.send_scoreboard(force=True)
             elif what == "restart_no":
                 self.tg.send("ری‌استارت لغو شد.")
             elif what == "help":
@@ -1524,6 +1768,9 @@ class Scout:
                 self.poll_analyses()
                 self.dash_tick()
                 self.stats_tick()
+                self.whatif_tick()
+                self.price_alert_tick()
+                self.scoreboard_tick()
                 bar = f.index[-1]
                 if self.last_bar is None:
                     self.last_bar = bar

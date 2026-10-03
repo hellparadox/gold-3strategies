@@ -77,6 +77,18 @@ scout:
     mode: "warn"               # warn = خط «📰 خبر مهم» زیر هشدار · off = خاموش
     minutes_before: 15         # پنجره دور اخبار پراهمیت دلار (Forex Factory، همان ماژول ORB)
     minutes_after: 15
+  # همراه هشدارها و ابزارها (هیچ‌کدام سیگنالی را حذف نمی‌کند)
+  chart:
+    enabled: true              # نمودار زیر هر هشدار: محدودهٔ سود/ضرر/خنثی
+    bars: 64                   # چند کندل ۱۵ دقیقه‌ای در نمودار
+  whatif:
+    enabled: true              # «اگر گرفته بودید…»: هشدار ردشده/منقضی/بازنشده دنبال می‌شود و نتیجه + دلیل می‌آید
+    check_seconds: 30
+    file: "data/scout_whatif.json"   # بعد از ری‌استارت ادامه می‌دهد
+  scoreboard:
+    enabled: true              # جدول امتیاز شبانه در تلگرام
+    tehran_time: "23:55"
+  price_alerts_file: "data/scout_price_alerts.json"   # /alert 4150
   # داشبورد وب: http://SERVER_IP:8082/?token=...  (مثل داشبورد دو ربات دیگر؛ پورت را در فایروال باز کنید)
   # توکن از .env خوانده می‌شود: DASHBOARD_TOKEN_SCOUT، وگرنه همان DASHBOARD_TOKEN دو داشبورد دیگر.
   # بدون توکن داشبورد روشن نمی‌شود. فقط خواندنی است؛ هیچ سفارشی از آن داده نمی‌شود.
