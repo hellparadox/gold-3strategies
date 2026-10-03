@@ -86,6 +86,9 @@ scout:
     port: 8082
     token: ""                  # خالی بگذارید؛ از .env می‌آید
     stats_minutes: 60          # نتیجهٔ فرضی ستاپ‌ها هر ۶۰ دقیقه دوباره حساب می‌شود
+    compare:                   # بخش «رقابت»: دیتابیس دو ربات دیگر (فقط خواندن)
+      - {name: "ORB", db: "subscriptions.db"}
+      - {name: "ایچیموکو", db: "subscriptions_ichimoku.db"}
 
 telegram:
   enabled: true

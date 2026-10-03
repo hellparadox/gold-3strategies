@@ -121,6 +121,7 @@ def make_scout(tmp: Path, mode="close") -> Scout:
     sc.record_n, sc.record_warn = 30, -0.5
     sc._recon_t, sc._close_try_t, sc._close_note_t = 0.0, {}, {}
     sc._dash_snap, sc._dash_t, sc._virt_t, sc.stats_every = {}, 0.0, 0.0, 3600.0
+    sc.compare_bots = []
     return sc
 
 

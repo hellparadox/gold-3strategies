@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import csv
 import hmac
+import sqlite3
 import json
 import math
 import sys
@@ -72,6 +73,104 @@ def _first_setup(s: Any) -> str:
     for sep in (",", "+", " "):
         s = s.split(sep)[0]
     return s or "—"
+
+
+# --------------------------------------------------------------------------- رقابت
+# مقایسهٔ منصفانه با R: سود هر معامله تقسیم بر ریسک اولیه‌اش (فاصلهٔ ورود تا حد ضرر × حجم).
+# حجم ربات‌ها فرق دارد، پس دلار به‌تنهایی مقایسهٔ درستی نیست؛ R هست.
+CONTRACT = 100.0                                       # XAUUSD: ۱ لات = ۱۰۰ اونس
+TAKEN = {"opened", "approved_dry"}
+PASSED = {"rejected", "expired", "cancelled", "pending", "invalid", "blocked_hedge",
+          "blocked_limit", "order_failed"}
+
+
+def _r(profit: float, entry: float, sl: float, lot: float) -> Optional[float]:
+    risk = abs(float(entry) - float(sl)) * CONTRACT * float(lot)
+    return round(float(profit) / risk, 3) if risk > 0 else None
+
+
+def bot_trades(db_path: Any) -> List[Dict[str, Any]]:
+    """معاملات بسته‌شدهٔ ORB/ایچیموکو از جدول signals (فقط خواندنی، بدون قفل کردن ربات)."""
+    path = Path(db_path)
+    if not path.exists():
+        return []
+    out: List[Dict[str, Any]] = []
+    con = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True, timeout=2.0)
+    try:
+        rows = con.execute("SELECT entry, sl, lot, profit, closed_at FROM signals "
+                           "WHERE closed_at IS NOT NULL AND profit IS NOT NULL").fetchall()
+    finally:
+        con.close()
+    for entry, sl, lot, profit, closed in rows:
+        try:
+            t = datetime.strptime(str(closed)[:19].replace("T", " "), "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            out.append({"t": t, "profit": float(profit), "r": _r(profit, entry, sl, lot or 0.0)})
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def scout_trades(events: List[Dict[str, str]], lot: float = 0.01) -> List[Dict[str, Any]]:
+    """معاملات بسته‌شدهٔ اسکات از ژورنال: ورود و حد ضرر از «opened»، سود از «gone»."""
+    opened: Dict[str, Dict[str, str]] = {}
+    out, seen = [], set()
+    for e in events:
+        ev, tk = e.get("event"), str(e.get("ticket") or "")
+        if ev == "opened" and tk:
+            opened[tk] = e
+        elif ev == "gone" and tk and tk not in seen:
+            p, t = _f(e.get("profit")), _tehran(e.get("ts", ""))
+            if math.isnan(p) or t is None:
+                continue
+            seen.add(tk)
+            o = opened.get(tk) or {}
+            entry, sl = _f(o.get("price")), _f(o.get("sl"))
+            r = None if (math.isnan(entry) or math.isnan(sl)) else _r(p, entry, sl, lot)
+            out.append({"t": t.astimezone(timezone.utc), "profit": p, "r": r})
+    return out
+
+
+def _summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    n = len(rows)
+    rs = [r["r"] for r in rows if r.get("r") is not None]
+    return {"n": n, "win": round(100.0 * sum(1 for r in rows if r["profit"] > 0) / n) if n else None,
+            "pnl": round(sum(r["profit"] for r in rows), 2),
+            "avg_r": round(sum(rs) / len(rs), 2) if rs else None,
+            "sum_r": round(sum(rs), 1) if rs else None}
+
+
+def build_compare(scout: List[Dict[str, Any]], bots: Dict[str, List[Dict[str, Any]]],
+                  now: Optional[datetime] = None) -> Dict[str, Any]:
+    """اسکات (شما) در برابر ربات‌های خودکار در سه بازه؛ «از شروع اسکات» از اولین معاملهٔ اسکات."""
+    now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    start = min((r["t"] for r in scout), default=None)
+    windows = {"7d": now - timedelta(days=7), "30d": now - timedelta(days=30), "start": start}
+    out: Dict[str, Any] = {"since": start.astimezone(TEHRAN).strftime("%Y-%m-%d") if start else None}
+    for key, since in windows.items():
+        rows = [{"name": "شما + اسکات", "me": True, **_summary([r for r in scout if since is None or r["t"] >= since])}]
+        for name, trades in bots.items():
+            rows.append({"name": name, "me": False,
+                         **_summary([r for r in trades if since is None or r["t"] >= since])})
+        out[key] = rows
+    return out
+
+
+def build_picks(virtual: Optional[List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
+    """انتخاب‌های شما در برابر بقیهٔ سیگنال‌ها، با نتیجهٔ فرضی (هدف 2R) برای همه به یک شکل."""
+    if not virtual:
+        return None
+
+    def grp(pred) -> Dict[str, Any]:
+        rs = []
+        for v in virtual:
+            R = _f(v.get("R"))
+            if not math.isnan(R) and pred(str(v.get("status") or "")):
+                rs.append(R)
+        n = len(rs)
+        return {"n": n, "win": round(100.0 * sum(1 for x in rs if x > 0) / n) if n else None,
+                "avg_r": round(sum(rs) / n, 2) if n else None}
+    return {"taken": grp(lambda s: s in TAKEN), "passed": grp(lambda s: s in PASSED),
+            "silent": grp(lambda s: s == "suppressed"), "all": grp(lambda s: True)}
 
 
 def build_stats(events: List[Dict[str, str]], now: Optional[datetime] = None,
@@ -357,6 +456,11 @@ GUIDE = r'''<div class="pane guide" id="p-guide" role="tabpanel" aria-labelledby
     <p class="hint">اگر یکی از این‌ها مانع شود، زیر خود هشدار نوشته می‌شود «فعلاً قابل باز شدن نیست» و دلیلش.</p>
   </section>
 
+  <section><h2>بخش رقابت چطور حساب می‌شود</h2>
+    <p>هر معامله با <b>R</b> سنجیده می‌شود: سود تقسیم بر ریسک اولیه (فاصلهٔ ورود تا حد ضرر ضرب در حجم). مثلاً اگر ریسک یک معامله ۱۰ دلار بوده و ۲۰ دلار سود داده، نتیجه‌اش ‎+2R است. این‌طوری ربات‌هایی که حجم متفاوت دارند منصفانه مقایسه می‌شوند.</p>
+    <p>نتایج ORB و ایچیموکو از دیتابیس خودشان خوانده می‌شود (فقط خواندن). نتایج اسکات معاملاتی است که شما تأیید کرده‌اید. بخش «انتخاب‌های شما» همهٔ سیگنال‌های اسکات را با یک معیار فرضی مقایسه می‌کند تا معلوم شود انتخاب شما بهتر از گرفتن همهٔ سیگنال‌هاست یا نه.</p>
+  </section>
+
   <section><h2>اطلاعات اضافه زیر هشدار</h2>
     <div class="gl">
       <div><b>📈 کارنامهٔ ستاپ</b><span>میانگین نتیجهٔ فرضی ۳۰ نمونهٔ آخر همان ستاپ. اگر از ‎−0.5R بدتر باشد با ⚠️ می‌آید. فقط اطلاع است و هیچ سیگنالی حذف نمی‌شود.</span></div>
@@ -487,6 +591,10 @@ td.n{font-variant-numeric:tabular-nums;direction:ltr;text-align:left}
 .rule b{display:block;font-size:1.05rem;font-variant-numeric:tabular-nums}
 footer{font-size:.78rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 .err{background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:10px 14px}
+.picks{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:720px){.picks{grid-template-columns:repeat(2,minmax(0,1fr))}}
+tr.me td{background:color-mix(in srgb,var(--gold-soft) 55%,transparent);font-weight:700}
+#cmpwin{margin-top:0}
 .hint{margin:-6px 0 0;font-size:.84rem;color:var(--muted);max-width:75ch}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:-14px}
 .tab{font:inherit;font-size:.92rem;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:8px;padding:5px 14px;cursor:pointer}
@@ -534,6 +642,22 @@ details p{margin-top:6px;color:var(--muted);font-size:.9rem}
   <section><h2>امروز و کل <small id="asof"></small></h2>
     <p class="hint">موجودی و اکوییتی از خود حساب می‌آید. «اکوییتی» یعنی موجودی به‌علاوهٔ سود و زیان پوزیشن‌های باز. سود امروز و ۷ روز فقط معاملات بسته‌شدهٔ اسکات را می‌شمارد، به روز تهران.</p>
     <div class="tiles" id="tiles"></div></section>
+
+  <section><h2>🏁 رقابت <small id="cmpnote">شما + اسکات در برابر دو ربات خودکار</small></h2>
+    <p class="hint">مقایسهٔ اصلی با <b>R</b> است: سود هر معامله تقسیم بر ریسک اولیه‌اش. چون حجم معاملهٔ ربات‌ها با هم فرق دارد، دلار به‌تنهایی مقایسهٔ منصفانه‌ای نیست و فقط برای اطلاع آمده است. «جمع R» یعنی در کل چند برابر ریسک یک معامله سود یا ضرر شده.</p>
+    <div class="tabs" role="tablist" id="cmpwin">
+      <button class="tab" data-w="7d" aria-selected="true">۷ روز اخیر</button>
+      <button class="tab" data-w="30d" aria-selected="false">۳۰ روز</button>
+      <button class="tab" data-w="start" aria-selected="false">از شروع اسکات</button>
+    </div>
+    <div class="tablewrap"><table><thead><tr><th>رقیب</th><th>معامله</th><th>برد</th><th>میانگین R</th><th>جمع R</th><th>سود دلاری</th></tr></thead><tbody id="cmp"></tbody></table></div>
+  </section>
+
+  <section><h2>انتخاب‌های شما در برابر همهٔ سیگنال‌ها</h2>
+    <p class="hint">همهٔ سیگنال‌ها با یک معیار سنجیده شده‌اند: اگر هر کدام با حد ضرر خودش و هدف 2R گرفته می‌شد. اگر ستون «تأییدشده‌های شما» از «همهٔ سیگنال‌ها» بهتر باشد، یعنی انتخاب شما به نتیجه اضافه می‌کند.</p>
+    <div class="tiles picks" id="picks"></div>
+    <p class="hint" id="picksay"></p>
+  </section>
 
   <div class="cols">
     <section><h2>پوزیشن‌های باز</h2>
@@ -626,8 +750,31 @@ function render(d){
     ['مهلت جواب',r.expiry_min+' دقیقه'],['گزارش زنده','هر '+r.status_min+' دقیقه']]
     .map(([k,v])=>`<div class="rule">${k}<b>${esc(v)}</b></div>`).join('');
   $('upd').textContent=s.version?('نسخه '+s.version):'';
+  LAST=st; renderCompare(); renderPicks(st.picks);
   document.querySelectorAll('[data-r]').forEach(el=>{const v=r[el.dataset.r];if(v!=null)el.textContent=(el.dataset.pre||'')+v+(el.dataset.suf||'');});
 }
+let LAST={}, WIN='7d';
+const rfmt=v=>v==null?'—':(v>0?'+':'')+v.toFixed(2)+'R';
+function renderCompare(){
+  const c=LAST.compare||{}; const rows=c[WIN]||[];
+  const best=Math.max(...rows.filter(r=>r.sum_r!=null).map(r=>r.sum_r));
+  $('cmp').innerHTML=rows.map(r=>`<tr class="${r.me?'me':''}"><td>${r.sum_r!=null&&r.sum_r===best&&r.n?'🏆 ':''}${esc(r.name)}</td>
+    <td class="n">${r.n}</td><td class="n">${r.win!=null?r.win+'٪':'—'}</td><td class="n ${cls(r.avg_r)}">${rfmt(r.avg_r)}</td>
+    <td class="n ${cls(r.sum_r)}">${r.sum_r!=null?(r.sum_r>0?'+':'')+r.sum_r.toFixed(1)+'R':'—'}</td><td class="n ${cls(r.pnl)}">${r.n?money(r.pnl):'—'}</td></tr>`).join('')
+    ||'<tr><td colspan="6" class="muted">هنوز معامله‌ای برای مقایسه نیست</td></tr>';
+  $('cmpnote').textContent='شما + اسکات در برابر دو ربات خودکار'+(c.since?(' · اسکات از '+c.since):'');
+}
+function renderPicks(p){
+  if(!p){$('picks').innerHTML='<div class="empty">نتیجهٔ فرضی هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';$('picksay').textContent='';return;}
+  const card=(k,t)=>{const v=p[k]||{};return `<div class="tile"><div class="k">${t}</div><div class="v num ${cls(v.avg_r)}">${rfmt(v.avg_r)}</div><div class="s">${fa(v.n)} نمونه · برد ${v.win!=null?v.win+'٪':'—'}</div></div>`};
+  $('picks').innerHTML=card('taken','✅ تأییدشده‌های شما')+card('passed','❌ ردشده یا منقضی')+card('silent','🔕 بی‌صدا (پوزیشن باز یا توقف)')+card('all','همهٔ سیگنال‌ها');
+  const a=p.taken||{}, b=p.all||{};
+  $('picksay').textContent=(a.avg_r==null||b.avg_r==null||a.n<5)?'برای مقایسه هنوز تأییدهای کافی نیست.'
+    :(a.avg_r>b.avg_r?`انتخاب‌های شما تا الان به‌طور میانگین ${(a.avg_r-b.avg_r).toFixed(2)}R در هر معامله بهتر از کل سیگنال‌ها بوده است.`
+    :`انتخاب‌های شما فعلاً ${(b.avg_r-a.avg_r).toFixed(2)}R در هر معامله پایین‌تر از کل سیگنال‌هاست؛ با معاملات بیشتر دقیق‌تر می‌شود.`);
+}
+document.querySelectorAll('#cmpwin .tab').forEach(b=>b.onclick=()=>{WIN=b.dataset.w;
+  document.querySelectorAll('#cmpwin .tab').forEach(x=>x.setAttribute('aria-selected',String(x===b)));renderCompare();});
 function show(tab){
   const g=tab==='guide';
   $('p-dash').hidden=g;$('p-guide').hidden=!g;

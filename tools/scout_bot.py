@@ -256,6 +256,8 @@ class Scout:
         self.dash_token = (os.environ.get("DASHBOARD_TOKEN_SCOUT") or os.environ.get("DASHBOARD_TOKEN")
                            or str(s.get("scout.dashboard.token", "") or ""))
         self.stats_every = float(s.get("scout.dashboard.stats_minutes", 60)) * 60.0
+        self.compare_bots = list(s.get("scout.dashboard.compare") or [
+            {"name": "ORB", "db": "subscriptions.db"}, {"name": "ایچیموکو", "db": "subscriptions_ichimoku.db"}])
         self.dashboard: Optional[Any] = None
         self._dash_snap: Dict[str, Any] = {}
         self._dash_t = 0.0
@@ -1315,8 +1317,17 @@ class Scout:
 
     def dash_stats(self) -> Dict[str, Any]:
         """از نخ وب صدا زده می‌شود: فقط دیسک و حافظه، بدون MT5."""
-        return dash.build_stats(dash.read_journal(self.journal), virtual=self._virtual_rows,
-                                actual_by_ticket=self._actual_map)
+        events = dash.read_journal(self.journal)
+        st = dash.build_stats(events, virtual=self._virtual_rows, actual_by_ticket=self._actual_map)
+        bots: Dict[str, list] = {}
+        for b in self.compare_bots:                    # فقط خواندن دیتابیس دو ربات دیگر
+            try:
+                bots[str(b.get("name"))] = dash.bot_trades(b.get("db", ""))
+            except Exception as exc:
+                logger.warning("scout dashboard: {} results unavailable ({})", b.get("name"), exc)
+        st["compare"] = dash.build_compare(dash.scout_trades(events, self.lot), bots)
+        st["picks"] = dash.build_picks(self._virtual_rows)
+        return st
 
     def refresh_virtual(self) -> None:
         """نتیجهٔ فرضی همهٔ ستاپ‌ها (مثل scout_stats) — در حلقهٔ اصلی، چون M1 از MT5 می‌آید."""
