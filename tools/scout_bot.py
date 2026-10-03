@@ -18,6 +18,8 @@
   هشدارها، ری‌استارت. فقط از admin_ids پذیرفته می‌شود. یک پیام «سالمم» روزانه
   (scout.health_daily_utc_hour) و هشدار خودکار وقتی داده/قیمت از MT5 نمی‌رسد.
 - فقط یک نسخه از اسکات اجرا می‌شود (قفل فایل scout.lock_file).
+- زیر هر هشدار «🤖 تحلیل»: نظر کوتاه هوش مصنوعی (ورود/صبر، اطمینان، دلیل‌ها، نکتهٔ مدیریت)
+  قبل از تصمیم؛ فقط راهنماست. «❓ راهنما» (/help) کار همهٔ دکمه‌ها را توضیح می‌دهد.
 - مهلت پاسخ به هر هشدار: scout.expiry_seconds (پیش‌فرض ۳۰ دقیقه).
 - در لحظهٔ تأیید، ورود با قیمت همان لحظه است و حد ضرر با همان فاصلهٔ هشدار از این قیمت
   گذاشته می‌شود؛ اگر قیمت از حد ضرر هشدار رد شده باشد، سفارشی ثبت نمی‌شود.
@@ -118,8 +120,10 @@ class TG:
             return None
 
     def send(self, text: str, buttons: Optional[list] = None,
-             keyboard: Optional[dict] = None) -> Optional[int]:
+             keyboard: Optional[dict] = None, reply_to: Optional[int] = None) -> Optional[int]:
         kw: Dict[str, Any] = {"chat_id": self.chat, "text": text, "parse_mode": "HTML"}
+        if reply_to:
+            kw["reply_parameters"] = {"message_id": int(reply_to), "allow_sending_without_reply": True}
         if buttons:
             kw["reply_markup"] = {"inline_keyboard": buttons}
         elif keyboard:
@@ -219,6 +223,12 @@ class Scout:
         self._health_day: Optional[str] = None
         self._last_alert_t: Optional[float] = None
         self.lock: Optional[ctl.InstanceLock] = None
+        # تحلیل هوش مصنوعی برای هشدارها
+        self._an_pool = None
+        self._an_futs: Dict[str, Any] = {}
+        self._an_cache: Dict[str, str] = {}
+        self._frame: Optional[pd.DataFrame] = None
+        self._closing_t: Dict[int, float] = {}
 
     # ---------------------------------------------------------------- journal
     def log(self, **row: Any) -> None:
@@ -339,13 +349,89 @@ class Scout:
             txt += (f"\n⚠️ پوزیشن باز: {self.open_summary()}"
                     + (f"\n🚫 <b>فعلاً قابل باز شدن نیست:</b> {block}" if block else
                        f"\nبا تأیید، پوزیشن دوم باز می‌شود (ریسک کل حداکثر {self.max_total_risk:.0f}$)."))
-        mid = self.tg.send(txt, [[{"text": "✅ تأیید", "callback_data": f"a|{aid}|y"},
-                                  {"text": "❌ رد", "callback_data": f"a|{aid}|n"}]])
-        self.pending[aid] = {"row": r, "sl": sl, "tp": tp, "mid": mid, "t": time.time(), "txt": txt}
+        mid = self.tg.send(txt, self.alert_buttons(aid))
+        try:
+            ctx = scout_ai.build_entry_message(
+                r.side, str(r.get("setups_all", r.setup)), entry, sl, tp, risk, float(r.atr),
+                float(spread_pts or 0.0), self._frame, self.open_summary() if self.open else "")
+        except Exception as exc:                       # pragma: no cover
+            logger.warning("scout: analysis context failed: {}", exc)
+            ctx = ""
+        self.pending[aid] = {"row": r, "sl": sl, "tp": tp, "mid": mid, "t": time.time(), "txt": txt,
+                             "ctx": ctx}
         self.log(event="alert", alert=aid, setup=str(r.get("setups_all", r.setup)),
                  n_setups=n_set, side=r.side, bar=str(r.bar),
                  price=entry, sl=round(sl, 2), tp=round(tp, 2), atr=round(r.atr, 3),
                  spread=spread_pts, risk_usd=risk)
+
+    @staticmethod
+    def alert_buttons(aid: str, analyze: bool = True) -> list:
+        row = [{"text": "✅ تأیید", "callback_data": f"a|{aid}|y"},
+               {"text": "❌ رد", "callback_data": f"a|{aid}|n"}]
+        if analyze:
+            row.append({"text": "🤖 تحلیل", "callback_data": f"x|{aid}"})
+        return [row]
+
+    # ------------------------------------------------------------- AI analysis
+    def analyze(self, aid: str, cb: Optional[str] = None) -> None:
+        """دکمهٔ «🤖 تحلیل»: نظر هوش مصنوعی دربارهٔ همین هشدار (فقط راهنما)."""
+        p = self.pending.get(aid)
+        if aid in self._an_cache:
+            if cb:
+                self.tg.ack(cb)
+            self.tg.send(self._an_cache[aid], self.alert_buttons(aid, analyze=False) if p else None,
+                         reply_to=p["mid"] if p else None)
+            return
+        if p is None:
+            if cb:
+                self.tg.ack(cb, "این هشدار دیگر معتبر نیست")
+            return
+        if aid in self._an_futs:
+            if cb:
+                self.tg.ack(cb, "در حال تحلیل…")
+            return
+        if self._ai is None:
+            self._ai = scout_ai.ScoutAI.from_gate_config(self.ai_timeout) or False
+        if not self._ai or not p.get("ctx"):
+            if cb:
+                self.tg.ack(cb, "تحلیل در دسترس نیست")
+            self.tg.send("🤖 تحلیل در دسترس نیست (هوش مصنوعی تنظیم نیست). تصمیم با خودتان است.",
+                         reply_to=p["mid"])
+            return
+        if self._an_pool is None:
+            self._an_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="scout-an")
+        self._an_futs[aid] = self._an_pool.submit(self._ai.analyze, p["ctx"])
+        if cb:
+            self.tg.ack(cb, "در حال تحلیل… چند ثانیه")
+        logger.info("scout: AI analysis requested for alert {}", aid)
+
+    def poll_analyses(self) -> None:
+        for aid in [k for k, f in self._an_futs.items() if f.done()]:
+            fut = self._an_futs.pop(aid)
+            try:
+                a = fut.result()
+            except Exception as exc:                   # pragma: no cover
+                a = scout_ai.EntryAnalysis("", 0, (), "", "", str(exc)[:120])
+            p = self.pending.get(aid)
+            r = p["row"] if p else None
+            title = (f"🤖 <b>تحلیل هوش مصنوعی</b> · هشدار #{aid}"
+                     + (f" ({'🟢 BUY' if r.side == 'BUY' else '🔴 SELL'})" if r is not None else ""))
+            if a.ok:
+                verdict = "✅ ورود" if a.decision == "TAKE" else "⏳ صبر / ورود نکن"
+                body = "\n".join(f"• {html.escape(x)}" for x in a.reasons) or "—"
+                tip = f"\n💡 {html.escape(a.tip)}" if a.tip else ""
+                text = (f"{title}\nنظر: <b>{verdict}</b> · اطمینان {a.confidence}٪\n{body}{tip}\n"
+                        f"<i>فقط راهنماست؛ تصمیم با شماست · {html.escape(a.model or '')}</i>")
+                self._an_cache[aid] = text
+            else:
+                text = (f"{title}\n⚠️ تحلیل الان در دسترس نیست ({html.escape(a.error[:80])}). "
+                        "می‌توانید دوباره «🤖 تحلیل» را بزنید.")
+            still = p is not None
+            self.tg.send(text, self.alert_buttons(aid, analyze=not a.ok) if still else None,
+                         reply_to=p["mid"] if still else None)
+            self.log(event="analysis", alert=aid, setup=(r.setup if r is not None else None),
+                     side=(r.side if r is not None else None),
+                     note=(f"{a.decision} {a.confidence}% {a.model}" if a.ok else f"error {a.error}")[:300])
 
     def expire(self) -> None:
         now = time.time()
@@ -465,6 +551,12 @@ class Scout:
         return (round(pnl, 2) if out else None), px
 
     def close(self, tk: int, cb: Optional[str] = None, why: str = "scout manual") -> None:
+        now = time.time()
+        if now - self._closing_t.get(int(tk), 0.0) < 20.0:     # کلیک تکراری روی «بستن»
+            if cb:
+                self.tg.ack(cb, "در حال بستن… یک بار کافی است")
+            return
+        self._closing_t[int(tk)] = now
         if int(tk) not in self.open:
             try:
                 live = {int(p.ticket) for p in self.client.positions(magic_only=True)}
@@ -786,14 +878,17 @@ class Scout:
         [{"text": "📋 پوزیشن‌ها", "callback_data": "k|pos"}, {"text": "⚙️ حالت حد ضرر", "callback_data": "k|mode"}],
         [{"text": "⏸ توقف هشدارها", "callback_data": "k|pause"},
          {"text": "▶️ ادامهٔ هشدارها", "callback_data": "k|resume"}],
-        [{"text": "🔄 ری‌استارت", "callback_data": "k|restart"}],
+        [{"text": "🔄 ری‌استارت", "callback_data": "k|restart"},
+         {"text": "❓ راهنما", "callback_data": "k|help"}],
     ]
 
     # دکمه‌های ثابت پایین صفحهٔ تلگرام — همیشه در دسترس، بدون نیاز به دانستن دستورها
     KEYBOARD = {"keyboard": [[{"text": "📋 پوزیشن‌ها"}, {"text": "💰 قیمت"}],
-                             [{"text": "📊 وضعیت"}, {"text": "🎛 منو"}]],
+                             [{"text": "📊 وضعیت"}, {"text": "🎛 منو"}],
+                             [{"text": "❓ راهنما"}]],
                 "is_persistent": True, "resize_keyboard": True}
-    KEYBOARD_ACTIONS = {"📋 پوزیشن‌ها": "pos", "💰 قیمت": "price", "📊 وضعیت": "status", "🎛 منو": "menu"}
+    KEYBOARD_ACTIONS = {"📋 پوزیشن‌ها": "pos", "💰 قیمت": "price", "📊 وضعیت": "status", "🎛 منو": "menu",
+                        "❓ راهنما": "help"}
 
     def is_admin(self, u: dict) -> bool:
         if not self.admins:
@@ -822,6 +917,8 @@ class Scout:
                 self.hold(int(parts[1]), cq["id"], on=False)
             elif parts[0] == "m" and len(parts) == 2:
                 self.set_mode(parts[1], cq["id"])
+            elif parts[0] == "x" and len(parts) == 2:
+                self.analyze(parts[1], cq["id"])
             elif parts[0] == "k" and len(parts) == 2:
                 self.tg.ack(cq["id"])
                 self.panel(parts[1])
@@ -835,6 +932,8 @@ class Scout:
             self.panel("menu")
         elif cmd in ("/mode", "/busy"):
             self.mode_menu()
+        elif cmd in ("/help", "/guide"):
+            self.panel("help")
         elif cmd in ("/price", "/status", "/positions", "/pause", "/resume", "/restart"):
             self.panel({"/positions": "pos"}.get(cmd, cmd[1:]))
         elif cmd == "/close":
@@ -866,6 +965,11 @@ class Scout:
                 self.restart()
             elif what == "restart_no":
                 self.tg.send("ری‌استارت لغو شد.")
+            elif what == "help":
+                self.tg.send(ctl.HELP_TEXT.format(max_open=self.max_open, risk=self.max_total_risk,
+                                                  sl=(self.sl_cap or 0) * 100 * self.lot,
+                                                  em=(self.emerg_cap or 0) * 100 * self.lot,
+                                                  status=int(self.status_every // 60)))
         except Exception as exc:
             logger.warning("scout panel {} failed: {}", what, exc)
             self.tg.send(f"⚠️ {what}: {html.escape(str(exc))[:150]}")
@@ -1117,7 +1221,9 @@ class Scout:
                 m15 = m15.iloc[:-1]                      # فقط کندل‌های بسته
                 h1 = self.client.get_rates("H1", 300)
                 f = indicators(m15, h1, int(self.s.get("scout.h1_ema_period", 20)))
+                self._frame = f
                 self.monitor(f)
+                self.poll_analyses()
                 bar = f.index[-1]
                 if self.last_bar is None:
                     self.last_bar = bar

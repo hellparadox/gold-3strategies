@@ -67,9 +67,10 @@ class FakeTG:
         self._mid = 100
         self.last_mid = None
 
-    def send(self, text, buttons=None, keyboard=None):
+    def send(self, text, buttons=None, keyboard=None, reply_to=None):
         self._mid += 1
         self.sent.append((text, buttons))
+        self.replies = getattr(self, "replies", []) + [reply_to]
         if keyboard:
             self.keyboards.append(keyboard)
         self.last_mid = self._mid
@@ -111,6 +112,7 @@ def make_scout(tmp: Path, mode="close") -> Scout:
     sc.alert_while_open, sc.max_open, sc.max_total_risk = True, 2, 20.0
     sc.expiry, sc.n = 1800, 0
     sc._last_alert_t = None
+    sc._an_pool, sc._an_futs, sc._an_cache, sc._frame, sc._closing_t = None, {}, {}, None, {}
     return sc
 
 
