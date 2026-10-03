@@ -83,6 +83,11 @@ class Server(unittest.TestCase):
             code, body = self.get(d, "/?token=s3cret")
             self.assertEqual(code, 200)
             self.assertIn("داشبورد اسکات", body)
+            self.assertIn("راهنمای اسکات", body)                    # تب راهنما داخل صفحه
+            self.assertIn("یک معامله از اول تا آخر", body)
+            self.assertNotIn("<!--GUIDE-->", body)
+            for name in ("kijun_pullback", "exhaustion", "حد ضرر اضطراری", "سؤال‌های رایج"):
+                self.assertIn(name, body)
             code, body = self.get(d, "/api/data?token=s3cret")
             data = json.loads(body)
             self.assertTrue(data["status"]["alive"])

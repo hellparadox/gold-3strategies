@@ -279,9 +279,125 @@ class _Handler(BaseHTTPRequestHandler):
             body = json.dumps(self.dash.data(), ensure_ascii=False, default=str).encode("utf-8")
             self._send(200, "application/json; charset=utf-8", body)
         elif u.path in ("/", "/index.html"):
-            self._send(200, "text/html; charset=utf-8", PAGE.encode("utf-8"))
+            self._send(200, "text/html; charset=utf-8", PAGE.replace("<!--GUIDE-->", GUIDE).encode("utf-8"))
         else:
             self._send(404, "text/plain; charset=utf-8", b"not found")
+
+
+GUIDE = r'''<div class="pane guide" id="p-guide" role="tabpanel" aria-labelledby="t-guide" hidden>
+
+  <section><h2>اسکات چیست؟</h2>
+    <p>اسکات سومین ربات طلاست و با دو ربات دیگر یک فرق اصلی دارد: <b>خودش وارد معامله نمی‌شود.</b> ORB و ایچیموکو خودکار معامله می‌کنند، ولی اسکات فقط ستاپ‌ها را پیدا می‌کند، در تلگرام خبر می‌دهد و تصمیم را به شما می‌سپارد.</p>
+    <p>همهٔ معاملات با حجم ثابت <b data-r="lot">0.01</b> لات روی حساب دمو انجام می‌شوند تا نتیجهٔ ستاپ‌ها منصفانه مقایسه شود. همه‌چیز در دفتر اسکات ثبت می‌شود، حتی هشدارهایی که رد کرده‌اید. همین‌طور می‌شود فهمید کدام ستاپ واقعاً جواب می‌دهد.</p>
+  </section>
+
+  <section><h2>یک معامله از اول تا آخر</h2>
+    <ol class="steps">
+      <li><div><b>پیدا کردن ستاپ.</b> هر بار که یک کندل ۱۵ دقیقه‌ای بسته می‌شود، اسکات ۱۰ نوع ستاپ را روی آن چک می‌کند. اگر چند ستاپ هم‌زمان و هم‌جهت بودند، در یک پیام می‌آیند.</div></li>
+      <li><div><b>هشدار در تلگرام.</b> پیام شامل جهت (خرید یا فروش)، قیمت، حد ضرر، هدف پیشنهادی (۲ برابر ریسک) و ریسک به دلار است.</div></li>
+      <li><div><b>تصمیم شما.</b> <b data-r="expiry_min">30</b> دقیقه فرصت دارید: ✅ تأیید، ❌ رد، یا اول 🤖 تحلیل بگیرید. اگر جواب ندهید، هشدار منقضی می‌شود.</div></li>
+      <li><div><b>باز شدن معامله.</b> با تأیید، معامله با قیمت همان لحظه باز می‌شود و حد ضرر با همان فاصلهٔ هشدار روی بروکر ثبت می‌شود. اگر قیمت در این فاصله از حد ضرر رد شده باشد، معامله باز نمی‌شود.</div></li>
+      <li><div><b>مراقبت.</b> هر <b data-r="status_min">5</b> دقیقه یک پیام وضعیت با سود و زیان می‌آید. در <b data-r="approach" data-suf="٪">70٪</b> فاصله تا حد ضرر یک هشدار «نزدیک حد ضرر» می‌آید و رسیدن به ۱ برابر ریسک (1R) هم خبر داده می‌شود.</div></li>
+      <li><div><b>بسته شدن.</b> یا خودتان با دکمهٔ 🔻 بستن می‌بندید، یا قیمت به حد ضرر می‌رسد و طبق «حالت» (پایین‌تر توضیح داده شده) رفتار می‌شود. اسکات حد سود خودکار نمی‌گذارد؛ زمان گرفتن سود با شماست.</div></li>
+    </ol>
+  </section>
+
+  <section><h2>۱۰ ستاپ اسکات</h2>
+    <p>چهار ستاپ اول فقط در جهت روند ظاهر می‌شوند. روند یعنی قیمت بالای ابر ایچیموکو، بالای میانگین ۲۰۰ و هم‌جهت با روند یک‌ساعته (برای فروش برعکس). بقیه به روند وابسته نیستند.</p>
+    <div class="tablewrap"><table class="setgrid"><thead><tr><th>ستاپ</th><th>یعنی چه</th></tr></thead><tbody>
+      <tr><td class="mono">kijun_pullback</td><td>در روند، قیمت تا نزدیک خط کیجون برمی‌گردد و دوباره در جهت روند بسته می‌شود.</td></tr>
+      <tr><td class="mono">tenkan_momentum</td><td>در روند و با نوسان رو به افزایش، قیمت خط تنکان را لمس می‌کند و با یک کندل قوی در جهت روند بسته می‌شود.</td></tr>
+      <tr><td class="mono">range_break</td><td>در روند، یک کندل قوی بالاتر از سقف ۲۰ کندل قبل (یا پایین‌تر از کف آن برای فروش) بسته می‌شود.</td></tr>
+      <tr><td class="mono">pullback_resume</td><td>در روند، بعد از برگشت به تنکان در ۳ کندل اخیر، قیمت از سقف کندل قبل رد می‌شود و روند ادامه پیدا می‌کند.</td></tr>
+      <tr><td class="mono">cloud_break</td><td>قیمت از ابر ایچیموکو عبور می‌کند و بیرون آن بسته می‌شود، همراه با افزایش نوسان.</td></tr>
+      <tr><td class="mono">tk_cross</td><td>خط تنکان خط کیجون را قطع می‌کند.</td></tr>
+      <tr><td class="mono">rejection</td><td>قیمت کف (یا سقف) ۲۰ کندل را می‌شکند ولی با سایهٔ بلند برمی‌گردد و داخل محدوده بسته می‌شود.</td></tr>
+      <tr><td class="mono">engulfing</td><td>کندل پوشا: بدنهٔ کندل فعلی بدنهٔ کندل مخالف قبلی را کامل می‌پوشاند.</td></tr>
+      <tr><td class="mono">ignition</td><td>یک کندل خیلی بزرگ (بیش از ۲ برابر ATR) با بدنهٔ پر و حجم بالا.</td></tr>
+      <tr><td class="mono">exhaustion</td><td>قیمت بیش از ۳ برابر ATR از تنکان دور شده است. این ستاپ خلاف حرکت است و روی برگشت حساب می‌کند.</td></tr>
+    </tbody></table></div>
+    <p class="hint">حد ضرر هر ستاپ پشت کف یا سقف کندل (یا تنکان) گذاشته می‌شود، بین ۱ تا ۲.۵ برابر ATR، ولی هیچ‌وقت بیشتر از <b data-r="sl_cap" data-pre="$">$10</b> ضرر نیست.</p>
+  </section>
+
+  <section><h2>دکمه‌های تلگرام</h2>
+    <div class="gl">
+      <div><b>✅ تأیید</b><span>با قیمت همین لحظه وارد می‌شود.</span></div>
+      <div><b>❌ رد</b><span>هشدار کنار گذاشته می‌شود ولی در آمار می‌ماند.</span></div>
+      <div><b>🤖 تحلیل</b><span>نظر کوتاه هوش مصنوعی: ورود یا صبر، درصد اطمینان، دلیل‌ها و یک نکته. فقط راهنماست؛ تصمیم با شماست.</span></div>
+      <div><b>🔻 بستن</b><span>پوزیشن را همان لحظه می‌بندد. زدن چندباره فقط یک بار اجرا می‌شود.</span></div>
+      <div><b>⏸ نگه دار</b><span>در حد ضرر سیگنال بسته نشود. حد ضرر روی بروکر به سطح اضطراری می‌رود.</span></div>
+      <div><b>▶️ لغو نگه داشتن</b><span>دوباره طبق حالت انتخاب‌شده رفتار می‌شود.</span></div>
+      <div><b>📋 پوزیشن‌ها · 💰 قیمت · 📊 وضعیت</b><span>کیبورد پایین چت، برای دیدن سریع.</span></div>
+      <div><b>🎛 منو</b><span>توقف و ادامهٔ هشدارها، سلامت ربات، حالت حد ضرر، ری‌استارت.</span></div>
+      <div><b>❓ راهنما</b><span>همین توضیحات، کوتاه، داخل تلگرام (<span class="mono">/help</span>).</span></div>
+    </div>
+  </section>
+
+  <section><h2>حد ضرر و «حالت»</h2>
+    <p>اسکات از دو سطح حد ضرر استفاده می‌کند:</p>
+    <div class="gl">
+      <div><b>حد ضرر سیگنال</b><span>همان حدی که در هشدار آمده، حداکثر <b data-r="sl_cap" data-pre="$">$10</b> ضرر. در حالت عادی همین روی بروکر ثبت است.</span></div>
+      <div><b>حد ضرر اضطراری</b><span>وقتی «نگه دار» زده‌اید یا حالت «نگه داشتن» است: ۳ برابر فاصلهٔ سیگنال، ولی حداکثر <b data-r="emerg_cap" data-pre="$">$20</b> ضرر. این سقف آخر است تا ضرر هیچ‌وقت از کنترل خارج نشود.</span></div>
+    </div>
+    <p>«حالت» تعیین می‌کند وقتی قیمت به حد ضرر سیگنال رسید و شما در دسترس نبودید چه شود. با دستور <span class="mono">/mode</span> یا از منو عوض می‌شود:</p>
+    <div class="gl">
+      <div><b>بستن</b><span>در حد ضرر سیگنال بسته می‌شود. پیش‌فرض و محتاطانه‌ترین حالت.</span></div>
+      <div><b>نگه داشتن</b><span>بسته نمی‌شود تا خودتان بگویید. فقط هشدار می‌آید و حد ضرر اضطراری از ضرر بزرگ جلوگیری می‌کند.</span></div>
+      <div><b>هوش مصنوعی</b><span>در حد ضرر از هوش مصنوعی می‌پرسد. اگر با اطمینان کافی گفت «نگه دار»، نگه می‌دارد و ۱۵ دقیقه بعد دوباره می‌پرسد. اگر جواب نداد یا مطمئن نبود، می‌بندد.</span></div>
+    </div>
+  </section>
+
+  <section><h2>سقف‌های هم‌زمانی</h2>
+    <p>هشدارها همیشه می‌آیند، حتی وقتی پوزیشن باز دارید. ولی تأیید جدید فقط وقتی معامله باز می‌کند که:</p>
+    <div class="gl">
+      <div><b>حداکثر <span data-r="max_open">2</span> پوزیشن</b><span>پوزیشن سوم باز نمی‌شود.</span></div>
+      <div><b>سقف ریسک کل <span data-r="max_risk" data-pre="$">$20</span></b><span>جمع ضرر ممکن همهٔ پوزیشن‌های باز تا حد ضرر فعلی‌شان از این بیشتر نشود.</span></div>
+      <div><b>بدون خرید و فروش هم‌زمان</b><span>اگر پوزیشن خرید باز است، تأیید فروش باز نمی‌شود (و برعکس).</span></div>
+    </div>
+    <p class="hint">اگر یکی از این‌ها مانع شود، زیر خود هشدار نوشته می‌شود «فعلاً قابل باز شدن نیست» و دلیلش.</p>
+  </section>
+
+  <section><h2>پیام‌های خودکار</h2>
+    <div class="gl">
+      <div><b>📊 وضعیت زنده</b><span>هر <b data-r="status_min">5</b> دقیقه برای هر پوزیشن. وقتی بازار بسته است فقط یک پیام «بازار بسته» می‌آید.</span></div>
+      <div><b>⚠️ نزدیک حد ضرر</b><span>یک بار، با دکمهٔ «نگه دار»، تا قبل از رسیدن تصمیم بگیرید.</span></div>
+      <div><b>🎯 رسیدن به 1R</b><span>سود به اندازهٔ ریسک اولیه رسیده است.</span></div>
+      <div><b>⚠️ شکست ساختار</b><span>کندل خلاف جهت تنکان بسته شده؛ نشانهٔ ضعیف شدن حرکت.</span></div>
+      <div><b>💚 سالمم</b><span>هر روز حدود ساعت ۸:۳۰ تهران. اگر نیامد، یعنی اسکات مشکل دارد.</span></div>
+      <div><b>📡 قطع داده</b><span>اگر ۱۰ دقیقه قیمت از MT5 نرسد. وقتی برگشت هم خبر می‌دهد.</span></div>
+    </div>
+  </section>
+
+  <section><h2>واژه‌نامه</h2>
+    <div class="gl">
+      <div><b>R</b><span>واحد ریسک. 1R یعنی به اندازهٔ فاصلهٔ ورود تا حد ضرر. ‎+2R یعنی دو برابر ریسک سود، ‎−1R یعنی خوردن حد ضرر.</span></div>
+      <div><b>نتیجهٔ فرضی</b><span>اگر هشدار با همان قیمت، همان حد ضرر و هدف 2R گرفته می‌شد چه می‌شد. روی کندل‌های ۱ دقیقه‌ای واقعی و با کسر اسپرد حساب می‌شود.</span></div>
+      <div><b>ATR</b><span>میانگین اندازهٔ حرکت هر کندل؛ معیار نوسان بازار.</span></div>
+      <div><b>اسپرد</b><span>فاصلهٔ قیمت خرید و فروش؛ هزینهٔ ورود به معامله.</span></div>
+      <div><b>تنکان و کیجون</b><span>دو خط ایچیموکو: میانهٔ ۹ و ۲۶ کندل اخیر. تنکان سریع‌تر است.</span></div>
+      <div><b>ابر ایچیموکو</b><span>محدوده‌ای که بالای آن معمولاً روند صعودی و پایینش نزولی حساب می‌شود.</span></div>
+      <div><b>اکوییتی</b><span>موجودی به‌علاوهٔ سود و زیان پوزیشن‌های باز.</span></div>
+      <div><b>منقضی</b><span>هشداری که در مهلت جواب نگرفت.</span></div>
+    </div>
+  </section>
+
+  <section><h2>سؤال‌های رایج</h2>
+    <div>
+      <details><summary>تأیید کردم ولی معامله باز نشد. چرا؟</summary>
+        <p>یکی از این دلیل‌ها: سقف تعداد یا ریسک کل پر بود، پوزیشن خلاف جهت باز بود، یا قیمت تا لحظهٔ تأیید از حد ضرر هشدار رد شده بود. دلیل دقیق در جواب تلگرام می‌آید.</p></details>
+      <details><summary>آخر هفته چرا پیامی نمی‌آید؟</summary>
+        <p>بازار طلا از جمعه‌شب تا حدود ساعت ۱:۳۰ بامداد دوشنبه به وقت تهران بسته است. اسکات روشن می‌ماند ولی ستاپ و پیام وضعیت تکراری ندارد.</p></details>
+      <details><summary>«تحلیل در دسترس نیست» یعنی چه؟</summary>
+        <p>سرویس هوش مصنوعی جواب نداده (معمولاً شلوغی موقت). دکمه می‌ماند و می‌توانید دوباره بزنید. تصمیم بدون تحلیل هم کاملاً ممکن است.</p></details>
+      <details><summary>اگر اسکات خاموش یا گیر کند چه می‌شود؟</summary>
+        <p>نگهبان VPS خودش ری‌استارتش می‌کند و بعد از ری‌استارت ویندوز هم خودش بالا می‌آید. پوزیشن‌های باز ذخیره شده‌اند و دوباره دنبال می‌شوند. حد ضرر هم روی بروکر است، پس حتی وقتی اسکات خاموش است پوزیشن محافظت می‌شود. از منوی تلگرام هم می‌شود ری‌استارت زد.</p></details>
+      <details><summary>این صفحه را چه کسی می‌تواند ببیند؟</summary>
+        <p>فقط کسی که آدرس کامل همراه با توکن را دارد. صفحه فقط خواندنی است و هیچ دکمه‌ای در آن معامله نمی‌کند.</p></details>
+    </div>
+  </section>
+
+  <p class="callout">اسکات روی حساب دمو کار می‌کند و هدفش پیدا کردن ستاپ‌هایی است که واقعاً جواب می‌دهند. عددهای «فرضی» گذشته را نشان می‌دهند و تضمینی برای آینده نیستند.</p>
+</div>'''
 
 
 PAGE = r"""<!doctype html>
@@ -305,6 +421,7 @@ PAGE = r"""<!doctype html>
   --gold:#e2b64e;--gold-soft:#3a2f14;--good:#58c48b;--good-soft:#173326;--bad:#ef7d70;--bad-soft:#3a1d1a;
   --warn:#f0b35a;--warn-soft:#3a2a12;color-scheme:dark}}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.8}
 .wrap{max-width:1040px;margin:0 auto;padding-inline:16px;padding-block:22px 56px;display:flex;flex-direction:column;gap:28px}
 h1,h2,h3{margin:0}
@@ -361,6 +478,32 @@ td.n{font-variant-numeric:tabular-nums;direction:ltr;text-align:left}
 .rule b{display:block;font-size:1.05rem;font-variant-numeric:tabular-nums}
 footer{font-size:.78rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 .err{background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:10px 14px}
+.hint{margin:-6px 0 0;font-size:.84rem;color:var(--muted);max-width:75ch}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:-14px}
+.tab{font:inherit;font-size:.92rem;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:8px;padding:5px 14px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--gold-soft);color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
+.tab:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.intro{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:.9rem}
+.intro p{margin:0;flex:1 1 360px;min-width:0}
+.linkbtn{font:inherit;font-weight:700;color:var(--gold);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.pane{display:flex;flex-direction:column;gap:28px}
+.guide{display:flex;flex-direction:column;gap:26px;max-width:860px}
+.guide h2{font-size:1.2rem}
+.guide p{margin:0;max-width:72ch}
+.guide h3{font-size:1rem;font-weight:700}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;counter-reset:st}
+.steps li{counter-increment:st;display:grid;grid-template-columns:32px 1fr;gap:12px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.steps li::before{content:counter(st);font-weight:800;color:var(--gold);background:var(--gold-soft);border-radius:50%;width:28px;height:28px;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.gl{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.gl > div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.gl b{font-size:.95rem}
+.gl span{font-size:.86rem;color:var(--muted)}
+.setgrid td:first-child{white-space:nowrap}
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 16px}
+details+details{margin-top:8px}
+summary{cursor:pointer;font-weight:700}
+details p{margin-top:6px;color:var(--muted);font-size:.9rem}
+.callout{background:var(--warn-soft);border-radius:10px;padding:10px 16px;font-size:.9rem}
 </style>
 </head>
 <body>
@@ -369,27 +512,49 @@ footer{font-size:.78rem;color:var(--muted);border-top:1px solid var(--line);padd
     <div><h1>اسکات</h1><div class="sub">دیدبان ستاپ‌های طلا · تأیید دستی در تلگرام · فقط خواندنی</div></div>
     <div class="pills" id="pills"><span class="pill"><span class="dot"></span>در حال دریافت…</span></div>
   </header>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="t-dash" aria-selected="true" aria-controls="p-dash">📊 داشبورد</button>
+    <button class="tab" role="tab" id="t-guide" aria-selected="false" aria-controls="p-guide">📖 راهنمای اسکات</button>
+  </div>
   <div id="err" class="err" hidden></div>
 
+  <div class="pane" id="p-dash" role="tabpanel" aria-labelledby="t-dash">
+  <div class="intro"><p><b>اسکات</b> خودش معامله نمی‌کند. هر ۱۵ دقیقه ستاپ‌های طلا را پیدا می‌کند، در تلگرام هشدار می‌دهد و فقط اگر شما تأیید کنید معامله باز می‌کند. این صفحه فقط نمایش است؛ همهٔ تصمیم‌ها از تلگرام گرفته می‌شود.</p>
+    <button class="linkbtn" data-go="guide">راهنمای کامل ←</button></div>
+
   <section><h2>امروز و کل <small id="asof"></small></h2>
+    <p class="hint">موجودی و اکوییتی از خود حساب می‌آید. «اکوییتی» یعنی موجودی به‌علاوهٔ سود و زیان پوزیشن‌های باز. سود امروز و ۷ روز فقط معاملات بسته‌شدهٔ اسکات را می‌شمارد، به روز تهران.</p>
     <div class="tiles" id="tiles"></div></section>
 
   <div class="cols">
-    <section><h2>پوزیشن‌های باز</h2><div id="open"></div></section>
-    <section><h2>هشدارهای منتظر جواب</h2><div id="pending"></div></section>
+    <section><h2>پوزیشن‌های باز</h2>
+      <p class="hint">«حد ضرر سیگنال» حدی است که اسکات پیشنهاد داده. «روی بروکر» حدی است که الان واقعاً در MT5 ثبت است. اگر «نگه دار» زده باشید، این دو فرق دارند.</p>
+      <div id="open"></div></section>
+    <section><h2>هشدارهای منتظر جواب</h2>
+      <p class="hint">هشدارهایی که هنوز تأیید یا رد نکرده‌اید. جواب فقط از تلگرام داده می‌شود و بعد از مهلت، هشدار منقضی می‌شود.</p>
+      <div id="pending"></div></section>
   </div>
 
   <section><h2>سود و زیان روزانه <small>۱۴ روز اخیر، به وقت تهران</small></h2>
+    <p class="hint">هر ستون جمع سود و زیان معاملاتی است که آن روز بسته شده‌اند. سبز سود، قرمز ضرر. نشانگر را روی ستون نگه دارید تا عدد دقیق را ببینید.</p>
     <div class="chart"><div class="scale"><span id="smax"></span><span>دلار</span></div>
       <div class="bars" id="bars"></div><div class="blab" id="blab"></div></div></section>
 
   <section><h2>ستاپ‌ها <small id="vnote"></small></h2>
+    <p class="hint">«سود واقعی» از معاملاتی است که تأیید کرده‌اید. «میانگین فرضی» نشان می‌دهد اگر همهٔ هشدارهای آن ستاپ با حد ضرر خودش و هدف ۲ برابر ریسک گرفته می‌شد، به‌طور میانگین چند R می‌داد. عدد مثبت یعنی آن ستاپ در تاریخچه جواب داده است. ستاپ‌های با کمتر از ۵ نمونه «—» دارند.</p>
     <div class="tablewrap"><table><thead><tr><th>ستاپ</th><th>هشدار</th><th>تأیید</th><th>معامله</th><th>سود واقعی</th><th>میانگین فرضی</th><th>برد فرضی</th></tr></thead><tbody id="setups"></tbody></table></div>
     <div class="cols" id="sides"></div></section>
 
-  <section><h2>رویدادهای اخیر</h2><ul class="ev" id="events"></ul></section>
+  <section><h2>رویدادهای اخیر</h2>
+    <p class="hint">۳۰ اتفاق آخر از دفتر اسکات: هشدارها، تأیید و ردها، باز و بسته شدن‌ها و تحلیل‌ها. جدیدترین بالاست.</p>
+    <ul class="ev" id="events"></ul></section>
 
-  <section><h2>قواعد فعلی</h2><div class="rules" id="rules"></div></section>
+  <section><h2>قواعد فعلی</h2>
+    <p class="hint">حدهایی که اسکات الان با آن‌ها کار می‌کند. توضیح هر کدام در راهنما آمده است.</p>
+    <div class="rules" id="rules"></div></section>
+  </div>
+
+<!--GUIDE-->
 
   <footer>هر ۱۰ ثانیه به‌روز می‌شود. «فرضی» یعنی اگر هر ستاپ با حد ضرر خودش و هدف 2R گرفته می‌شد (هر ساعت دوباره حساب می‌شود). <span id="upd"></span></footer>
 </div>
@@ -452,7 +617,18 @@ function render(d){
     ['مهلت جواب',r.expiry_min+' دقیقه'],['گزارش زنده','هر '+r.status_min+' دقیقه']]
     .map(([k,v])=>`<div class="rule">${k}<b>${esc(v)}</b></div>`).join('');
   $('upd').textContent=s.version?('نسخه '+s.version):'';
+  document.querySelectorAll('[data-r]').forEach(el=>{const v=r[el.dataset.r];if(v!=null)el.textContent=(el.dataset.pre||'')+v+(el.dataset.suf||'');});
 }
+function show(tab){
+  const g=tab==='guide';
+  $('p-dash').hidden=g;$('p-guide').hidden=!g;
+  $('t-dash').setAttribute('aria-selected',String(!g));$('t-guide').setAttribute('aria-selected',String(g));
+  try{history.replaceState(null,'',location.pathname+location.search+(g?'#guide':''));}catch(e){}
+  if(g)window.scrollTo(0,0);
+}
+$('t-dash').onclick=()=>show('dash');$('t-guide').onclick=()=>show('guide');
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
+show(location.hash==='#guide'?'guide':'dash');
 async function tick(){
   try{const res=await fetch('/api/data'+location.search,{cache:'no-store'});
       if(!res.ok)throw new Error('HTTP '+res.status);render(await res.json());}
