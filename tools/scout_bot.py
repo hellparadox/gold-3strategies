@@ -114,6 +114,7 @@ class TG:
         try:
             r = requests.post(API.format(self.token, method), json=kw, timeout=20)
             d = r.json()
+            self.last_error = "" if d.get("ok") else str(d.get("description") or "")
             return d.get("result") if d.get("ok") else None
         except Exception as exc:
             logger.warning("telegram {} failed: {}", method, exc)
@@ -142,7 +143,10 @@ class TG:
                               "text": text, "parse_mode": "HTML"}
         if buttons:
             kw["reply_markup"] = {"inline_keyboard": buttons}
-        return self._call("editMessageText", **kw) is not None
+        if self._call("editMessageText", **kw) is not None:
+            return True
+        # متن تکراری (مثلاً بازار بسته و قیمت ثابت) خطا نیست؛ پیام تازه نفرست
+        return "not modified" in (getattr(self, "last_error", "") or "")
 
     def ack(self, cb_id: str, text: str = "") -> None:
         self._call("answerCallbackQuery", callback_query_id=cb_id, text=text)
@@ -583,9 +587,13 @@ class Scout:
                    else {"text": "⏸ نگه دار", "callback_data": f"h|{tk}"})
         return [row]
 
+    def market_open(self) -> bool:
+        return ctl.market_open_utc(datetime.now(timezone.utc))
+
     def monitor(self, f: pd.DataFrame) -> None:
         live = {int(p.ticket): p for p in self.client.positions(magic_only=True)}
         now = time.time()
+        mkt = self.market_open()
         server_now: Optional[float] = None
         for tk in list(self.open):
             if tk not in live:                       # دستی، در حد ضرر یا اضطراری بسته شده
@@ -634,9 +642,16 @@ class Scout:
                 self.tg.send(f"⚠️ #{tk} ({info['setup']}) ساختار شکست — بسته شدن کندل خلاف جهت تنکان. "
                              f"سود فعلی ${profit:.2f}", self._close_buttons(tk))
                 self.log(event="structure_break", ticket=tk, setup=info["setup"], profit=profit)
-            if self.soft_stop and price > 0:
+            if self.soft_stop and price > 0 and mkt:     # بازار بسته: بروکر تغییر حد ضرر را رد می‌کند
                 if self._manage_stop(tk, info, p, price, profit, now, f):
                     continue                              # همین الان بسته شد
+            if not mkt:                                   # یک پیام «بازار بسته» و بعد سکوت تا باز شدن
+                if price > 0 and not info.get("closed_note"):
+                    info["closed_note"] = True
+                    self._push_status(tk, info, price, profit, swap, None, None, now, closed=True)
+                continue
+            if info.pop("closed_note", None):
+                info["status_t"] = 0.0                    # با باز شدن بازار گزارش فوراً ادامه پیدا کند
             if price > 0 and now - float(info.get("status_t", 0.0)) >= self.status_every:
                 if server_now is None:
                     tick = None
@@ -747,9 +762,12 @@ class Scout:
         return False
 
     def _push_status(self, tk: int, info: dict, price: float, profit: float, swap: float,
-                     secs: Optional[float], server_now: Optional[float], now: float) -> None:
+                     secs: Optional[float], server_now: Optional[float], now: float,
+                     closed: bool = False) -> None:
         info["status_t"] = now
         text = trk.status_text(tk, info, price, profit, swap, secs, server_now, self.mode)
+        if closed:
+            text += "\n🔒 <b>بازار بسته است</b> — گزارش با باز شدن بازار ادامه پیدا می‌کند."
         buttons = self._close_buttons(tk)
         mid = info.get("status_mid")
         # فقط وقتی آخرین پیام چت است ویرایش شود؛ وگرنه پیام تازه پایین چت (با دکمه‌ها) و حذف قبلی

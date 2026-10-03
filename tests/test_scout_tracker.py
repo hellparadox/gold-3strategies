@@ -113,6 +113,7 @@ def make_scout(tmp: Path, mode="close") -> Scout:
     sc.expiry, sc.n = 1800, 0
     sc._last_alert_t = None
     sc._an_pool, sc._an_futs, sc._an_cache, sc._frame, sc._closing_t = None, {}, {}, None, {}
+    sc.market_open = lambda: True
     return sc
 
 
