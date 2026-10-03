@@ -43,6 +43,10 @@
   حد ضرر رسید، نتیجه با دلیلش (روند، ابر، خبر، مسیر قیمت) گفته می‌شود.
 - 🏁 جدول امتیاز شبانه (scout.scoreboard): شما + اسکات در برابر ORB و ایچیموکو، با R.
 - 🔔 هشدار قیمت: /alert 4150 [یادداشت] · /alerts فهرست و حذف.
+- هیچ سیگنالی گم نمی‌شود: هر کندل فقط بعد از پردازش موفق «دیده‌شده» حساب می‌شود (خطا = تلاش دوباره، حداکثر
+  ۳ بار و بعد پیام)، کندل‌های جاافتاده بعد از گیر کردن حلقه یا ری‌استارت تا scout.backfill_bars کندل
+  (پیش‌فرض ۴ = یک ساعت) با برچسب «⏰ دیرهنگام» بررسی می‌شوند، و هشدار تکراری (همان کندل، جهت و ستاپ)
+  هرگز دوباره فرستاده نمی‌شود — حتی بعد از ری‌استارت (از روی ژورنال).
 - همه‌چیز در data/scout_journal_v2.csv با ستون‌های ثابت ثبت می‌شود؛ آمار: tools/scout_stats.py
 
 اجرا:
@@ -225,7 +229,10 @@ class Scout:
         self.tg = TG(token, (s.get("telegram.admin_ids") or [0])[0])
         self.pending: Dict[str, dict] = {}
         self.open: Dict[int, dict] = {}
-        self.last_bar: Optional[pd.Timestamp] = None
+        self.last_bar: Optional[pd.Timestamp] = None      # آخرین کندلی که با موفقیت پردازش شد
+        self.backfill_bars = int(s.get("scout.backfill_bars", 4))
+        self._bar_fail: Dict[str, int] = {}
+        self._seen_keys: Optional[set] = None             # (کندل، جهت، ستاپ) که قبلاً هشدار/ثبت شده
         self.n = 0
         self.block_hedge = bool(s.get("scout.block_hedge", True))
         self.alert_while_open = bool(s.get("scout.alert_while_open", True))
@@ -598,6 +605,82 @@ class Scout:
             return                                     # روز بی‌فعالیت (آخر هفته): پیامی نمی‌آید
         self.tg.send(fu.scoreboard_text(tday, today, week, alerts_today, taken_today, passes))
 
+    # ------------------------------------------------------- bars (no signal lost)
+    @staticmethod
+    def signal_key(r: pd.Series) -> tuple:
+        return (str(pd.Timestamp(r.bar)), str(r.side), str(r.get("setups_all", r.setup)))
+
+    def seen_keys(self) -> set:
+        """کلید هشدارها/ثبت‌های قبلی، یک بار از ژورنال (تا ری‌استارت هشدار تکراری نفرستد)."""
+        if self._seen_keys is None:
+            keys = set()
+            for e in dash.read_journal(self.journal):
+                if e.get("event") in ("alert", "suppressed") and e.get("bar"):
+                    try:
+                        keys.add((str(pd.Timestamp(e["bar"])), str(e.get("side")), str(e.get("setup"))))
+                    except (TypeError, ValueError):
+                        continue
+            self._seen_keys = keys
+        return self._seen_keys
+
+    def bars_to_process(self, f: pd.DataFrame) -> list:
+        idx = list(f.index)
+        if not idx:
+            return []
+        if self.last_bar is None:                      # تازه روشن شده
+            if not self.market_open():                 # آخر هفته/وقفه: کندل‌های قدیمی را هشدار نده
+                self.last_bar = idx[-1]
+                return []
+            return idx[-self.backfill_bars:] if self.backfill_bars > 0 else idx[-1:]
+        todo = [b for b in idx if b > self.last_bar]
+        if len(todo) > max(self.backfill_bars, 1):
+            dropped = len(todo) - max(self.backfill_bars, 1)
+            logger.warning("scout: loop stalled; {} bar(s) older than the backfill window skipped", dropped)
+            todo = todo[-max(self.backfill_bars, 1):]
+        return todo
+
+    def process_new_bars(self, f: pd.DataFrame) -> None:
+        """هر کندل جدید (و جاافتاده) فقط بعد از پردازش موفق «دیده‌شده» حساب می‌شود."""
+        todo = self.bars_to_process(f)
+        if not todo:
+            return
+        newest = f.index[-1]
+        sig_all = detect(f)
+        sp = self.client.spread_points() or 0.0
+        for bar in todo:
+            key = str(bar)
+            try:
+                self.process_bar(sig_all[sig_all.bar == bar], sp, late_bars=int(f.index.get_loc(newest)
+                                                                           - f.index.get_loc(bar)))
+            except Exception as exc:
+                n = self._bar_fail.get(key, 0) + 1
+                self._bar_fail[key] = n
+                if n < 3:
+                    raise                                  # حلقه ۵ ثانیه بعد دوباره همین کندل را امتحان می‌کند
+                logger.error("scout: bar {} failed 3 times, giving up: {}", key, exc)
+                self.tg.send(f"⚠️ بررسی کندل {pd.Timestamp(bar):%H:%M} سه بار خطا داد ({html.escape(str(exc))[:80]}). "
+                             "ممکن است سیگنال این کندل نیامده باشد؛ لاگ اسکات را ببینید.")
+            self._bar_fail.pop(key, None)
+            self.last_bar = bar
+
+    def process_bar(self, sig: pd.DataFrame, sp: float, late_bars: int = 0) -> None:
+        rows = ([self.merge(g) for _s, g in sig.groupby("side", sort=False)]
+                if self.merge_setups and not sig.empty else [r for _, r in sig.iterrows()])
+        rows = [self.cap_row(r) for r in rows]
+        quiet = (not self.alert_while_open) and self.busy() and not self.dry
+        seen = self.seen_keys()
+        for r in rows:
+            k = self.signal_key(r)
+            if k in seen:                                  # قبلاً هشدار/ثبت شده (مثلاً قبل از ری‌استارت)
+                continue
+            if self.paused:
+                self.record_silent(r, sp, note="paused")
+            elif quiet:
+                self.record_silent(r, sp)
+            else:
+                self.alert(r, sp, news=self.news_note(), late_bars=late_bars, key=k)
+            seen.add(k)
+
     # ------------------------------------------------------- info lines
     @staticmethod
     def account_kind(acc: Any) -> str:
@@ -649,7 +732,8 @@ class Scout:
                  side=r.side, bar=str(r.bar), price=entry, sl=round(sl, 2), tp=round(tp, 2),
                  atr=round(r.atr, 3), spread=spread_pts, risk_usd=risk, note=note)
 
-    def alert(self, r: pd.Series, spread_pts: float, news: str = "") -> None:
+    def alert(self, r: pd.Series, spread_pts: float, news: str = "", late_bars: int = 0,
+              key: Optional[tuple] = None) -> None:
         self.n += 1
         self._last_alert_t = time.time()
         aid = f"{self.n}"
@@ -663,6 +747,9 @@ class Scout:
                f"هدف پیشنهادی: {tp:.2f}  (۲ برابر ریسک)\n"
                f"ریسک: ${risk} · ATR {r.atr:.2f} · اسپرد {spread_pts:.0f}\n"
                f"<i>{self.expiry // 60} دقیقه فرصت پاسخ</i>")
+        if late_bars > 0:
+            txt += (f"\n⏰ <b>دیرهنگام</b>: این سیگنال مال کندل {r.bar:%H:%M} است ({late_bars} کندل قبل)؛ "
+                    "قیمت از آن موقع حرکت کرده. اگر تا لحظهٔ تأیید از حد ضرر رد شده باشد، باز نمی‌شود.")
         rec = self.setup_record(str(r.setup))
         if rec:
             n_rec, avg = rec
@@ -678,6 +765,8 @@ class Scout:
                     + (f"\n🚫 <b>فعلاً قابل باز شدن نیست:</b> {block}" if block else
                        f"\nبا تأیید، پوزیشن دوم باز می‌شود (ریسک کل حداکثر {self.max_total_risk:.0f}$)."))
         mid = self.tg.send(txt, self.alert_buttons(aid))
+        if key is not None:                            # فرستاده شد: تلاش دوباره (بعد از خطا) تکرارش نمی‌کند
+            self.seen_keys().add(key)
         try:
             ctx = scout_ai.build_entry_message(
                 r.side, str(r.get("setups_all", r.setup)), entry, sl, tp, risk, float(r.atr),
@@ -857,7 +946,7 @@ class Scout:
             self.tg.edit(p["mid"], p["txt"] + f"\n\n⚠️ <b>ثبت نشد</b>: {res.comment}")
             self.log(event="order_failed", alert=aid, setup=r.setup, side=r.side, note=res.comment)
             return
-        tk = res.position or res.order
+        tk = self.position_ticket(res)
         self.open[tk] = {"setup": r.setup, "side": r.side, "entry": res.price,
                          "sl": round(sl_now, 2), "risk": abs(res.price - sl_now), "r1": False,
                          "opened": time.time(), "alert": aid,
@@ -897,6 +986,18 @@ class Scout:
         except Exception:                              # pragma: no cover
             return False
 
+    def position_ticket(self, res: Any) -> int:
+        """شمارهٔ پوزیشن (نه سفارش): از جواب، وگرنه از روی deal؛ در بدترین حالت شمارهٔ سفارش
+        (در حساب hedging همان است). همان روش main_live.py."""
+        tk = int(getattr(res, "position", 0) or 0)
+        if tk <= 0 and getattr(res, "deal", 0):
+            try:
+                tk = int(self.client.position_id_for_deal(int(res.deal)) or 0)
+            except Exception as exc:
+                logger.warning("scout: position id for deal {} not available yet ({})", res.deal, exc)
+                tk = 0
+        return tk if tk > 0 else int(res.order)
+
     def realized(self, tk: int):
         """سود واقعی و قیمت خروج از تاریخچهٔ بروکر؛ اگر هنوز نیامده None."""
         try:
@@ -928,6 +1029,8 @@ class Scout:
                     self.tg.ack(cb, "این پوزیشن قبلاً بسته شده")
                 return
         res = self.client.close_position(int(tk), comment=why)
+        if not res.ok:
+            self._closing_t.pop(int(tk), None)         # ناموفق: زدن دوبارهٔ «بستن» همین الان مجاز است
         if cb:
             self.tg.ack(cb, "بسته شد" if res.ok else f"خطا: {res.comment}")
         info = self.open.get(int(tk), {})
@@ -1314,8 +1417,8 @@ class Scout:
                         "❓ راهنما": "help"}
 
     def is_admin(self, u: dict) -> bool:
-        if not self.admins:
-            return True
+        if not self.admins:                            # بدون admin_ids هیچ‌کس، نه همه
+            return False
         cq = u.get("callback_query") or {}
         who = (cq.get("from") or {}).get("id") or ((u.get("message") or {}).get("from") or {}).get("id")
         try:
@@ -1771,26 +1874,7 @@ class Scout:
                 self.whatif_tick()
                 self.price_alert_tick()
                 self.scoreboard_tick()
-                bar = f.index[-1]
-                if self.last_bar is None:
-                    self.last_bar = bar
-                elif bar != self.last_bar:
-                    self.last_bar = bar
-                    sig = detect(f)
-                    sig = sig[sig.bar == bar]
-                    sp = self.client.spread_points() or 0.0
-                    rows = ([self.merge(g) for _s, g in sig.groupby("side", sort=False)]
-                            if self.merge_setups and not sig.empty
-                            else [r for _, r in sig.iterrows()])
-                    rows = [self.cap_row(r) for r in rows]
-                    quiet = (not self.alert_while_open) and self.busy() and not self.dry
-                    for r in rows:
-                        if self.paused:
-                            self.record_silent(r, sp, note="paused")
-                        elif quiet:
-                            self.record_silent(r, sp)
-                        else:
-                            self.alert(r, sp, news=self.news_note())
+                self.process_new_bars(f)
                 time.sleep(float(self.s.get("scout.loop_seconds", 2)))
             except KeyboardInterrupt:
                 break
