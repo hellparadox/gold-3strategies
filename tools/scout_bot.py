@@ -47,6 +47,8 @@
   ۳ بار و بعد پیام)، کندل‌های جاافتاده بعد از گیر کردن حلقه یا ری‌استارت تا scout.backfill_bars کندل
   (پیش‌فرض ۴ = یک ساعت) با برچسب «⏰ دیرهنگام» بررسی می‌شوند، و هشدار تکراری (همان کندل، جهت و ستاپ)
   هرگز دوباره فرستاده نمی‌شود — حتی بعد از ری‌استارت (از روی ژورنال).
+- سقف تعداد/ریسک (scout.max_open / scout.max_total_risk_usd): اگر با تأیید جدید پر شود، اسکات رد نمی‌کند؛
+  ضرر احتمالی کل را می‌گوید و با «✅ می‌دانم، باز کن» تصمیم را به مالک می‌سپارد. (پوزیشن خلاف جهت مثل قبل.)
 - همه‌چیز در data/scout_journal_v2.csv با ستون‌های ثابت ثبت می‌شود؛ آمار: tools/scout_stats.py
 
 اجرا:
@@ -761,8 +763,10 @@ class Scout:
             txt += f"\n📰 <b>خبر مهم نزدیک است</b>: {html.escape(news)}"
         if self.open:
             block = self.entry_block(r.side, self.new_risk_usd(r.side, entry, sl))
+            hedge = bool(block) and block.startswith("پوزیشن خلاف")
             txt += (f"\n⚠️ پوزیشن باز: {self.open_summary()}"
-                    + (f"\n🚫 <b>فعلاً قابل باز شدن نیست:</b> {block}" if block else
+                    + (f"\n🚫 <b>فعلاً قابل باز شدن نیست:</b> {block}" if hedge else
+                       f"\n⚠️ {block}؛ با تأیید، اسکات ضرر احتمالی کل را می‌گوید و از شما می‌پرسد." if block else
                        f"\nبا تأیید، پوزیشن دوم باز می‌شود (ریسک کل حداکثر {self.max_total_risk:.0f}$)."))
         mid = self.tg.send(txt, self.alert_buttons(aid))
         if key is not None:                            # فرستاده شد: تلاش دوباره (بعد از خطا) تکرارش نمی‌کند
@@ -881,7 +885,7 @@ class Scout:
             self.track_whatif(aid, p, "expired")
 
     # ---------------------------------------------------------------- decision
-    def decide(self, aid: str, yes: bool, cb: str) -> None:
+    def decide(self, aid: str, yes: bool, cb: str, override: bool = False) -> None:
         p = self.pending.pop(aid, None)
         if p is None:
             self.tg.ack(cb, "این هشدار دیگر معتبر نیست")
@@ -894,7 +898,24 @@ class Scout:
             self.track_whatif(aid, p, "rejected")
             return
         if self.open and not self.dry:
-            block = self.entry_block(r.side, self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"])))
+            new_risk = self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"]))
+            block = self.entry_block(r.side, new_risk)
+            hedge = bool(block) and block.startswith("پوزیشن خلاف")
+            if block and not hedge and override:
+                block = None                               # مالک با دیدن هشدار سقف گفت «باز کن»
+            if block and not hedge:
+                # سقف تعداد/ریسک: رد نکن، از مالک بپرس (تصمیم با اوست)
+                total = round(self.open_risk_usd() + new_risk, 2)
+                self.pending[aid] = p                      # هشدار زنده می‌ماند (همان مهلت قبلی)
+                self.tg.ack(cb, "سقف پر است — تصمیم با شما")
+                self.tg.edit(p["mid"], p["txt"] + (
+                    f"\n\n⚠️ <b>{block}</b>.\nاگر باز کنم، با {len(self.open) + 1} پوزیشن، ضرر احتمالی کل تا "
+                    f"حد ضرر فعلی‌شان می‌شود <b>{total:.2f}$</b> (سقف {self.max_total_risk:.0f}$). باز هم باز کنم؟"),
+                    [[{"text": "✅ می‌دانم، باز کن", "callback_data": f"a|{aid}|o"},
+                      {"text": "❌ رد", "callback_data": f"a|{aid}|n"}]])
+                self.log(event="limit_confirm", alert=aid, setup=r.setup, side=r.side,
+                         note=f"{block[:150]};total={total}")
+                return
             if block:
                 self.tg.ack(cb, "ثبت نشد")
                 self.tg.edit(p["mid"], p["txt"] + f"\n\n🚫 <b>ثبت نشد</b> — {block}.")
@@ -965,8 +986,8 @@ class Scout:
                      self._close_buttons(tk))
         self.log(event="opened", alert=aid, setup=r.setup, side=r.side, ticket=tk,
                  price=res.price, sl=round(sl_now, 2),
-                 note=f"broker_sl={broker_sl};emergency_sl={emerg};mode={self.mode}"
-                 if self.soft_stop else None)
+                 note=(f"broker_sl={broker_sl};emergency_sl={emerg};mode={self.mode}"
+                       + (";over_cap=owner" if override else "")) if self.soft_stop else None)
         if not self.alert_while_open:
             self.cancel_pending("معامله‌ای باز شد")
 
@@ -1434,7 +1455,7 @@ class Scout:
         if cq:
             parts = str(cq.get("data", "")).split("|")
             if parts[0] == "a" and len(parts) == 3:
-                self.decide(parts[1], parts[2] == "y", cq["id"])
+                self.decide(parts[1], parts[2] in ("y", "o"), cq["id"], override=parts[2] == "o")
             elif parts[0] == "c" and len(parts) == 2:
                 self.close(int(parts[1]), cq["id"])
             elif parts[0] == "h" and len(parts) == 2:
