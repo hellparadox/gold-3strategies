@@ -71,13 +71,15 @@ class Multi(unittest.TestCase):
         self.approve(row(sl_dist=6.0))
         self.assertEqual(len(self.sc.open), 1)
 
-    def test_opposite_side_shown_but_not_opened(self):
+    def test_opposite_side_shown_and_owner_asked(self):     # مالک ۲۰۲۶-۱۰-۰۶: رد نکن، بپرس
         self.approve(row(side="BUY"))
         self.sc.alert(row(side="SELL"), 27.0)
-        self.assertIn("فعلاً قابل باز شدن نیست", self.sc.tg.sent[-1][0])
+        self.assertIn("خلاف جهت", self.sc.tg.sent[-1][0])
+        self.assertIn("اسکات می‌پرسد", self.sc.tg.sent[-1][0])
         self.sc.decide(str(self.sc.n), True, "cb")
-        self.assertEqual(len(self.sc.open), 1)
-        self.assertIn("خلاف جهت", self.sc.tg.edits[-1][1])
+        self.assertEqual(len(self.sc.open), 1)                 # بدون جواب شما چیزی باز یا بسته نمی‌شود
+        self.assertIn(str(self.sc.n), self.sc.pending)
+        self.assertIn("چه کنم؟", self.sc.tg.edits[-1][1])
 
     def test_other_pending_alerts_not_cancelled_on_open(self):
         self.sc.alert(row(), 27.0)

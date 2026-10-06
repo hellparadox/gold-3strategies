@@ -80,16 +80,14 @@ class Override(unittest.TestCase):
         self.assertEqual(self.sc._whatif[-1]["decision"], "expired")
         self.assertEqual(len(self.sc.open), 2)
 
-    def test_opposite_side_still_not_opened_without_asking(self):
+    def test_opposite_side_cap_override_does_not_skip_hedge_question(self):
         self.approve(row(side="BUY"))
         self.sc.alert(row(side="SELL"), 27.0)
-        self.assertIn("فعلاً قابل باز شدن نیست", self.sc.tg.sent[-1][0])
         aid = str(self.sc.n)
-        self.sc.decide(aid, True, "cb")
-        self.assertNotIn(aid, self.sc.pending)
-        self.assertIn("خلاف جهت", self.sc.tg.edits[-1][1])
-        self.tap(f"a|{aid}|o")                                # دکمه‌ای نبود؛ حتی اگر بیاید اثری ندارد
+        self.tap(f"a|{aid}|o")                                # «باز کن» سقف، سؤال خلاف جهت را دور نمی‌زند
         self.assertEqual(len(self.sc.open), 1)
+        self.assertIn(aid, self.sc.pending)
+        self.assertIn("چه کنم؟", self.sc.tg.edits[-1][1])
 
     def test_alert_text_says_it_will_ask(self):
         self.approve(row(sl_dist=10.0))

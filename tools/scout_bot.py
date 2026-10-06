@@ -48,7 +48,9 @@
   (پیش‌فرض ۴ = یک ساعت) با برچسب «⏰ دیرهنگام» بررسی می‌شوند، و هشدار تکراری (همان کندل، جهت و ستاپ)
   هرگز دوباره فرستاده نمی‌شود — حتی بعد از ری‌استارت (از روی ژورنال).
 - سقف تعداد/ریسک (scout.max_open / scout.max_total_risk_usd): اگر با تأیید جدید پر شود، اسکات رد نمی‌کند؛
-  ضرر احتمالی کل را می‌گوید و با «✅ می‌دانم، باز کن» تصمیم را به مالک می‌سپارد. (پوزیشن خلاف جهت مثل قبل.)
+  ضرر احتمالی کل را می‌گوید و با «✅ می‌دانم، باز کن» تصمیم را به مالک می‌سپارد.
+- پوزیشن خلاف جهت (scout.block_hedge): اسکات رد نمی‌کند، می‌پرسد: «🔄 ببند و جهت را عوض کن» (اول چک می‌کند
+  سیگنال هنوز معتبر است، بعد می‌بندد و باز می‌کند)، «✅ هر دو باز بمانند»، یا «❌ رد». هشدار زنده می‌ماند.
 - همه‌چیز در data/scout_journal_v2.csv با ستون‌های ثابت ثبت می‌شود؛ آمار: tools/scout_stats.py
 
 اجرا:
@@ -377,6 +379,8 @@ class Scout:
         """ضرر هر پوزیشن باز اگر حد ضرر فعلی‌اش (طبق سیاست) روی بروکر بخورد."""
         total = 0.0
         for info in self.open.values():
+            if info.get("closing"):                        # در حال بسته شدن (عوض کردن جهت)
+                continue
             try:
                 stop = trk.desired_broker_sl(info, self.mode) if self.soft_stop else float(info["sl"])
                 total += max(self._usd(float(info["entry"]) - stop), 0.0)
@@ -391,13 +395,19 @@ class Scout:
         stop = trk.desired_broker_sl({"sl": sl, "emerg": emerg, "hold": False}, self.mode)
         return self._usd(entry - stop)
 
-    def entry_block(self, side: str, new_risk: float) -> Optional[str]:
+    def active_open(self) -> Dict[int, dict]:
+        return {tk: i for tk, i in self.open.items() if not i.get("closing")}
+
+    def opposite_of(self, side: str) -> list:
+        return [tk for tk, i in self.active_open().items() if i["side"] != side]
+
+    def entry_block(self, side: str, new_risk: float, allow_hedge: bool = False) -> Optional[str]:
         """دلیل باز نشدن تأیید جدید، یا None."""
-        opposite = [tk for tk, i in self.open.items() if i["side"] != side]
-        if self.block_hedge and opposite:
+        opposite = self.opposite_of(side)
+        if self.block_hedge and opposite and not allow_hedge:
             return ("پوزیشن خلاف جهت باز است (" + "، ".join(f"#{t}" for t in opposite) + ") — "
                     "خرید و فروش هم‌زمان همدیگر را خنثی می‌کنند و فقط اسپرد می‌دهید")
-        if self.max_open > 0 and len(self.open) >= self.max_open:
+        if self.max_open > 0 and len(self.active_open()) >= self.max_open:
             return f"سقف {self.max_open} پوزیشن هم‌زمان پر است"
         used = self.open_risk_usd()
         if self.max_total_risk > 0 and used + new_risk > self.max_total_risk + 0.01:
@@ -765,7 +775,8 @@ class Scout:
             block = self.entry_block(r.side, self.new_risk_usd(r.side, entry, sl))
             hedge = bool(block) and block.startswith("پوزیشن خلاف")
             txt += (f"\n⚠️ پوزیشن باز: {self.open_summary()}"
-                    + (f"\n🚫 <b>فعلاً قابل باز شدن نیست:</b> {block}" if hedge else
+                    + (f"\n⚠️ {block}؛ با تأیید، اسکات می‌پرسد: پوزیشن قبلی را ببندد و جهت را عوض کند، "
+                       "هر دو باز بمانند، یا رد." if hedge else
                        f"\n⚠️ {block}؛ با تأیید، اسکات ضرر احتمالی کل را می‌گوید و از شما می‌پرسد." if block else
                        f"\nبا تأیید، پوزیشن دوم باز می‌شود (ریسک کل حداکثر {self.max_total_risk:.0f}$)."))
         mid = self.tg.send(txt, self.alert_buttons(aid))
@@ -885,7 +896,9 @@ class Scout:
             self.track_whatif(aid, p, "expired")
 
     # ---------------------------------------------------------------- decision
-    def decide(self, aid: str, yes: bool, cb: str, override: bool = False) -> None:
+    def decide(self, aid: str, yes: bool, cb: str, override: bool = False,
+               hedge: Optional[str] = None) -> None:
+        """hedge: None | "reverse" (پوزیشن خلاف جهت را ببند و این را باز کن) | "both" (هر دو بمانند)."""
         p = self.pending.pop(aid, None)
         if p is None:
             self.tg.ack(cb, "این هشدار دیگر معتبر نیست")
@@ -898,12 +911,19 @@ class Scout:
             self.track_whatif(aid, p, "rejected")
             return
         if self.open and not self.dry:
+            if hedge == "reverse" and self.opposite_of(r.side):
+                if not self._reverse(aid, p, r, cb):
+                    return
             new_risk = self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"]))
-            block = self.entry_block(r.side, new_risk)
-            hedge = bool(block) and block.startswith("پوزیشن خلاف")
-            if block and not hedge and override:
+            block = self.entry_block(r.side, new_risk, allow_hedge=(hedge == "both"))
+            is_hedge = bool(block) and block.startswith("پوزیشن خلاف")
+            if is_hedge:
+                # خلاف جهت: رد نکن، بپرس — ببند و جهت را عوض کن / هر دو بمانند / رد
+                self._ask_hedge(aid, p, r, cb)
+                return
+            if block and override:
                 block = None                               # مالک با دیدن هشدار سقف گفت «باز کن»
-            if block and not hedge:
+            if block:
                 # سقف تعداد/ریسک: رد نکن، از مالک بپرس (تصمیم با اوست)
                 total = round(self.open_risk_usd() + new_risk, 2)
                 self.pending[aid] = p                      # هشدار زنده می‌ماند (همان مهلت قبلی)
@@ -911,17 +931,10 @@ class Scout:
                 self.tg.edit(p["mid"], p["txt"] + (
                     f"\n\n⚠️ <b>{block}</b>.\nاگر باز کنم، با {len(self.open) + 1} پوزیشن، ضرر احتمالی کل تا "
                     f"حد ضرر فعلی‌شان می‌شود <b>{total:.2f}$</b> (سقف {self.max_total_risk:.0f}$). باز هم باز کنم؟"),
-                    [[{"text": "✅ می‌دانم، باز کن", "callback_data": f"a|{aid}|o"},
+                    [[{"text": "✅ می‌دانم، باز کن", "callback_data": f"a|{aid}|{'q' if hedge == 'both' else 'o'}"},
                       {"text": "❌ رد", "callback_data": f"a|{aid}|n"}]])
                 self.log(event="limit_confirm", alert=aid, setup=r.setup, side=r.side,
                          note=f"{block[:150]};total={total}")
-                return
-            if block:
-                self.tg.ack(cb, "ثبت نشد")
-                self.tg.edit(p["mid"], p["txt"] + f"\n\n🚫 <b>ثبت نشد</b> — {block}.")
-                kind = "blocked_hedge" if block.startswith("پوزیشن خلاف") else "blocked_limit"
-                self.log(event=kind, alert=aid, setup=r.setup, side=r.side, note=block[:200])
-                self.track_whatif(aid, p, kind)
                 return
         # قیمت لحظهٔ تأیید؛ حد ضرر با همان فاصلهٔ هشدار نسبت به این قیمت
         ref = float(r.ref_close); dist = abs(ref - p["sl"])
@@ -987,7 +1000,8 @@ class Scout:
         self.log(event="opened", alert=aid, setup=r.setup, side=r.side, ticket=tk,
                  price=res.price, sl=round(sl_now, 2),
                  note=(f"broker_sl={broker_sl};emergency_sl={emerg};mode={self.mode}"
-                       + (";over_cap=owner" if override else "")) if self.soft_stop else None)
+                       + (";over_cap=owner" if override else "")
+                       + (f";hedge={hedge}" if hedge else "")) if self.soft_stop else None)
         if not self.alert_while_open:
             self.cancel_pending("معامله‌ای باز شد")
 
@@ -1006,6 +1020,60 @@ class Scout:
             return len(self.client.positions(magic_only=True)) > 0
         except Exception:                              # pragma: no cover
             return False
+
+    def _side_fa(self, side: str) -> str:
+        return "خرید" if side == "BUY" else "فروش"
+
+    def _ask_hedge(self, aid: str, p: dict, r: pd.Series, cb: Optional[str]) -> None:
+        opp = self.opposite_of(r.side)
+        other = self._side_fa(self.open[opp[0]]["side"])
+        parts = []
+        for tk in opp:
+            pr = (self._live.get(tk) or {}).get("profit")
+            parts.append(f"#{tk}" + (f" ({pr:+.2f}$)" if pr is not None else ""))
+        self.pending[aid] = p                              # هشدار زنده می‌ماند (همان مهلت قبلی)
+        self.tg.ack(cb, "پوزیشن خلاف جهت باز است — تصمیم با شما")
+        self.tg.edit(p["mid"], p["txt"] + (
+            f"\n\n⚠️ <b>پوزیشن {other} باز است</b>: {'، '.join(parts)}. این سیگنال {self._side_fa(r.side)} است؛ "
+            "خرید و فروش هم‌زمان همدیگر را خنثی می‌کنند. چه کنم؟"),
+            [[{"text": f"🔄 {other} را ببند، {self._side_fa(r.side)} را باز کن", "callback_data": f"a|{aid}|r"}],
+             [{"text": "✅ هر دو باز بمانند", "callback_data": f"a|{aid}|b"}],
+             [{"text": "❌ رد", "callback_data": f"a|{aid}|n"}]])
+        self.log(event="hedge_confirm", alert=aid, setup=r.setup, side=r.side, note=",".join(map(str, opp)))
+
+    def _reverse(self, aid: str, p: dict, r: pd.Series, cb: Optional[str]) -> bool:
+        """پوزیشن(های) خلاف جهت را می‌بندد تا سیگنال جدید باز شود. False = چیزی باز نمی‌شود (هشدار زنده می‌ماند
+        یا اگر قیمت از حد ضرر هشدار رد شده، باطل می‌شود — قبل از بستن چک می‌شود تا بی‌دلیل نبندیم)."""
+        tick = None
+        try:
+            tick = self.client.get_tick()
+        except Exception:                                  # pragma: no cover
+            pass
+        px = float(getattr(tick, "ask" if r.side == "BUY" else "bid", 0.0) or 0.0) if tick else 0.0
+        if px > 0 and ((px <= p["sl"]) if r.side == "BUY" else (px >= p["sl"])):
+            self.tg.ack(cb, "ستاپ باطل شده")
+            self.tg.edit(p["mid"], p["txt"] + f"\n\n⛔ <b>ثبت نشد — قیمت ({px:.2f}) از حد ضرر هشدار رد شده</b>؛ "
+                                              "پوزیشن قبلی دست نخورد.")
+            self.log(event="invalid", alert=aid, setup=r.setup, side=r.side, price=px, sl=round(p["sl"], 2))
+            return False
+        for tk in self.opposite_of(r.side):
+            info = self.open[tk]
+            res = self.client.close_position(int(tk), comment="scout reverse")
+            self.log(event="closed", ticket=tk, setup=info.get("setup"), side=info.get("side"),
+                     price=res.price, ok=res.ok, note="reverse")
+            if not res.ok:
+                self.pending[aid] = p
+                self.tg.ack(cb, "بستن انجام نشد")
+                self.tg.edit(p["mid"], p["txt"] + (
+                    f"\n\n⚠️ بستن #{tk} انجام نشد ({html.escape(str(res.comment))[:80]})؛ چیزی باز نشد. "
+                    "دوباره امتحان کنید:"),
+                    [[{"text": f"🔄 دوباره: ببند و {self._side_fa(r.side)} را باز کن", "callback_data": f"a|{aid}|r"}],
+                     [{"text": "❌ رد", "callback_data": f"a|{aid}|n"}]])
+                return False
+            info["closing"] = True                         # نتیجه را monitor مثل همیشه ثبت می‌کند
+            self.tg.send(f"🔄 #{tk} ({self._side_fa(info['side'])}) بسته شد @ {res.price:.2f} — برای باز کردن "
+                         f"{self._side_fa(r.side)} هشدار #{aid}.")
+        return True
 
     def position_ticket(self, res: Any) -> int:
         """شمارهٔ پوزیشن (نه سفارش): از جواب، وگرنه از روی deal؛ در بدترین حالت شمارهٔ سفارش
@@ -1455,7 +1523,9 @@ class Scout:
         if cq:
             parts = str(cq.get("data", "")).split("|")
             if parts[0] == "a" and len(parts) == 3:
-                self.decide(parts[1], parts[2] in ("y", "o"), cq["id"], override=parts[2] == "o")
+                code = parts[2]
+                self.decide(parts[1], code in ("y", "o", "r", "b", "q"), cq["id"], override=code in ("o", "q"),
+                            hedge={"r": "reverse", "b": "both", "q": "both"}.get(code))
             elif parts[0] == "c" and len(parts) == 2:
                 self.close(int(parts[1]), cq["id"])
             elif parts[0] == "h" and len(parts) == 2:
