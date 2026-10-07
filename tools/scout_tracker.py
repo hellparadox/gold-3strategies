@@ -12,13 +12,16 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 # fields persisted per open ticket (JSON-safe scalars only)
 STATE_KEYS = ("setup", "side", "entry", "sl", "emerg", "risk", "r1", "warned", "opened",
-              "alert", "status_mid", "below", "hold", "adopted", "approach", "ai_next", "ai_note")
+              "alert", "status_mid", "below", "hold", "adopted", "approach", "ai_next", "ai_note",
+              # قیمت خروج پوزیشن نگه‌داشته (TP/SL روی بروکر)، پیام سؤالش، و برای کارت پایان معامله
+              "xtp", "xsl", "xprompt", "tp_owned", "by", "why")
 POLICIES = ("close", "hold", "ai")
 POLICY_FA = {"close": "در حد ضرر بسته شود", "hold": "نگه داشته شود", "ai": "هوش مصنوعی تصمیم بگیرد"}
 
@@ -48,8 +51,51 @@ def effective_policy(info: Dict[str, Any], mode: str) -> str:
 
 
 def desired_broker_sl(info: Dict[str, Any], mode: str) -> float:
+    if info.get("hold") and info.get("xsl"):          # قیمت خروج پایینِ خود مالک
+        return float(info["xsl"])
     pol = effective_policy(info, mode)
     return float(info["sl"]) if pol == "close" else float(info.get("emerg") or info["sl"])
+
+
+FA_DIGITS = str.maketrans("۰۱۲۳۴۵۶۷۸۹٫٠١٢٣٤٥٦٧٨٩", "0123456789.0123456789")
+_NUMS = re.compile(r"\d+(?:\.\d+)?")
+
+
+def parse_numbers(text: str) -> List[float]:
+    """«۴۱۲۰ 4,095.5» → [4120.0, 4095.5]؛ اعداد فارسی/عربی هم پذیرفته می‌شود (ویرگول = جداکنندهٔ هزارگان)."""
+    raw = re.sub(r"(?<=\d)[,،٬](?=\d)", "", str(text or "").translate(FA_DIGITS))
+    return [float(m) for m in _NUMS.findall(raw)]
+
+
+def reached(side: str, price: float, level: float, upper: bool) -> bool:
+    """upper=True: سطح «بالا»ی فهرست خروج (برای BUY بالاتر از قیمت، برای SELL پایین‌تر)."""
+    if upper:
+        return price >= level if side == "BUY" else price <= level
+    return price <= level if side == "BUY" else price >= level
+
+
+def classify_exits(side: str, price: float, nums: List[float]) -> Tuple[Optional[float], Optional[float]]:
+    """یک یا دو عدد → (xtp, xsl) نسبت به قیمت فعلی بستن. BUY: بالاتر = xtp، پایین‌تر = xsl؛
+    SELL برعکس. خطا (ValueError) با پیام فارسی برای کاربر."""
+    if not nums or len(nums) > 2:
+        raise ValueError("یک یا دو عدد بنویسید، مثل: 4120 4095")
+    tp = sl = None
+    for v in nums:
+        v = round(float(v), 2)
+        if price > 0 and abs(v - price) > 0.2 * price:
+            raise ValueError(f"{v:.2f} خیلی از قیمت فعلی ({price:.2f}) دور است؛ عدد را دوباره نگاه کنید")
+        if abs(v - price) < 0.01:
+            raise ValueError(f"{v:.2f} همان قیمت فعلی است؛ عددی بالاتر یا پایین‌تر بنویسید")
+        upper = (v > price) if side == "BUY" else (v < price)
+        if upper:
+            if tp is not None:
+                raise ValueError("هر دو عدد یک طرف قیمت فعلی‌اند؛ یکی بالاتر و یکی پایین‌تر بنویسید")
+            tp = v
+        else:
+            if sl is not None:
+                raise ValueError("هر دو عدد یک طرف قیمت فعلی‌اند؛ یکی بالاتر و یکی پایین‌تر بنویسید")
+            sl = v
+    return tp, sl
 
 
 def adverse_fraction(side: str, entry: float, price: float, risk: float) -> float:
@@ -118,6 +164,13 @@ def status_text(tk: int, info: Dict[str, Any], price: float, profit: float, swap
         pol = effective_policy(info, mode)
         why = "نگه دار (دستی)" if info.get("hold") else POLICY_FA.get(pol, pol)
         lines.append(f"در حد ضرر: <b>{why}</b>")
+    if info.get("hold") and (info.get("xtp") or info.get("xsl")):
+        parts = []
+        if info.get("xtp"):
+            parts.append(f"⬆️ {float(info['xtp']):.2f}")
+        if info.get("xsl"):
+            parts.append(f"⬇️ {float(info['xsl']):.2f}")
+        lines.append("🎯 قیمت خروج شما: " + " · ".join(parts))
     if info.get("ai_note"):
         lines.append(f"🤖 {info['ai_note']}")
     return "\n".join(lines)

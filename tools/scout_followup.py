@@ -247,3 +247,47 @@ def scoreboard_text(day: date, today: List[Dict[str, Any]], week: List[Dict[str,
                      f"{passes.get('missed', 0)} بار سود می‌داد")
     lines.append("<i>مقایسه با R است (سود تقسیم بر ریسک اولیه)، چون حجم ربات‌ها فرق دارد.</i>")
     return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- trade card
+CLOSE_HOW_FA = {
+    "exit_tp": "🎯 قیمت خروج شما (بالا)",
+    "exit_sl": "🎯 قیمت خروج شما (پایین)",
+    "manual": "🔻 دستی (دکمهٔ بستن)",
+    "ai": "🤖 هوش مصنوعی",
+    "stop": "⛔ حد ضرر سیگنال",
+    "signal_sl": "⛔ حد ضرر سیگنال",
+    "emergency_sl": "🛑 حد ضرر اضطراری",
+    "reverse": "🔄 عوض کردن جهت",
+}
+
+
+def fmt_hm(seconds: float) -> str:
+    m = max(int(round(float(seconds) / 60.0)), 0)
+    d, m = divmod(m, 1440)
+    h, m = divmod(m, 60)
+    parts = ([f"{d} روز"] if d else []) + ([f"{h} ساعت"] if h else []) + ([f"{m} دقیقه"] if m or not (d or h) else [])
+    return " و ".join(parts)
+
+
+def trade_card_caption(tk: int, side: str, setup: str, entry: float, exit_px: float, pnl: float,
+                       r_mult: Optional[float], seconds: Optional[float], how: Optional[str],
+                       by: Optional[str], day: date) -> str:
+    """متن کارت پایان معامله (کپشن عکس؛ تلگرام حداکثر ۱۰۲۴ نویسه)."""
+    won = pnl > 0.005
+    flat = abs(pnl) <= 0.005
+    mark = "⚪️" if flat else ("✅" if won else "❌")
+    r_txt = f" ({r_mult:+.2f}R)" if r_mult is not None else ""
+    lines = [
+        f"🃏 <b>کارت معامله #{tk}</b>",
+        f"{'🟢 BUY' if side == 'BUY' else '🔴 SELL'} · <code>{setup}</code>",
+        f"{mark} <b>{pnl:+.2f}$</b>{r_txt}",
+        f"ورود {float(entry):.2f} ← خروج {float(exit_px):.2f}",
+    ]
+    if seconds is not None:
+        lines.append(f"⏱ مدت: {fmt_hm(seconds)}")
+    lines.append("🚪 چطور بسته شد: " + CLOSE_HOW_FA.get(how or "", "📱 بیرون از اسکات (متاتریدر یا بروکر)"))
+    if by:
+        lines.append(f"👤 تأیید: {by}")
+    lines.append(f"📅 {jalali_label(day)}")
+    return "\n".join(lines)[:1000]

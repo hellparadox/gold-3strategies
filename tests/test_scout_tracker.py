@@ -128,6 +128,7 @@ def make_scout(tmp: Path, mode="close") -> Scout:
     sc.score_enabled, sc.score_time = False, "23:55"
     sc.palerts_path, sc._palerts = tmp / "palerts.json", []
     sc.last_bar, sc.backfill_bars, sc._bar_fail, sc._seen_keys = None, 4, {}, None
+    sc._exit_ask, sc._who, sc.card_enabled = {}, "", False
     return sc
 
 
