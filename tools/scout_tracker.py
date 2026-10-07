@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple
 STATE_KEYS = ("setup", "side", "entry", "sl", "emerg", "risk", "r1", "warned", "opened",
               "alert", "status_mid", "below", "hold", "adopted", "approach", "ai_next", "ai_note",
               # قیمت خروج پوزیشن نگه‌داشته (TP/SL روی بروکر)، پیام سؤالش، و برای کارت پایان معامله
-              "xtp", "xsl", "xprompt", "tp_owned", "by", "why")
+              "xtp", "xsl", "xprompt", "tp_owned", "by", "why", "locked")
 POLICIES = ("close", "hold", "ai")
 POLICY_FA = {"close": "در حد ضرر بسته شود", "hold": "نگه داشته شود", "ai": "هوش مصنوعی تصمیم بگیرد"}
 

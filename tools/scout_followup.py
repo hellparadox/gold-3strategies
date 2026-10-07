@@ -253,6 +253,8 @@ def scoreboard_text(day: date, today: List[Dict[str, Any]], week: List[Dict[str,
 CLOSE_HOW_FA = {
     "exit_tp": "🎯 قیمت خروج شما (بالا)",
     "exit_sl": "🎯 قیمت خروج شما (پایین)",
+    "lock_tp": "🎯 هدف 2R (بعد از بی‌ضرر کردن)",
+    "lock_sl": "🔒 سر به سر (بی‌ضرر)",
     "manual": "🔻 دستی (دکمهٔ بستن)",
     "ai": "🤖 هوش مصنوعی",
     "stop": "⛔ حد ضرر سیگنال",

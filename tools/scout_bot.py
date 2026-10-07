@@ -500,6 +500,8 @@ class Scout:
         risk_usd = float(info.get("risk") or 0.0) * 100.0 * self.lot
         r_mult = round(pnl / risk_usd, 2) if risk_usd > 0.01 else None
         how = kind if kind in ("exit_tp", "exit_sl") else (info.get("why") or kind)
+        if info.get("locked") and how in ("exit_tp", "exit_sl"):
+            how = "lock_tp" if how == "exit_tp" else "lock_sl"
         setup = html.escape(str(info.get("setup") or ""))
         day = datetime.now(dash.TEHRAN).date()
         caption = fu.trade_card_caption(tk, info["side"], setup, float(info["entry"]), exit_px, pnl, r_mult,
@@ -1247,6 +1249,10 @@ class Scout:
                        "exit_tp": f"\n🎯 به قیمت خروج شما ({float(xtp or 0):.2f}) رسید و بسته شد.",
                        "exit_sl": f"\n🎯 به قیمت خروج پایین شما ({float(xsl or 0):.2f}) رسید و بسته شد."
                        }.get(kind or "", "")
+                if info.get("locked") and kind == "exit_tp":
+                    why = f"\n🎯 به هدف 2R ({float(xtp or 0):.2f}) رسید و بسته شد."
+                elif info.get("locked") and kind == "exit_sl":
+                    why = f"\n🔒 به قیمت ورود ({float(xsl or 0):.2f}) برگشت و سر به سر بسته شد (بی‌ضرر)."
                 self.tg.send(f"ℹ️ پوزیشن #{tk} ({info['setup']}) بسته شد{res_txt}.{why}"
                              + ("\n🔔 هشدارها دوباره فعال شد." if not self.open else ""))
                 if info.get("status_mid"):
@@ -1269,8 +1275,10 @@ class Scout:
             d = trk.signed_move(info["side"], float(info["entry"]), price)
             if not info["r1"] and info["risk"] > 0 and d >= info["risk"]:
                 info["r1"] = True
-                self.tg.send(f"🎯 #{tk} ({info['setup']}) به ۱ برابر ریسک رسید. سود فعلی ${profit:.2f}",
-                             self._close_buttons(tk))
+                self.tg.send(f"🎯 #{tk} ({info['setup']}) به ۱ برابر ریسک رسید. سود فعلی ${profit:.2f}\n"
+                             "🔒 با «بی‌ضرر کن» حد ضرر به قیمت ورود و هدف به 2R می‌رود (روی بروکر).",
+                             self._close_buttons(tk) + [[{"text": "🔒 بی‌ضرر کن + هدف 2R",
+                                                          "callback_data": f"z|{tk}"}]])
                 self.log(event="reached_1R", ticket=tk, setup=info["setup"], profit=profit)
             last = f.iloc[-1]
             broke = (info["side"] == "BUY" and last.close < last.tenkan) or \
@@ -1476,6 +1484,7 @@ class Scout:
         had_exits = bool(info.get("xtp") or info.get("xsl"))
         if not on:                                        # لغو نگه داشتن = قیمت‌های خروج هم برداشته شود
             info["xtp"] = info["xsl"] = info["xprompt"] = None
+            info["locked"] = False
             self._exit_ask.pop(int(tk), None)
         self._save_state()
         if cb:
@@ -1609,10 +1618,13 @@ class Scout:
             self.tg.ack(cb, "حذف می‌شود")
         self._apply_exits(int(tk), None, None)
 
-    def _apply_exits(self, tk: int, tp: Optional[float], sl: Optional[float], over_cap: bool = False) -> None:
+    def _apply_exits(self, tk: int, tp: Optional[float], sl: Optional[float], over_cap: bool = False,
+                     lock: bool = False) -> bool:
+        """True = ثبت شد (یا با بسته بودن بازار ذخیره شد)؛ False = بروکر قبول نکرد و چیزی عوض نشد."""
         info = self.open[tk]
-        prev = (info.get("xtp"), info.get("xsl"))
+        prev = (info.get("xtp"), info.get("xsl"), info.get("locked"))
         info["xtp"], info["xsl"], info["xprompt"] = tp, sl, None
+        info["locked"] = bool(lock)
         info.pop("xfail", None)
         info["status_t"] = 0.0
         deleted = tp is None and sl is None
@@ -1623,14 +1635,14 @@ class Scout:
             res = (self.client.modify_sltp(tk, sl=want) if tp_arg is None
                    else self.client.modify_sltp(tk, sl=want, tp=tp_arg))
             if not res.ok:
-                info["xtp"], info["xsl"] = prev
+                info["xtp"], info["xsl"], info["locked"] = prev
                 self._save_state()
                 self.tg.send(f"⚠️ <b>#{tk}: بروکر قبول نکرد</b> ({html.escape(str(res.comment))[:80]}). "
                              "چیزی عوض نشد؛ شاید عدد خیلی به قیمت فعلی نزدیک است. دوباره امتحان کنید.",
                              [[{"text": "🎯 دوباره", "callback_data": f"e|{tk}"}]])
                 self.log(event="exit_failed", ticket=tk, setup=info["setup"], side=info["side"],
-                         sl=sl, note=f"tp={tp};{str(res.comment)[:120]}")
-                return
+                         sl=sl, note=f"tp={tp};{str(res.comment)[:120]}" + (";lock" if lock else ""))
+                return False
             if tp_arg is not None:
                 info["tp_owned"] = tp_arg > 0
             self._sl_fail_t.pop(tk, None)
@@ -1641,13 +1653,63 @@ class Scout:
             head = (f"🗑 <b>#{tk}: قیمت‌های خروج حذف شد</b> · حد ضرر اضطراری {em:.2f}، بدون حد سود."
                     + ("" if live else "\n🔒 بازار بسته است؛ با باز شدن بازار روی بروکر هم اعمال می‌شود."))
             self.tg.send(head, self._close_buttons(tk))
+        elif lock:
+            head = (f"🔒 <b>#{tk} بی‌ضرر شد</b> · حد ضرر {float(sl):.2f} (قیمت ورود) · هدف 2R {float(tp):.2f} "
+                    f"(حدود {self._level_usd(info, tp):+.2f}$)")
+            if not live:
+                head += "\n🔒 بازار بسته است؛ با باز شدن بازار روی بروکر می‌رود."
+            self.tg.send(head + "\nاز این به بعد یا به هدف می‌رسد یا سر به سر بسته می‌شود؛ هر دو روی بروکر.",
+                         self._exit_buttons(tk))
         else:
             head = (f"✅ <b>ثبت شد روی بروکر</b> · #{tk}" if live else
                     f"🔒 <b>بازار بسته است</b> — #{tk} ذخیره شد و با باز شدن بازار خودکار روی بروکر می‌رود.")
             self.tg.send(head + "\n" + self._exit_lines(info) + "\nهر کدام زودتر برسد، بسته می‌شود و خبرتان می‌کنم.",
                          self._exit_buttons(tk))
-        self.log(event="exit_del" if deleted else "exit_set", ticket=tk, setup=info["setup"], side=info["side"],
-                 sl=sl, note=f"tp={tp};live={live}" + (";over_cap=owner" if over_cap else ""))
+        self.log(event="lock_profit" if lock else ("exit_del" if deleted else "exit_set"), ticket=tk,
+                 setup=info["setup"], side=info["side"], sl=sl,
+                 note=f"tp={tp};live={live}" + (";over_cap=owner" if over_cap else ""))
+        return True
+
+    def lock_profit(self, tk: int, cb: Optional[str] = None) -> None:
+        """«🔒 بی‌ضرر کن + هدف 2R»: حد ضرر روی قیمت ورود، حد سود روی 2R — هر دو روی بروکر (با سازوکار قیمت خروج)."""
+        info = self.open.get(int(tk))
+        if info is None:
+            if cb:
+                self.tg.ack(cb, "این پوزیشن دیگر باز نیست")
+            return
+        side, entry, risk = info["side"], float(info["entry"]), float(info.get("risk") or 0.0)
+        if risk <= 0:
+            if cb:
+                self.tg.ack(cb, "ریسک این پوزیشن معلوم نیست؛ از «🎯 قیمت خروج» استفاده کنید")
+            return
+        tp = round(entry + 2 * risk if side == "BUY" else entry - 2 * risk, 2)
+        sl = round(entry, 2)
+        px = self._close_px(tk, side)
+        if px <= 0:
+            if cb:
+                self.tg.ack(cb, "قیمت از MT5 نرسید؛ چند ثانیه بعد دوباره بزنید")
+            return
+        if not trk.reached(side, px, sl, upper=True) or abs(px - sl) < 0.01:
+            if cb:
+                self.tg.ack(cb, "قیمت به ورود برگشته")
+            self.tg.send(f"⚠️ #{tk}: الان نمی‌شود بی‌ضرر کرد — قیمت ({px:.2f}) "
+                         f"{'زیر' if side == 'BUY' else 'بالای'} قیمت ورود ({entry:.2f}) است. چیزی عوض نشد.",
+                         self._close_buttons(tk))
+            return
+        if trk.reached(side, px, tp, upper=True):
+            if cb:
+                self.tg.ack(cb, "از هدف رد شده")
+            self.tg.send(f"🎯 #{tk}: قیمت ({px:.2f}) همین الان از هدف 2R ({tp:.2f}) رد شده؛ "
+                         "اگر می‌خواهید سود را بگیرید، ببندید.", [[{"text": "🔻 بستن", "callback_data": f"c|{tk}"}]])
+            return
+        if cb:
+            self.tg.ack(cb, "بی‌ضرر می‌شود")
+        was_hold = bool(info.get("hold"))
+        info["hold"] = True                               # قیمت‌های خروج فقط روی پوزیشن نگه‌داشته معنا دارند
+        self._exit_ask.pop(int(tk), None)
+        if not self._apply_exits(int(tk), tp, sl, lock=True):
+            info["hold"] = was_hold                       # بروکر قبول نکرد: همه‌چیز مثل قبل
+            self._save_state()
 
     # ------------------------------------------------------------------- mode
     def mode_menu(self) -> None:
@@ -1816,6 +1878,8 @@ class Scout:
                 self.hold(int(parts[1]), cq["id"])
             elif parts[0] == "u" and len(parts) == 2:
                 self.hold(int(parts[1]), cq["id"], on=False)
+            elif parts[0] == "z" and len(parts) == 2 and parts[1].isdigit():
+                self.lock_profit(int(parts[1]), cq["id"])
             elif parts[0] == "e" and len(parts) == 2 and parts[1].isdigit():
                 self.exit_prompt(int(parts[1]), cq["id"])
             elif parts[0] == "e" and len(parts) == 3 and parts[1].isdigit():
