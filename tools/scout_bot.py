@@ -1581,14 +1581,19 @@ class Scout:
             return
         self._apply_exits(int(tk), tp, sl)
 
-    def exit_confirm(self, tk: int, yes: bool, cb: Optional[str] = None) -> None:
+    def exit_confirm(self, tk: int, yes: bool, cb: Optional[str] = None, mid: Optional[int] = None) -> None:
         ask = self._exit_ask.pop(int(tk), None)
         if ask is None or int(tk) not in self.open:
             if cb:
                 self.tg.ack(cb, "این سؤال دیگر معتبر نیست")
+            if mid:
+                self.tg.edit(int(mid), f"⌛ سؤال قیمت خروج #{tk} — دیگر معتبر نیست.")
             return
         if cb:
             self.tg.ack(cb, "ثبت می‌شود" if yes else "لغو شد")
+        if mid:                                           # سؤال بدون دکمه، با جوابی که داده شد
+            self.tg.edit(int(mid), f"⚠️ #{tk}: قیمت خروج پایین {float(ask[1]):.2f} (بیشتر از سقف) — "
+                                   + ("✅ <b>تأیید شد</b>" if yes else "❌ <b>نه</b>") + self._by())
         if not yes:
             self.tg.send(f"❌ #{tk}: قیمت خروج عوض نشد.\n" + self._exit_lines(self.open[int(tk)]))
             return
@@ -1657,7 +1662,7 @@ class Scout:
               {"text": "⏸ نگه دار", "callback_data": "m|hold"},
               {"text": "🤖 هوش مصنوعی", "callback_data": "m|ai"}]])
 
-    def set_mode(self, mode: str, cb: Optional[str] = None) -> None:
+    def set_mode(self, mode: str, cb: Optional[str] = None, mid: Optional[int] = None) -> None:
         if mode not in trk.POLICIES:
             return
         self.mode = mode
@@ -1670,9 +1675,15 @@ class Scout:
             info["ai_next"] = 0.0
         if cb:
             self.tg.ack(cb, trk.POLICY_FA[mode])
+        if mid:                                           # منوی انتخاب بدون دکمه (کلیک دوباره ممکن نیست)
+            self.tg.edit(mid, f"⚙️ حالت حد ضرر: <b>{trk.POLICY_FA[mode]}</b> ✅" + self._by())
         self.tg.send(f"⚙️ حالت ثبت شد: در حد ضرر <b>{trk.POLICY_FA[mode]}</b>."
                      + (f" حد ضرر {len(self.open)} پوزیشن باز هماهنگ می‌شود." if self.open else ""))
         self.log(event="mode", note=mode)
+
+    def _by(self) -> str:
+        who = getattr(self, "_who", "")
+        return f" · {who}" if who else ""
 
     # ------------------------------------------------------------------ state
     def _save_state(self) -> None:
@@ -1793,6 +1804,7 @@ class Scout:
         who = (cq or u.get("message") or {}).get("from") or {}
         self._who = html.escape(str(who.get("first_name") or who.get("username") or ""))[:40]
         if cq:
+            cq_mid = (cq.get("message") or {}).get("message_id")     # پیامی که دکمه‌اش زده شد
             parts = str(cq.get("data", "")).split("|")
             if parts[0] == "a" and len(parts) == 3:
                 code = parts[2]
@@ -1810,13 +1822,15 @@ class Scout:
                 if parts[2] == "d":
                     self.exit_delete(int(parts[1]), cq["id"])
                 elif parts[2] in ("y", "n"):
-                    self.exit_confirm(int(parts[1]), parts[2] == "y", cq["id"])
+                    self.exit_confirm(int(parts[1]), parts[2] == "y", cq["id"], mid=cq_mid)
             elif parts[0] == "m" and len(parts) == 2:
-                self.set_mode(parts[1], cq["id"])
+                self.set_mode(parts[1], cq["id"], mid=cq_mid)
             elif parts[0] == "x" and len(parts) == 2:
                 self.analyze(parts[1], cq["id"])
             elif parts[0] == "p" and len(parts) == 2:
                 self.price_alert_delete(parts[1], cq["id"])
+            elif parts[0] == "k" and len(parts) == 2 and parts[1] in ("restart_yes", "restart_no"):
+                self.restart_answer(parts[1] == "restart_yes", cq["id"], cq_mid)
             elif parts[0] == "k" and len(parts) == 2:
                 self.tg.ack(cq["id"])
                 self.panel(parts[1])
@@ -1865,10 +1879,14 @@ class Scout:
             elif what in ("pause", "resume"):
                 self.set_paused(what == "pause")
             elif what == "restart":
-                self.tg.send("🔄 <b>ری‌استارت اسکات؟</b>\nپوزیشن‌های باز بسته نمی‌شوند و بعد از روشن شدن "
-                             "دوباره زیر نظر می‌آیند. حدود ۳۰ ثانیه طول می‌کشد.",
-                             [[{"text": "✅ بله، ری‌استارت", "callback_data": "k|restart_yes"},
-                               {"text": "❌ نه", "callback_data": "k|restart_no"}]])
+                old = getattr(self, "_restart_mid", None)
+                if old:                                   # سؤال قبلی بی‌جواب: پاک شود تا دو سؤال زنده نماند
+                    self.tg.delete(old)
+                self._restart_mid = self.tg.send(
+                    "🔄 <b>ری‌استارت اسکات؟</b>\nپوزیشن‌های باز بسته نمی‌شوند و بعد از روشن شدن "
+                    "دوباره زیر نظر می‌آیند. حدود ۳۰ ثانیه طول می‌کشد.",
+                    [[{"text": "✅ بله، ری‌استارت", "callback_data": "k|restart_yes"},
+                      {"text": "❌ نه", "callback_data": "k|restart_no"}]])
             elif what == "restart_yes":
                 self.restart()
             elif what == "palert":
@@ -1997,8 +2015,31 @@ class Scout:
                      "▶️ <b>هشدارها دوباره فعال شد.</b>")
         self.log(event="pause" if on else "resume")
 
-    def restart(self) -> None:
-        self.tg.send("🔄 اسکات در حال ری‌استارت است…")
+    def restart_answer(self, yes: bool, cb: str, mid: Optional[int]) -> None:
+        """جواب سؤال ری‌استارت. «بله» = سؤال به یک خط سابقه (بدون دکمه) تبدیل و ری‌استارت؛ «نه» = سؤال پاک.
+        دکمهٔ یک سؤال قدیمی (مثلاً از قبل از ری‌استارت قبلی) دیگر ری‌استارت نمی‌کند."""
+        current = getattr(self, "_restart_mid", None)
+        if mid and int(mid) != int(current or 0):
+            self.tg.ack(cb, "این سؤال قدیمی است؛ برای ری‌استارت دوباره از منو بزنید")
+            self.tg.edit(int(mid), "⌛ سؤال ری‌استارت قدیمی — بی‌اثر شد.")
+            return
+        self._restart_mid = None
+        if not yes:
+            self.tg.ack(cb, "ری‌استارت لغو شد")
+            if mid:
+                self.tg.delete(int(mid))
+            else:
+                self.tg.send("ری‌استارت لغو شد.")
+            return
+        self.tg.ack(cb, "در حال ری‌استارت…")
+        if mid:
+            t = datetime.now(dash.TEHRAN).strftime("%H:%M")
+            self.tg.edit(int(mid), f"🔄 <b>ری‌استارت شد</b>{self._by()} · ساعت {t} تهران")
+        self.restart(announce=not mid)
+
+    def restart(self, announce: bool = True) -> None:
+        if announce:
+            self.tg.send("🔄 اسکات در حال ری‌استارت است…")
         self.log(event="restart")
         self._save_state()
         logger.warning("scout restart requested from telegram")
