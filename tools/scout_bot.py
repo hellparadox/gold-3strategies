@@ -1928,6 +1928,7 @@ class Scout:
         if not self.client.connect():
             raise SystemExit("MT5 connect failed")
         acc = self.client.account_info()
+        self.restore()                                  # اول پوزیشن‌های باز، تا پیام روشن شدن تعدادشان را درست بگوید
         self.tg.start()
         self.tg._call("setMyCommands", commands=ctl.MENU_COMMANDS)
         self.tg.send(f"👀 <b>اسکات روشن شد</b>{' (آزمایشی)' if self.dry else ''}\n"
@@ -1937,7 +1938,6 @@ class Scout:
                      "دکمه‌های پایین صفحه: 📋 پوزیشن‌ها (بستن/نگه داشتن) · 💰 قیمت · 📊 وضعیت · 🎛 منو",
                      keyboard=self.KEYBOARD)
         logger.info("scout online")
-        self.restore()
         self.start_dashboard()
         self.news_note()                                # تقویم خبر همین‌جا بار شود، نه وسط اولین هشدار
         if self.selftest:
