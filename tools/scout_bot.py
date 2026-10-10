@@ -98,6 +98,7 @@ try:
     from tools import scout_dashboard as dash
     from tools import scout_stats
     from tools import scout_followup as fu
+    from tools import scout_signal_audit as sig_audit
 except Exception:                      # pragma: no cover
     import scout_tracker as trk
     import scout_ai
@@ -105,6 +106,7 @@ except Exception:                      # pragma: no cover
     import scout_dashboard as dash
     import scout_stats
     import scout_followup as fu
+    import scout_signal_audit as sig_audit
 
 API = "https://api.telegram.org/bot{}/{}"
 # ستون‌های ثابت ژورنال — همهٔ رویدادها زیر یک سرستون (نسخهٔ قبل ستون‌ها را جابه‌جا می‌نوشت)
@@ -335,6 +337,14 @@ class Scout:
         self._exit_ask: Dict[int, tuple] = {}
         self._who = ""                                    # نام کسی که همین الان دکمه زد (برای «تأیید: …»)
         self.card_enabled = bool(s.get("scout.trade_card.enabled", True))
+        # کارنامهٔ سیگنال‌ها: بعد از هر هشدار بازار به کدام طرف رفت (زیر هشدار و در داشبورد)
+        self.audit_enabled = bool(s.get("scout.audit.enabled", True))
+        self.audit_days = int(s.get("scout.audit.days", 14))
+        self.audit_every = float(s.get("scout.audit.refresh_minutes", 60)) * 60.0
+        self.audit_min_n = int(s.get("scout.audit.min_samples", 5))
+        self._audit: Optional[Dict[str, Any]] = None
+        self._audit_setups: Dict[str, Dict[str, Any]] = {}
+        self._audit_t = 0.0
 
     # ---------------------------------------------------------------- journal
     def log(self, **row: Any) -> None:
@@ -837,6 +847,9 @@ class Scout:
             txt += (f"\n{'⚠️' if warn else '📈'} کارنامهٔ <code>{dash._first_setup(r.setup)}</code>: "
                     f"میانگین فرضی {avg:+.2f}R در {n_rec} نمونهٔ آخر"
                     + (" — این ستاپ اخیراً ضعیف بوده" if warn else ""))
+        aud = self.audit_line(str(r.get("setups_all", r.setup)))
+        if aud:
+            txt += "\n" + aud
         if news:
             txt += f"\n📰 <b>خبر مهم نزدیک است</b>: {html.escape(news)}"
         if self.open:
@@ -2206,6 +2219,7 @@ class Scout:
                         "profit": getattr(acc, "profit", None)} if acc is not None else {},
             "price": {"bid": float(tick.bid), "ask": float(tick.ask)} if tick is not None else None,
             "open": opened, "open_risk": self.open_risk_usd(), "pending": pending,
+            "audit": getattr(self, "_audit", None),
             "rules": {"lot": self.lot, "sl_cap": round((self.sl_cap or 0) * 100 * self.lot, 2),
                       "emerg_cap": round((self.emerg_cap or 0) * 100 * self.lot, 2),
                       "approach": int(self.approach_frac * 100), "max_open": self.max_open,
@@ -2222,6 +2236,48 @@ class Scout:
                 self.refresh_virtual()
             except Exception as exc:
                 logger.warning("scout stats refresh failed: {}", exc)
+
+    def audit_tick(self, now: Optional[float] = None) -> None:
+        """هر audit_every: برای هشدارهای audit_days روز اخیر حساب می‌کند بازار بعدش به کدام طرف رفت.
+        فقط خواندن (ژورنال + کندل‌های M1)؛ خطا فقط لاگ می‌شود."""
+        if not getattr(self, "audit_enabled", False):
+            return
+        now = time.time() if now is None else now
+        if now - self._audit_t < self.audit_every:
+            return
+        self._audit_t = now
+        try:
+            since = (datetime.now() - timedelta(days=self.audit_days)).isoformat(timespec="seconds")
+            alerts = sig_audit.read_alerts(self.journal, since=since)
+            if alerts.empty:
+                return
+            m1 = self.client.get_history_bars("M1", self.audit_days * 1440 + 600)
+            res = sig_audit.audit(alerts, m1)
+            rep = sig_audit.audit_report(res)
+            rep["days"] = self.audit_days
+            rep["updated"] = datetime.now(dash.TEHRAN).strftime("%Y-%m-%d %H:%M")
+            self._audit = rep
+            self._audit_setups = {x["key"]: x for x in rep.get("setup", [])}
+        except Exception as exc:
+            logger.warning("scout signal audit failed: {}", exc)
+
+    def audit_line(self, setups: str) -> str:
+        """یک خط زیر هشدار: هر ستاپ در audit_days روز اخیر چند درصد اول به ‎+1R رسید."""
+        table = getattr(self, "_audit_setups", None) or {}
+        parts, weak = [], False
+        for name in dict.fromkeys(x.strip() for x in setups.replace("+", ",").split(",") if x.strip()):
+            st = table.get(name)
+            if not st or st.get("first") is None or st.get("n", 0) < getattr(self, "audit_min_n", 5):
+                continue
+            pct = int(round(st["first"] * 100))
+            mark = "✅" if st["first"] >= 0.6 else ("⚠️" if st["first"] < 0.5 else "")
+            weak = weak or st["first"] < 0.5
+            parts.append(f"{mark}<code>{name}</code> {pct}٪ ({st['n']})")
+        if not parts:
+            return ""
+        days = getattr(self, "audit_days", 14)
+        return (f"🧭 بعد از سیگنال ({days} روز اخیر، اول ‎+1R): " + " · ".join(parts)
+                + (" — اکثراً اول خلاف جهت رفته" if weak and len(parts) == 1 else ""))
 
     def dash_tick(self, now: Optional[float] = None) -> None:
         if self.dashboard is None:
@@ -2352,6 +2408,7 @@ class Scout:
                 self.poll_analyses()
                 self.dash_tick()
                 self.stats_tick()
+                self.audit_tick()
                 self.whatif_tick()
                 self.price_alert_tick()
                 self.scoreboard_tick()

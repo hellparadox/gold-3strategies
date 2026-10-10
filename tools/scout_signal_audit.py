@@ -150,6 +150,54 @@ def _line(label: str, g: pd.DataFrame) -> str:
     return " | ".join(parts)
 
 
+def group_stats(g: pd.DataFrame) -> Dict[str, Any]:
+    """آمار یک گروه برای داشبورد و پیام هشدار (فقط عدد، JSON-پذیر)."""
+    g = g[g.status != "no_data"]
+    out: Dict[str, Any] = {"n": int(len(g))}
+    if not len(g):
+        return out
+    for m in CHECKPOINTS:
+        x = g[f"r{m}"].dropna()
+        out[f"up{m}"] = round(float((x > 0).mean()), 3) if len(x) else None
+        out[f"r{m}"] = round(float(x.mean()), 2) if len(x) else None
+    out["mfe"] = round(float(g.mfe_r.mean()), 2)
+    out["mae"] = round(float(g.mae_r.mean()), 2)
+    f = g["first"]
+    plus, minus, both = int((f == "+1R").sum()), int((f == "-1R").sum()), int((f == "both").sum())
+    out.update(plus=plus, minus=minus, both=both, none=int((f == "none").sum()),
+               first=round(plus / (plus + minus + both), 3) if (plus + minus + both) else None)
+    return out
+
+
+def setup_groups(df: pd.DataFrame) -> Dict[str, List[int]]:
+    fam: Dict[str, List[int]] = {}
+    for i, s in df.setup.items():
+        for name in str(s).replace("+", ",").split(","):
+            name = name.strip()
+            if name:
+                fam.setdefault(name, []).append(i)
+    return fam
+
+
+DECISION_FA = {"taken": "تأیید کردید", "rejected": "رد کردید", "expired": "جواب ندادید (منقضی)",
+               "blocked": "سقف پر بود", "pending": "بی‌جواب", "invalid": "باطل", "cancelled": "لغو شد",
+               "order_failed": "خطای سفارش", "order_uncertain": "سفارش نامشخص"}
+
+
+def audit_report(df: pd.DataFrame, offset_min: int = 30) -> Dict[str, Any]:
+    """کارنامهٔ سیگنال‌ها برای داشبورد: کل، جهت، ستاپ، ساعت تهران، تصمیم."""
+    rep: Dict[str, Any] = {"n": int(len(df)), "all": group_stats(df),
+                           "from": str(df.ts.min()) if len(df) else None, "to": str(df.ts.max()) if len(df) else None}
+    rep["side"] = [dict(group_stats(g), key=str(k)) for k, g in df.groupby("side")]
+    rep["setup"] = sorted((dict(group_stats(df.loc[ids]), key=k) for k, ids in setup_groups(df).items()),
+                          key=lambda x: -(x.get("first") or 0) if x["n"] >= 5 else 1)
+    th = df.bar.map(lambda b: tehran_hour(b, offset_min))
+    rep["hour"] = [dict(group_stats(df[(th >= lo) & (th < hi)]), key=f"{lo:02d}-{hi:02d}") for lo, hi in TEHRAN_BUCKETS]
+    rep["decision"] = [dict(group_stats(g), key=str(k), fa=DECISION_FA.get(str(k), str(k)))
+                       for k, g in df.groupby("decision")]
+    return rep
+
+
 def summarize(df: pd.DataFrame, offset_min: int = 30) -> str:
     ok = df[df.status != "no_data"]
     out = [f"SCOUT SIGNAL AUDIT  alerts={len(df)}  with data={len(ok)}  "
@@ -167,13 +215,7 @@ def summarize(df: pd.DataFrame, offset_min: int = 30) -> str:
         out.append(_line(str(dc), g))
     out.append("")
     out.append("== BY SETUP (a signal with several setups counts in each) ==")
-    fam: Dict[str, List[int]] = {}
-    for i, s in df.setup.items():
-        for name in str(s).replace("+", ",").split(","):
-            name = name.strip()
-            if name:
-                fam.setdefault(name, []).append(i)
-    for name, ids in sorted(fam.items(), key=lambda kv: -len(kv[1])):
+    for name, ids in sorted(setup_groups(df).items(), key=lambda kv: -len(kv[1])):
         out.append(_line(name, df.loc[ids]))
     out.append("")
     out.append("== BY TEHRAN HOUR (signal time) ==")

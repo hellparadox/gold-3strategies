@@ -649,6 +649,7 @@ details p{margin-top:6px;color:var(--muted);font-size:.9rem}
   </header>
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="t-dash" aria-selected="true" aria-controls="p-dash">📊 داشبورد</button>
+    <button class="tab" role="tab" id="t-audit" aria-selected="false" aria-controls="p-audit">🧭 کارنامهٔ سیگنال‌ها</button>
     <button class="tab" role="tab" id="t-guide" aria-selected="false" aria-controls="p-guide">📖 راهنمای اسکات</button>
   </div>
   <div id="err" class="err" hidden></div>
@@ -704,6 +705,21 @@ details p{margin-top:6px;color:var(--muted);font-size:.9rem}
     <p class="hint">حدهایی که اسکات الان با آن‌ها کار می‌کند. توضیح هر کدام در راهنما آمده است.</p>
     <div class="rules" id="rules"></div></section>
   </div>
+
+<div class="pane" id="p-audit" role="tabpanel" aria-labelledby="t-audit" hidden>
+  <section><h2>بعد از هر سیگنال، بازار به کدام طرف رفت؟ <small id="aunote"></small></h2>
+    <p class="hint">برای هر هشدار، از بسته شدن کندل هشدار روی کندل‌های ۱ دقیقه‌ای بروکر سنجیده شده است. «اول ‎+1R» یعنی قیمت قبل از اینکه به اندازهٔ حد ضرر هشدار خلاف جهت برود، به همان اندازه در جهت سیگنال رفت (تا ۴ ساعت). «در جهت سیگنال» یعنی چند درصد سیگنال‌ها بعد از آن مدت در جهت درست بودند. این صفحه فقط آمار است و هیچ سیگنالی را حذف نمی‌کند. هر ساعت خودکار به‌روز می‌شود.</p>
+    <div class="tiles" id="autiles"></div></section>
+  <section><h2>ستاپ‌ها <small>سیگنالی که چند ستاپ دارد در هر کدام شمرده می‌شود · زیر ۵ نمونه کم‌رنگ است</small></h2>
+    <div class="tablewrap"><table><thead id="auhead"></thead><tbody id="ausetup"></tbody></table></div></section>
+  <section><h2>ساعت سیگنال (تهران)</h2>
+    <div class="tablewrap"><table><thead class="auh"></thead><tbody id="auhour"></tbody></table></div></section>
+  <section><h2>تصمیم شما</h2>
+    <p class="hint">برای «رد کردید»، درصد پایین یعنی رد درست بوده.</p>
+    <div class="tablewrap"><table><thead class="auh"></thead><tbody id="audec"></tbody></table></div></section>
+  <section><h2>خرید و فروش</h2>
+    <div class="tablewrap"><table><thead class="auh"></thead><tbody id="auside"></tbody></table></div></section>
+</div>
 
 <!--GUIDE-->
 
@@ -768,7 +784,7 @@ function render(d){
     ['مهلت جواب',r.expiry_min+' دقیقه'],['گزارش زنده','هر '+r.status_min+' دقیقه']]
     .map(([k,v])=>`<div class="rule">${k}<b>${esc(v)}</b></div>`).join('');
   $('upd').textContent=s.version?('نسخه '+s.version):'';
-  LAST=st; renderCompare(); renderPicks(st.picks);
+  LAST=st; renderCompare(); renderPicks(st.picks); renderAudit(d.audit);
   document.querySelectorAll('[data-r]').forEach(el=>{const v=r[el.dataset.r];if(v!=null)el.textContent=(el.dataset.pre||'')+v+(el.dataset.suf||'');});
 }
 let LAST={}, WIN='7d';
@@ -793,16 +809,44 @@ function renderPicks(p){
 }
 document.querySelectorAll('#cmpwin .tab').forEach(b=>b.onclick=()=>{WIN=b.dataset.w;
   document.querySelectorAll('#cmpwin .tab').forEach(x=>x.setAttribute('aria-selected',String(x===b)));renderCompare();});
-function show(tab){
-  const g=tab==='guide';
-  $('p-dash').hidden=g;$('p-guide').hidden=!g;
-  $('t-dash').setAttribute('aria-selected',String(!g));$('t-guide').setAttribute('aria-selected',String(g));
-  try{history.replaceState(null,'',location.pathname+location.search+(g?'#guide':''));}catch(e){}
-  if(g)window.scrollTo(0,0);
+const AUH='<tr><th>گروه</th><th>نمونه</th><th>اول ‎+1R</th><th>‎+1R / ‎-1R</th><th>۱۵ دقیقه در جهت</th><th>۶۰ دقیقه در جهت</th><th>میانگین R در ۶۰ دقیقه</th><th>حرکت به نفع / به ضرر (R)</th></tr>';
+const pct=v=>v==null?'—':Math.round(v*100)+'٪';
+function auRow(x,label,inverse){
+  const f=x.first, few=(x.n||0)<5;
+  const good=f==null||few?'':(inverse?(f<0.5?'pos':'neg'):(f>=0.6?'pos':f<0.5?'neg':''));
+  return `<tr class="${few?'muted':''}"><td class="${label===x.key?'mono':''}">${esc(label)}</td><td class="n">${x.n||0}</td>
+    <td class="n ${good}"><b>${pct(f)}</b></td><td class="n">${x.n?`${x.plus??0} / ${x.minus??0}`:'—'}</td>
+    <td class="n">${pct(x.up15)}</td><td class="n">${pct(x.up60)}</td><td class="n ${cls(x.r60)}">${rfmt(x.r60)}</td>
+    <td class="n">${x.mfe!=null?x.mfe.toFixed(2)+' / '+x.mae.toFixed(2):'—'}</td></tr>`;
 }
-$('t-dash').onclick=()=>show('dash');$('t-guide').onclick=()=>show('guide');
+function renderAudit(a){
+  document.querySelectorAll('.auh').forEach(h=>h.innerHTML=AUH); $('auhead').innerHTML=AUH;
+  if(!a||!a.all){$('autiles').innerHTML='<div class="empty">کارنامه هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';
+    ['ausetup','auhour','audec','auside'].forEach(id=>$(id).innerHTML='');$('aunote').textContent='';return;}
+  const x=a.all;
+  $('aunote').textContent=`${a.days} روز اخیر · به‌روز ${a.updated||''}`;
+  $('autiles').innerHTML=[
+    ['سیگنال‌ها',fa(x.n),`${fa(x.plus)} اول ‎+1R · ${fa(x.minus)} اول ‎-1R`,''],
+    ['اول ‎+1R',pct(x.first),'از سیگنال‌هایی که به یکی رسیدند',x.first>=0.5?'pos':'neg'],
+    ['۱۵ دقیقه بعد',pct(x.up15),'در جهت سیگنال',''],
+    ['۶۰ دقیقه بعد',pct(x.up60),'در جهت سیگنال',''],
+    ['ساعت اول',x.mfe!=null?x.mfe.toFixed(2)+'R':'—',`بیشترین به نفع · به ضرر ${x.mae!=null?x.mae.toFixed(2)+'R':'—'}`,''],
+  ].map(([k,v,sub,c])=>`<div class="tile"><div class="k">${k}</div><div class="v num ${c}">${v}</div><div class="s">${sub}</div></div>`).join('');
+  $('ausetup').innerHTML=(a.setup||[]).map(r=>auRow(r,r.key)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
+  $('auhour').innerHTML=(a.hour||[]).map(r=>auRow(r,r.key.replace('-',' تا '))).join('');
+  $('audec').innerHTML=(a.decision||[]).map(r=>auRow(r,r.fa||r.key,r.key==='rejected')).join('');
+  $('auside').innerHTML=(a.side||[]).map(r=>auRow(r,r.key==='BUY'?'خرید':r.key==='SELL'?'فروش':r.key)).join('');
+}
+const PANES=['dash','audit','guide'];
+function show(tab){
+  if(!PANES.includes(tab))tab='dash';
+  PANES.forEach(k=>{$('p-'+k).hidden=k!==tab;$('t-'+k).setAttribute('aria-selected',String(k===tab));});
+  try{history.replaceState(null,'',location.pathname+location.search+(tab==='dash'?'':'#'+tab));}catch(e){}
+  if(tab!=='dash')window.scrollTo(0,0);
+}
+PANES.forEach(k=>$('t-'+k).onclick=()=>show(k));
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
-show(location.hash==='#guide'?'guide':'dash');
+show((location.hash||'#dash').slice(1));
 async function tick(){
   try{const res=await fetch('/api/data'+location.search,{cache:'no-store'});
       if(!res.ok)throw new Error('HTTP '+res.status);render(await res.json());}
