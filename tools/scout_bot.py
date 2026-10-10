@@ -345,6 +345,10 @@ class Scout:
         self._audit: Optional[Dict[str, Any]] = None
         self._audit_setups: Dict[str, Dict[str, Any]] = {}
         self._audit_t = 0.0
+        # برچسب بالای هشدار (همراه شکست / بدون شکست / حد ضرر نزدیک) با درصدِ همان کارنامه — فقط اطلاع
+        self.label_enabled = bool(s.get("scout.label.enabled", True))
+        self.label_tight = float(s.get("scout.label.tight_stop", sig_audit.TIGHT_STOP))
+        self._audit_labels: Dict[str, Dict[str, Any]] = {}
 
     # ---------------------------------------------------------------- journal
     def log(self, **row: Any) -> None:
@@ -831,7 +835,8 @@ class Scout:
         aid = f"{self.n}"
         entry, sl, tp, risk, n_set = self.levels(r)
         head = f"  ({n_set} ستاپ هم‌زمان)" if n_set > 1 else ""
-        txt = (f"<b>{'🟢 BUY' if r.side=='BUY' else '🔴 SELL'}</b> · <code>{r.setup}</code>{head}\n"
+        label = self.label_line(str(r.get("setups_all", r.setup)), abs(entry - sl))
+        txt = (label + "\n" if label else "") + (f"<b>{'🟢 BUY' if r.side=='BUY' else '🔴 SELL'}</b> · <code>{r.setup}</code>{head}\n"
                f"کندل: {r.bar:%H:%M}  |  قیمت: <b>{entry:.2f}</b>\n"
                f"حد ضرر: {sl:.2f}  ({r.sl_dist:.2f} = {r.sl_dist/r.atr:.1f}×ATR)"
                + (f" · سقف {risk:.0f}$ (ساختار {float(r['sl_dist_orig']):.2f})"
@@ -2327,11 +2332,12 @@ class Scout:
                 return
             m1 = self.client.get_history_bars("M1", self.audit_days * 1440 + 600)
             res = sig_audit.audit(alerts, m1)
-            rep = sig_audit.audit_report(res)
+            rep = sig_audit.audit_report(res, tight=getattr(self, "label_tight", sig_audit.TIGHT_STOP))
             rep["days"] = self.audit_days
             rep["updated"] = datetime.now(dash.TEHRAN).strftime("%Y-%m-%d %H:%M")
             self._audit = rep
             self._audit_setups = {x["key"]: x for x in rep.get("setup", [])}
+            self._audit_labels = {x["key"]: x for x in rep.get("label", [])}
         except Exception as exc:
             logger.warning("scout signal audit failed: {}", exc)
 
@@ -2352,6 +2358,29 @@ class Scout:
         days = getattr(self, "audit_days", 14)
         return (f"🧭 بعد از سیگنال ({days} روز اخیر، اول ‎+1R): " + " · ".join(parts)
                 + (" — اکثراً اول خلاف جهت رفته" if weak and len(parts) == 1 else ""))
+
+    def label_line(self, setups: str, stop_dist: float) -> str:
+        """خط اول هشدار: این سیگنال در کدام دسته است و آن دسته در audit_days روز اخیر چند درصد اول ‎+1R شد.
+        علامت با اطمینان آماری (بازهٔ ۹۵٪): کل بازه بالای ۵۰٪ ← ✅، کل بازه زیر ۵۰٪ ← ⚠️، بقیه ⚪ (سبز/قرمز مال جهت است)؛ فقط اطلاع است."""
+        if not getattr(self, "label_enabled", True):
+            return ""
+        tight = getattr(self, "label_tight", sig_audit.TIGHT_STOP)
+        key = sig_audit.label_group(setups, stop_dist, tight)
+        st = (getattr(self, "_audit_labels", None) or {}).get(key)
+        if not st or st.get("first") is None or st.get("n", 0) < getattr(self, "audit_min_n", 5):
+            return ""
+        f = st["first"]
+        decided = int(st.get("plus", 0)) + int(st.get("minus", 0)) + int(st.get("both", 0))
+        lo, hi = sig_audit.wilson(int(st.get("plus", 0)), decided)
+        if lo > 0.5:                                  # حتی با احتساب شانس بالای ۵۰٪
+            icon, word = "✅", "خوب"
+        elif hi < 0.5:                                # حتی با احتساب شانس زیر ۵۰٪
+            icon, word = "⚠️", "ضعیف"
+        else:
+            icon, word = "⚪", ("شانسی" if 0.45 <= f <= 0.55 else "هنوز معلوم نیست")
+        what = (f"حد ضرر نزدیک ({float(stop_dist):.2f})" if key == "tight" else sig_audit.LABEL_FA[key])
+        days = getattr(self, "audit_days", 14)
+        return f"{icon} <b>{word}</b> — {what} ({int(round(f * 100))}٪ اول ‎+1R در {days} روز، {st['n']} سیگنال)"
 
     def dash_tick(self, now: Optional[float] = None) -> None:
         if self.dashboard is None:

@@ -711,6 +711,9 @@ details p{margin-top:6px;color:var(--muted);font-size:.9rem}
   <section><h2>بعد از هر سیگنال، بازار به کدام طرف رفت؟ <small id="aunote"></small></h2>
     <p class="hint">برای هر هشدار، از بسته شدن کندل هشدار روی کندل‌های ۱ دقیقه‌ای بروکر سنجیده شده است. «اول ‎+1R» یعنی قیمت قبل از اینکه به اندازهٔ حد ضرر هشدار خلاف جهت برود، به همان اندازه در جهت سیگنال رفت (تا ۴ ساعت). «در جهت سیگنال» یعنی چند درصد سیگنال‌ها بعد از آن مدت در جهت درست بودند. این صفحه فقط آمار است و هیچ سیگنالی را حذف نمی‌کند. هر ساعت خودکار به‌روز می‌شود.</p>
     <div class="tiles" id="autiles"></div></section>
+  <section><h2>برچسب هشدارها <small>همان خط اول هر هشدار</small></h2>
+    <p class="hint">«حد ضرر نزدیک» یعنی فاصلهٔ حد ضرر هشدار <span id="autight">۶</span> یا کمتر بوده. «همراه شکست» یعنی سیگنال range_break یا cloud_break هم داشته. بقیه «بدون شکست»‌اند. علامت هشدار با احتساب شانس گذاشته می‌شود: ✅ خوب فقط وقتی که با تعداد نمونه‌ها، حتی در بدترین حالت هم بالای ۵۰٪ باشد؛ ⚠️ ضعیف فقط وقتی که حتی در بهترین حالت هم زیر ۵۰٪ باشد؛ بقیه ⚪ (شانسی یا هنوز معلوم نیست).</p>
+    <div class="tablewrap"><table><thead class="auh"></thead><tbody id="aulabel"></tbody></table></div></section>
   <section><h2>ستاپ‌ها <small>سیگنالی که چند ستاپ دارد در هر کدام شمرده می‌شود · زیر ۵ نمونه کم‌رنگ است</small></h2>
     <div class="tablewrap"><table><thead id="auhead"></thead><tbody id="ausetup"></tbody></table></div></section>
   <section><h2>ساعت سیگنال (تهران)</h2>
@@ -823,7 +826,7 @@ function auRow(x,label,inverse){
 function renderAudit(a){
   document.querySelectorAll('.auh').forEach(h=>h.innerHTML=AUH); $('auhead').innerHTML=AUH;
   if(!a||!a.all){$('autiles').innerHTML='<div class="empty">کارنامه هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';
-    ['ausetup','auhour','audec','auside'].forEach(id=>$(id).innerHTML='');$('aunote').textContent='';return;}
+    ['aulabel','ausetup','auhour','audec','auside'].forEach(id=>$(id).innerHTML='');$('aunote').textContent='';return;}
   const x=a.all;
   $('aunote').textContent=`${a.days} روز اخیر · به‌روز ${a.updated||''}`;
   $('autiles').innerHTML=[
@@ -833,6 +836,8 @@ function renderAudit(a){
     ['۶۰ دقیقه بعد',pct(x.up60),'در جهت سیگنال',''],
     ['ساعت اول',x.mfe!=null?x.mfe.toFixed(2)+'R':'—',`بیشترین به نفع · به ضرر ${x.mae!=null?x.mae.toFixed(2)+'R':'—'}`,''],
   ].map(([k,v,sub,c])=>`<div class="tile"><div class="k">${k}</div><div class="v num ${c}">${v}</div><div class="s">${sub}</div></div>`).join('');
+  $('aulabel').innerHTML=(a.label||[]).map(r=>auRow(r,r.fa)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
+  if(a.tight!=null)$('autight').textContent=String(a.tight);
   $('ausetup').innerHTML=(a.setup||[]).map(r=>auRow(r,r.key)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
   $('auhour').innerHTML=(a.hour||[]).map(r=>auRow(r,r.key.replace('-',' تا '))).join('');
   $('audec').innerHTML=(a.decision||[]).map(r=>auRow(r,r.fa||r.key,r.key==='rejected')).join('');

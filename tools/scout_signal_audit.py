@@ -29,6 +29,10 @@ DECISIONS = {"opened", "rejected", "expired", "blocked_hedge", "blocked_limit", 
              "order_failed", "order_uncertain", "approved_dry"}
 CHECKPOINTS = (15, 30, 60)
 TEHRAN_BUCKETS = ((0, 8), (8, 12), (12, 16), (16, 20), (20, 24))
+# برچسب هشدار: سه دسته که در ۱۴ روز اول بیشترین فرق را داشتند (فقط اطلاع؛ هیچ سیگنالی حذف نمی‌شود)
+BREAKS = ("range_break", "cloud_break")
+TIGHT_STOP = 6.0                       # فاصلهٔ قیمت تا حد ضرر هشدار؛ با لات ۰.۰۱ همان دلار است
+LABEL_FA = {"break": "همراه شکست", "plain": "بدون شکست", "tight": "حد ضرر نزدیک"}
 
 
 def _f(x: Any) -> float:
@@ -182,13 +186,38 @@ def setup_groups(df: pd.DataFrame) -> Dict[str, List[int]]:
     return fam
 
 
+def wilson(k: int, n: int, z: float = 1.96) -> tuple:
+    """بازهٔ اطمینان ۹۵٪ برای درصد (ویلسون): (پایین، بالا)؛ بدون نمونه ← (0, 1)."""
+    if n <= 0:
+        return 0.0, 1.0
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d
+    return float(c - h), float(c + h)
+
+
+def label_group(setup: Any, stop_dist: Any, tight: float = TIGHT_STOP, breaks: tuple = BREAKS) -> str:
+    """دستهٔ برچسب یک سیگنال: حد ضرر نزدیک ← tight؛ وگرنه اگر range_break/cloud_break دارد ← break؛ بقیه ← plain."""
+    d = _f(stop_dist)
+    if not np.isnan(d) and d <= tight:
+        return "tight"
+    names = {x.strip() for x in str(setup).replace("+", ",").split(",")}
+    return "break" if names & set(breaks) else "plain"
+
+
+def label_column(df: pd.DataFrame, tight: float = TIGHT_STOP) -> pd.Series:
+    dist = (pd.to_numeric(df.price, errors="coerce") - pd.to_numeric(df.sl, errors="coerce")).abs()
+    return pd.Series([label_group(s, d, tight) for s, d in zip(df.setup, dist)], index=df.index, dtype=object)
+
+
 DECISION_FA = {"contra": "خلاف جهت گرفتید", "taken": "تأیید کردید", "rejected": "رد کردید", "expired": "جواب ندادید (منقضی)",
                "blocked": "سقف پر بود", "pending": "بی‌جواب", "invalid": "باطل", "cancelled": "لغو شد",
                "order_failed": "خطای سفارش", "order_uncertain": "سفارش نامشخص"}
 
 
-def audit_report(df: pd.DataFrame, offset_min: int = 30) -> Dict[str, Any]:
-    """کارنامهٔ سیگنال‌ها برای داشبورد: کل، جهت، ستاپ، ساعت تهران، تصمیم."""
+def audit_report(df: pd.DataFrame, offset_min: int = 30, tight: float = TIGHT_STOP) -> Dict[str, Any]:
+    """کارنامهٔ سیگنال‌ها برای داشبورد: کل، برچسب، جهت، ستاپ، ساعت تهران، تصمیم."""
     rep: Dict[str, Any] = {"n": int(len(df)), "all": group_stats(df),
                            "from": str(df.ts.min()) if len(df) else None, "to": str(df.ts.max()) if len(df) else None}
     rep["side"] = [dict(group_stats(g), key=str(k)) for k, g in df.groupby("side")]
@@ -198,6 +227,9 @@ def audit_report(df: pd.DataFrame, offset_min: int = 30) -> Dict[str, Any]:
     rep["hour"] = [dict(group_stats(df[(th >= lo) & (th < hi)]), key=f"{lo:02d}-{hi:02d}") for lo, hi in TEHRAN_BUCKETS]
     rep["decision"] = [dict(group_stats(g), key=str(k), fa=DECISION_FA.get(str(k), str(k)))
                        for k, g in df.groupby("decision")]
+    lab = label_column(df, tight) if len(df) else pd.Series([], dtype=object)
+    rep["label"] = [dict(group_stats(df[lab == k]), key=k, fa=LABEL_FA[k]) for k in LABEL_FA]
+    rep["tight"] = tight
     return rep
 
 
@@ -208,6 +240,11 @@ def summarize(df: pd.DataFrame, offset_min: int = 30) -> str:
            "up% = share of signals that moved in the signal direction; R = alert stop distance",
            "", "== ALL =="]
     out.append(_line("all", df))
+    out.append("")
+    out.append(f"== BY ALERT LABEL (tight = stop <= {TIGHT_STOP:g}; break = has range_break/cloud_break) ==")
+    lab = label_column(df) if len(df) else pd.Series([], dtype=object)
+    for k in LABEL_FA:
+        out.append(_line(k, df[lab == k]))
     out.append("")
     out.append("== BY SIDE ==")
     for sd, g in df.groupby("side"):
