@@ -538,7 +538,8 @@ PAGE = r"""<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>داشبورد اسکات</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<!-- فونت منتظر نمی‌ماند: اگر Google Fonts باز نشد (مثلاً بدون فیلترشکن)، صفحه فوراً با Tahoma باز می‌شود -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap" media="print" onload="this.media='all'">
 <style>
 /* layout: header with live status → KPI row → open positions & pending alerts → P/L by day → setups → events → rules */
 :root{
