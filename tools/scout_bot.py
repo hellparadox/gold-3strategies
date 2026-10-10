@@ -516,6 +516,8 @@ class Scout:
         day = datetime.now(dash.TEHRAN).date()
         caption = fu.trade_card_caption(tk, info["side"], setup, float(info["entry"]), exit_px, pnl, r_mult,
                                         secs, how, info.get("by"), day)
+        if info.get("contra"):
+            caption = caption.replace("</code>", "</code> · 🔄 خلاف سیگنال", 1)
         levels = {"sl": info.get("sl")}
         if info.get("hold"):
             levels.update(xtp=info.get("xtp"), xsl=info.get("xsl"))
@@ -860,7 +862,7 @@ class Scout:
                        "هر دو باز بمانند، یا رد." if hedge else
                        f"\n⚠️ {block}؛ با تأیید، اسکات ضرر احتمالی کل را می‌گوید و از شما می‌پرسد." if block else
                        f"\nبا تأیید، پوزیشن دوم باز می‌شود (ریسک کل حداکثر {self.max_total_risk:.0f}$)."))
-        mid = self.tg.send(txt, self.alert_buttons(aid))
+        mid = self.tg.send(txt, self.alert_buttons(aid, reverse_side=self.opposite_side(r.side)))
         if key is not None:                            # فرستاده شد: تلاش دوباره (بعد از خطا) تکرارش نمی‌کند
             self.seen_keys().add(key)
         try:
@@ -882,12 +884,73 @@ class Scout:
                  spread=spread_pts, risk_usd=risk)
 
     @staticmethod
-    def alert_buttons(aid: str, analyze: bool = True) -> list:
+    def alert_buttons(aid: str, analyze: bool = True, reverse_side: Optional[str] = None) -> list:
         row = [{"text": "✅ تأیید", "callback_data": f"a|{aid}|y"},
                {"text": "❌ رد", "callback_data": f"a|{aid}|n"}]
         if analyze:
             row.append({"text": "🤖 تحلیل", "callback_data": f"x|{aid}"})
+        if reverse_side:                                  # «خلاف جهت»: تصمیم با مالک، اول می‌پرسد
+            return [row, [{"text": f"🔄 خلاف جهت ({reverse_side})", "callback_data": f"v|{aid}"}]]
         return [row]
+
+    # ------------------------------------------------------------- contra (خلاف جهت)
+    @staticmethod
+    def opposite_side(side: str) -> str:
+        return "SELL" if str(side).upper() == "BUY" else "BUY"
+
+    def _contra_levels(self, p: dict) -> tuple:
+        """جهت مخالف با همان فاصلهٔ حد ضرر هشدار: (جهت، ورود، حد ضرر، هدف 2R، ریسک دلاری)."""
+        r = p["row"]
+        entry = float(r.ref_close)
+        dist = abs(entry - float(p["sl"]))
+        side = self.opposite_side(r.side)
+        sl = entry + dist if side == "SELL" else entry - dist
+        tp = entry - 2 * dist if side == "SELL" else entry + 2 * dist
+        return side, entry, round(sl, 2), round(tp, 2), self._usd(dist)
+
+    def _contra_restore(self, p: dict) -> dict:
+        o = p.get("orig") or {}
+        q = dict(p, row=o.get("row", p["row"]), sl=o.get("sl", p["sl"]), tp=o.get("tp", p.get("tp")), contra=False)
+        q.pop("orig", None)
+        return q
+
+    def contra_ask(self, aid: str, cb: Optional[str] = None) -> None:
+        p = self.pending.get(aid)
+        if p is None:
+            if cb:
+                self.tg.ack(cb, "این هشدار دیگر معتبر نیست")
+            return
+        if p.get("contra"):
+            p = self.pending[aid] = self._contra_restore(p)
+        side, entry, sl, tp, risk = self._contra_levels(p)
+        if cb:
+            self.tg.ack(cb, "خلاف جهت؟ تأیید بخواهید")
+        self.tg.edit(p["mid"], p["txt"] + (
+            f"\n\n🔄 <b>خلاف جهت سیگنال؟</b> {side} به‌جای {p['row'].side}\n"
+            f"ورود حدود {entry:.2f} · حد ضرر {sl:.2f} · هدف 2R {tp:.2f} · ریسک {risk:.2f}$\n"
+            "قیمت ورود و حد ضرر مثل همیشه از لحظهٔ تأیید حساب می‌شود؛ سقف‌ها و پوزیشن خلاف جهت هم مثل همیشه پرسیده می‌شود."),
+            [[{"text": f"✅ بله، {side} باز کن", "callback_data": f"v|{aid}|y"},
+              {"text": "↩️ برگرد به سیگنال", "callback_data": f"v|{aid}|n"}]])
+        self.log(event="contra_confirm", alert=aid, setup=p["row"].setup, side=side, price=entry, sl=sl)
+
+    def contra_answer(self, aid: str, yes: bool, cb: str) -> None:
+        p = self.pending.get(aid)
+        if p is None:
+            self.tg.ack(cb, "این هشدار دیگر معتبر نیست")
+            return
+        if not yes:
+            if p.get("contra"):
+                p = self.pending[aid] = self._contra_restore(p)
+            self.tg.ack(cb, "برگشت به سیگنال")
+            self.tg.edit(p["mid"], p["txt"], self.alert_buttons(aid, reverse_side=self.opposite_side(p["row"].side)))
+            return
+        if not p.get("contra"):
+            side, _entry, sl, tp, _risk = self._contra_levels(p)
+            row = p["row"].copy()
+            row["side"] = side
+            self.pending[aid] = dict(p, row=row, sl=sl, tp=tp, contra=True,
+                                     orig={"row": p["row"], "sl": p["sl"], "tp": p.get("tp")})
+        self.decide(aid, True, cb)
 
     # ------------------------------------------------------------- AI analysis
     def analyze(self, aid: str, cb: Optional[str] = None) -> None:
@@ -986,6 +1049,9 @@ class Scout:
             return
         r = p["row"]
         if not yes:
+            if p.get("contra"):                           # پیگیری «اگر گرفته بودید» با خود سیگنال، نه برعکسش
+                p = self._contra_restore(p)
+                r = p["row"]
             self.tg.ack(cb, "رد شد")
             self.tg.edit(p["mid"], p["txt"] + "\n\n❌ <b>رد شد</b>")
             self.log(event="rejected", alert=aid, setup=r.setup, side=r.side)
@@ -1067,9 +1133,11 @@ class Scout:
                          "opened": time.time(), "alert": aid,
                          "emerg": emerg if self.soft_stop else None,
                          "status_mid": None, "below": False, "hold": False, "warned": False,
-                         "approach": False, "ai_next": 0.0, "ai_note": "", "by": self._who or None}
+                         "approach": False, "ai_next": 0.0, "ai_note": "", "by": self._who or None,
+                         "contra": bool(p.get("contra"))}
         self._save_state()
-        self.tg.edit(p["mid"], p["txt"] + f"\n\n✅ <b>باز شد</b> #{tk} @ {res.price:.2f}\n{info_line}")
+        self.tg.edit(p["mid"], p["txt"] + (f"\n\n🔄 <b>خلاف سیگنال: {r.side} باز شد</b>" if p.get("contra")
+                                           else "\n\n✅ <b>باز شد</b>") + f" #{tk} @ {res.price:.2f}\n{info_line}")
         soft_note = (f"\nحد ضرر {sl_now:.2f} · اگر برسد: <b>{trk.POLICY_FA[self.mode]}</b>"
                      f" (حالت /mode). با «نگه دار» حد ضرر به سطح اضطراری {emerg:.2f} می‌رود."
                      if self.soft_stop else "")
@@ -1082,7 +1150,9 @@ class Scout:
                  price=res.price, sl=round(sl_now, 2),
                  note=(f"broker_sl={broker_sl};emergency_sl={emerg};mode={self.mode}"
                        + (";over_cap=owner" if override else "")
-                       + (f";hedge={hedge}" if hedge else "")) if self.soft_stop else None)
+                       + (f";hedge={hedge}" if hedge else "")
+                       + (";contra=1" if p.get("contra") else "")) if self.soft_stop else
+                 (";contra=1" if p.get("contra") else None))
         if not self.alert_while_open:
             self.cancel_pending("معامله‌ای باز شد")
 
@@ -1891,6 +1961,10 @@ class Scout:
                 self.hold(int(parts[1]), cq["id"])
             elif parts[0] == "u" and len(parts) == 2:
                 self.hold(int(parts[1]), cq["id"], on=False)
+            elif parts[0] == "v" and len(parts) == 2:
+                self.contra_ask(parts[1], cq["id"])
+            elif parts[0] == "v" and len(parts) == 3 and parts[2] in ("y", "n"):
+                self.contra_answer(parts[1], parts[2] == "y", cq["id"])
             elif parts[0] == "z" and len(parts) == 2 and parts[1].isdigit():
                 self.lock_profit(int(parts[1]), cq["id"])
             elif parts[0] == "e" and len(parts) == 2 and parts[1].isdigit():

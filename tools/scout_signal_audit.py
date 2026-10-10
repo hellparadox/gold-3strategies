@@ -55,8 +55,11 @@ def read_alerts(journal: Path, since: Optional[str] = None, until: Optional[str]
             elif e in DECISIONS:
                 r = latest.get(str(d.get("alert")))
                 if r is not None and r["decision"] == "pending":
-                    r["decision"] = "taken" if e in ("opened", "approved_dry") else (
-                        "blocked" if e.startswith("blocked") else e)
+                    if e == "opened" and "contra=1" in str(d.get("note") or ""):
+                        r["decision"] = "contra"          # خلاف جهت سیگنال گرفته شد
+                    else:
+                        r["decision"] = "taken" if e in ("opened", "approved_dry") else (
+                            "blocked" if e.startswith("blocked") else e)
     df = pd.DataFrame(recs, columns=["ts", "setup", "side", "bar", "price", "sl", "decision"])
     if since:
         df = df[df.ts >= since]
@@ -179,7 +182,7 @@ def setup_groups(df: pd.DataFrame) -> Dict[str, List[int]]:
     return fam
 
 
-DECISION_FA = {"taken": "تأیید کردید", "rejected": "رد کردید", "expired": "جواب ندادید (منقضی)",
+DECISION_FA = {"contra": "خلاف جهت گرفتید", "taken": "تأیید کردید", "rejected": "رد کردید", "expired": "جواب ندادید (منقضی)",
                "blocked": "سقف پر بود", "pending": "بی‌جواب", "invalid": "باطل", "cancelled": "لغو شد",
                "order_failed": "خطای سفارش", "order_uncertain": "سفارش نامشخص"}
 
