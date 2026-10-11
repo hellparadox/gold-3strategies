@@ -22,7 +22,7 @@ STATE_KEYS = ("setup", "side", "entry", "sl", "emerg", "risk", "r1", "warned", "
               "alert", "status_mid", "below", "hold", "adopted", "approach", "ai_next", "ai_note",
               # قیمت خروج پوزیشن نگه‌داشته (TP/SL روی بروکر)، پیام سؤالش، و برای کارت پایان معامله
               "xtp", "xsl", "xprompt", "tp_owned", "by", "why", "locked", "contra",
-              "xdirty")                         # قیمت خروج عوض شده و هنوز روی بروکر نرفته (soft_stop خاموش)
+              "xdirty", "lot")                         # قیمت خروج عوض شده و هنوز روی بروکر نرفته (soft_stop خاموش)
 POLICIES = ("close", "hold", "ai")
 POLICY_FA = {"close": "در حد ضرر بسته شود", "hold": "نگه داشته شود", "ai": "هوش مصنوعی تصمیم بگیرد"}
 

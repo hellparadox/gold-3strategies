@@ -110,6 +110,16 @@ def bot_trades(db_path: Any) -> List[Dict[str, Any]]:
     return out
 
 
+def _note_lot(note: Any, default: float) -> float:
+    """لات همان معامله از یادداشت «opened» (…;lot=0.02)؛ معاملات قدیمی‌تر: پیش‌فرض."""
+    for part in str(note or "").split(";"):
+        if part.startswith("lot="):
+            v = _f(part[4:])
+            if not math.isnan(v) and v > 0:
+                return v
+    return default
+
+
 def scout_trades(events: List[Dict[str, str]], lot: float = 0.01) -> List[Dict[str, Any]]:
     """معاملات بسته‌شدهٔ اسکات از ژورنال: ورود و حد ضرر از «opened»، سود از «gone»."""
     opened: Dict[str, Dict[str, str]] = {}
@@ -125,7 +135,7 @@ def scout_trades(events: List[Dict[str, str]], lot: float = 0.01) -> List[Dict[s
             seen.add(tk)
             o = opened.get(tk) or {}
             entry, sl = _f(o.get("price")), _f(o.get("sl"))
-            r = None if (math.isnan(entry) or math.isnan(sl)) else _r(p, entry, sl, lot)
+            r = None if (math.isnan(entry) or math.isnan(sl)) else _r(p, entry, sl, _note_lot(o.get("note"), lot))
             out.append({"t": t.astimezone(timezone.utc), "profit": p, "r": r})
     return out
 

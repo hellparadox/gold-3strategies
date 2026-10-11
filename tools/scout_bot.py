@@ -100,6 +100,7 @@ try:
     from tools import scout_stats
     from tools import scout_followup as fu
     from tools import scout_signal_audit as sig_audit
+    from tools import scout_settings as sset
 except Exception:                      # pragma: no cover
     import scout_tracker as trk
     import scout_ai
@@ -108,6 +109,7 @@ except Exception:                      # pragma: no cover
     import scout_stats
     import scout_followup as fu
     import scout_signal_audit as sig_audit
+    import scout_settings as sset
 
 API = "https://api.telegram.org/bot{}/{}"
 # ستون‌های ثابت ژورنال — همهٔ رویدادها زیر یک سرستون (نسخهٔ قبل ستون‌ها را جابه‌جا می‌نوشت)
@@ -268,6 +270,7 @@ class Scout:
         ecap = float(s.get("scout.emergency_cap_usd", 20.0) or 0.0)
         self.sl_cap = cap / usd_per_point if cap > 0 else None
         self.emerg_cap = ecap / usd_per_point if ecap > 0 else None
+        self.sl_cap_usd, self.emerg_cap_usd = cap, ecap
         self.approach_frac = float(s.get("scout.approach_frac", 0.7))
         self.mode_path = Path(str(s.get("scout.mode_file", "data/scout_mode.json")))
         self.mode = trk.load_mode(self.mode_path, str(s.get("scout.away_default", "close")))
@@ -355,6 +358,14 @@ class Scout:
         self.label_enabled = bool(s.get("scout.label.enabled", True))
         self.label_tight = float(s.get("scout.label.tight_stop", sig_audit.TIGHT_STOP))
         self._audit_labels: Dict[str, Dict[str, Any]] = {}
+        # تنظیمات از تلگرام (فقط ادمین): پیش‌فرض = YAML، تغییرها در فایل جدا
+        self.settings_path = Path(str(s.get("scout.settings_file", "data/scout_overrides.json")))
+        self._settings_defaults = self.current_settings()
+        self._settings_mid: Optional[int] = None
+        self._settings_ask: Optional[tuple] = None
+        ov, self._settings_warn = sset.load(self.settings_path, self._settings_defaults)
+        if ov:
+            self._set_values(ov)
 
     # ---------------------------------------------------------------- journal
     def log(self, **row: Any) -> None:
@@ -400,8 +411,9 @@ class Scout:
         r["tp_dist"] = 2.0 * self.sl_cap
         return r
 
-    def _usd(self, price_dist: float) -> float:
-        return round(abs(float(price_dist)) * 100.0 * self.lot, 2)
+    def _usd(self, price_dist: float, lot: Optional[float] = None) -> float:
+        """دلار برای فاصلهٔ قیمت؛ lot = لات خود پوزیشن (اگر بعداً لات از تلگرام عوض شده باشد)."""
+        return round(abs(float(price_dist)) * 100.0 * float(lot or self.lot), 2)
 
     def open_risk_usd(self) -> float:
         """ضرر هر پوزیشن باز اگر حد ضرر فعلی‌اش (طبق سیاست) روی بروکر بخورد."""
@@ -411,17 +423,29 @@ class Scout:
                 continue
             try:
                 stop = trk.desired_broker_sl(info, self.mode) if self.soft_stop else float(info["sl"])
-                total += max(self._usd(float(info["entry"]) - stop), 0.0)
+                total += max(self._usd(float(info["entry"]) - stop, info.get("lot")), 0.0)
             except (KeyError, TypeError, ValueError):
                 continue
         return round(total, 2)
 
-    def new_risk_usd(self, side: str, entry: float, sl: float) -> float:
+    @staticmethod
+    def _filled_lot(res: Any, asked: float) -> float:
+        """حجمی که بروکر واقعاً پر کرد (اگر گزارش داد)، وگرنه همان که خواستیم."""
+        vol = getattr(res, "volume", None)
+        return float(vol) if isinstance(vol, (int, float)) and not isinstance(vol, bool) and vol > 0 else float(asked)
+
+    def _emerg_dist(self, lot: Optional[float]) -> Optional[float]:
+        """سقف اضطراری (فاصلهٔ قیمت) برای این لات."""
+        if lot is None or abs(float(lot) - float(self.lot)) < 1e-9:
+            return self.emerg_cap
+        return self._cap_dist(self._cap_usd("emerg"), lot)
+
+    def new_risk_usd(self, side: str, entry: float, sl: float, lot: Optional[float] = None) -> float:
         if not self.soft_stop:
-            return self._usd(entry - sl)
-        emerg = trk.emergency_sl(side, entry, sl, self.emerg_mult, self.emerg_cap)
+            return self._usd(entry - sl, lot)
+        emerg = trk.emergency_sl(side, entry, sl, self.emerg_mult, self._emerg_dist(lot))
         stop = trk.desired_broker_sl({"sl": sl, "emerg": emerg, "hold": False}, self.mode)
-        return self._usd(entry - stop)
+        return self._usd(entry - stop, lot)
 
     def active_open(self) -> Dict[int, dict]:
         return {tk: i for tk, i in self.open.items() if not i.get("closing")}
@@ -517,7 +541,7 @@ class Scout:
         except Exception as exc:
             logger.warning("scout card #{} data failed: {}", tk, exc)
             return
-        risk_usd = float(info.get("risk") or 0.0) * 100.0 * self.lot
+        risk_usd = float(info.get("risk") or 0.0) * 100.0 * float(info.get("lot") or self.lot)
         r_mult = round(pnl / risk_usd, 2) if risk_usd > 0.01 else None
         how = kind if kind in ("exit_tp", "exit_sl") else (info.get("why") or kind)
         if info.get("locked") and how in ("exit_tp", "exit_sl"):
@@ -685,7 +709,7 @@ class Scout:
                 bots[str(b.get("name"))] = dash.bot_trades(b.get("db", ""))
             except Exception as exc:
                 logger.warning("scout scoreboard: {} results unavailable ({})", b.get("name"), exc)
-        scout = dash.scout_trades(events, self.lot)
+        scout = dash.scout_trades(events, float((getattr(self, "_settings_defaults", None) or {}).get("lot") or self.lot))
         today = dash.compare_since(scout, bots, midnight)
         week = dash.compare_since(scout, bots, midnight - timedelta(days=6))
         tday = t.date()
@@ -887,6 +911,7 @@ class Scout:
         if news:
             wctx["news"] = True
         self.pending[aid] = {"row": r, "sl": sl, "tp": tp, "mid": mid, "t": time.time(), "txt": txt,
+                             "lot": self.lot, "exp": self.expiry,     # هشدار با تنظیمات همان لحظه می‌ماند
                              "ctx": ctx, "wctx": wctx}
         self.send_chart(aid, mid, r, entry, sl, tp, risk)
         self.log(event="alert", alert=aid, setup=str(r.get("setups_all", r.setup)),
@@ -917,7 +942,7 @@ class Scout:
         side = self.opposite_side(r.side)
         sl = entry + dist if side == "SELL" else entry - dist
         tp = entry - 2 * dist if side == "SELL" else entry + 2 * dist
-        return side, entry, round(sl, 2), round(tp, 2), self._usd(dist)
+        return side, entry, round(sl, 2), round(tp, 2), self._usd(dist, p.get("lot"))
 
     def _contra_restore(self, p: dict) -> dict:
         o = p.get("orig") or {}
@@ -1043,7 +1068,7 @@ class Scout:
 
     def expire(self) -> None:
         now = time.time()
-        for aid in [k for k, v in self.pending.items() if now - v["t"] > self.expiry]:
+        for aid in [k for k, v in self.pending.items() if now - v["t"] > float(v.get("exp") or self.expiry)]:
             p = self.pending.pop(aid)
             if p["mid"]:
                 self.tg.edit(p["mid"], p["txt"] + "\n\n⏳ <b>منقضی شد</b>")
@@ -1074,7 +1099,7 @@ class Scout:
                     return                                # اول سقف را بپرس، بعد چیزی ببند
                 if not self._reverse(aid, p, r, cb):
                     return
-            new_risk = self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"]))
+            new_risk = self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"]), p.get("lot"))
             block = self.entry_block(r.side, new_risk, allow_hedge=(hedge == "both"))
             is_hedge = bool(block) and block.startswith("پوزیشن خلاف")
             if is_hedge:
@@ -1121,11 +1146,12 @@ class Scout:
             self.log(event="approved_dry", alert=aid, setup=r.setup, side=r.side,
                      price=px, sl=round(sl_now, 2))
             return
-        emerg = trk.emergency_sl(r.side, px, sl_now, self.emerg_mult, self.emerg_cap)
+        lot = float(p.get("lot") or self.lot)             # همان لاتی که هشدار با آن نشان داده شد
+        emerg = trk.emergency_sl(r.side, px, sl_now, self.emerg_mult, self._emerg_dist(lot))
         draft = {"sl": round(sl_now, 2), "emerg": emerg, "hold": False}
         broker_sl = (round(trk.desired_broker_sl(draft, self.mode), 2)
                      if self.soft_stop else round(sl_now, 2))
-        res = self.client.send_market_order(r.side, self.lot, sl=broker_sl,
+        res = self.client.send_market_order(r.side, lot, sl=broker_sl,
                                             tp=None, comment=scout_comment(r.setup))
         if not res.ok and getattr(res, "uncertain", False):
             # ممکن است سفارش روی بروکر باز شده باشد: «ثبت نشد» نگوییم؛ بررسی خودکار فوری
@@ -1147,7 +1173,8 @@ class Scout:
                          "emerg": emerg if self.soft_stop else None,
                          "status_mid": None, "below": False, "hold": False, "warned": False,
                          "approach": False, "ai_next": 0.0, "ai_note": "", "by": self._who or None,
-                         "contra": bool(p.get("contra"))}
+                         "contra": bool(p.get("contra")),
+                         "lot": self._filled_lot(res, lot)}
         self._save_state()
         self.tg.edit(p["mid"], p["txt"] + (f"\n\n🔄 <b>خلاف سیگنال: {r.side} باز شد</b>" if p.get("contra")
                                            else "\n\n✅ <b>باز شد</b>") + f" #{tk} @ {res.price:.2f}\n{info_line}")
@@ -1164,8 +1191,8 @@ class Scout:
                  note=(f"broker_sl={broker_sl};emergency_sl={emerg};mode={self.mode}"
                        + (";over_cap=owner" if override else "")
                        + (f";hedge={hedge}" if hedge else "")
-                       + (";contra=1" if p.get("contra") else "")) if self.soft_stop else
-                 (";contra=1" if p.get("contra") else None))
+                       + (";contra=1" if p.get("contra") else "") + f";lot={lot}") if self.soft_stop else
+                 ((";contra=1" if p.get("contra") else "") + f";lot={lot}"))
         if not self.alert_while_open:
             self.cancel_pending("معامله‌ای باز شد")
 
@@ -1209,7 +1236,7 @@ class Scout:
         """«ببند و جهت را عوض کن»: اگر بعد از بستن پوزیشن مخالف هم سقف پر است، همین الان (قبل از بستن) بپرس.
         True = سؤال فرستاده شد و هنوز چیزی بسته نشده."""
         opp = self.opposite_of(r.side)
-        new_risk = self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"]))
+        new_risk = self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"]), p.get("lot"))
         saved = {tk: self.open[tk].get("closing") for tk in opp}
         try:
             for tk in opp:                                # فرض: مخالف‌ها بسته شده‌اند
@@ -1717,7 +1744,8 @@ class Scout:
 
     def _level_usd(self, info: dict, level: float) -> float:
         """سود (+) یا ضرر (−) تقریبی اگر در این قیمت بسته شود."""
-        return round(trk.signed_move(info["side"], float(info["entry"]), float(level)) * 100.0 * self.lot, 2)
+        return round(trk.signed_move(info["side"], float(info["entry"]), float(level)) * 100.0
+                     * float(info.get("lot") or self.lot), 2)
 
     def _exit_lines(self, info: dict) -> str:
         tp, sl = info.get("xtp"), info.get("xsl")
@@ -1780,7 +1808,7 @@ class Scout:
         except ValueError as exc:
             self.tg.send(f"⚠️ {html.escape(str(exc))} (الان {px:.2f}). دوباره روی همان پیام سؤال ریپلای کنید.")
             return
-        cap_usd = (self.emerg_cap or 0.0) * 100.0 * self.lot
+        cap_usd = float(getattr(self, "emerg_cap_usd", None) or (self.emerg_cap or 0.0) * 100.0 * self.lot)
         loss = -self._level_usd(info, sl) if sl else 0.0
         if sl and cap_usd > 0 and loss > cap_usd + 0.01:
             self._exit_ask[int(tk)] = (tp, sl)
@@ -1960,12 +1988,21 @@ class Scout:
         except Exception as exc:                       # pragma: no cover
             logger.warning("scout state save failed: {}", exc)
 
+    def _cap_dist(self, usd: Optional[float], lot: Optional[float]) -> Optional[float]:
+        """سقف دلاری → فاصلهٔ قیمت برای لات همان پوزیشن."""
+        if not usd or float(usd) <= 0:
+            return None
+        return float(usd) / (100.0 * float(lot or self.lot))
+
     def _apply_caps(self, info: dict) -> None:
-        """سقف‌های جدید روی پوزیشن‌های قدیمی هم اعمال شود."""
+        """سقف‌های جدید روی پوزیشن‌های قدیمی هم اعمال شود (با لات خود پوزیشن)."""
         side, entry = info["side"], float(info["entry"])
-        info["sl"] = trk.capped_sl(side, entry, float(info["sl"]), self.sl_cap)
+        lot = info.get("lot")
+        sl_cap = self._cap_dist(self._cap_usd("sl"), lot) if lot else self.sl_cap
+        em_cap = self._cap_dist(self._cap_usd("emerg"), lot) if lot else self.emerg_cap
+        info["sl"] = trk.capped_sl(side, entry, float(info["sl"]), sl_cap)
         info["risk"] = abs(entry - float(info["sl"]))
-        info["emerg"] = trk.emergency_sl(side, entry, float(info["sl"]), self.emerg_mult, self.emerg_cap)
+        info["emerg"] = trk.emergency_sl(side, entry, float(info["sl"]), self.emerg_mult, em_cap)
 
     def restore(self) -> None:
         """بعد از ری‌استارت: پوزیشن‌های باز اسکات دوباره دنبال می‌شوند (با سقف‌های فعلی)."""
@@ -1983,7 +2020,10 @@ class Scout:
             info.setdefault("ai_next", 0.0)
             info.setdefault("ai_note", "")
             info["hold"] = bool(info.get("hold"))
-            self._apply_caps(info)
+            if not info.get("lot"):                    # پوزیشن قدیمی (قبل از تنظیمات تلگرام): مثل قبل سقف‌ها
+                lp = live.get(tk)
+                info["lot"] = float(getattr(lp, "volume", 0) or 0) or self.lot
+                self._apply_caps(info)
             self.open[tk] = info
         for tk, p in live.items():
             if tk not in self.open:
@@ -2003,7 +2043,8 @@ class Scout:
         info = {"setup": str(getattr(p, "comment", "") or "scout"), "side": side, "entry": entry,
                 "sl": soft, "risk": 0.0, "r1": False, "warned": False, "opened": time.time(),
                 "alert": None, "status_mid": None, "below": False, "hold": False,
-                "adopted": True, "emerg": None, "approach": False, "ai_next": 0.0, "ai_note": ""}
+                "adopted": True, "emerg": None, "approach": False, "ai_next": 0.0, "ai_note": "",
+                "lot": float(getattr(p, "volume", 0) or 0) or self.lot}
         self._apply_caps(info)
         self.open[tk] = info
         self.log(event="adopted", ticket=tk, setup=info["setup"], side=side, entry=entry,
@@ -2042,6 +2083,7 @@ class Scout:
          {"text": "▶️ ادامهٔ هشدارها", "callback_data": "k|resume"}],
         [{"text": "🔔 هشدار قیمت", "callback_data": "k|palert"},
          {"text": "🏁 جدول امتیاز", "callback_data": "k|score"}],
+        [{"text": "🛠 تنظیمات", "callback_data": "k|settings"}],
         [{"text": "🔄 ری‌استارت", "callback_data": "k|restart"},
          {"text": "❓ راهنما", "callback_data": "k|help"}],
     ]
@@ -2117,6 +2159,8 @@ class Scout:
                 self.analyze(parts[1], cq["id"])
             elif parts[0] == "p" and len(parts) == 2:
                 self.price_alert_delete(parts[1], cq["id"])
+            elif parts[0] == "g" and len(parts) >= 2:
+                self.settings_tap(parts[1:], cq["id"], cq_mid)
             elif parts[0] == "k" and len(parts) == 2 and parts[1] in ("restart_yes", "restart_no"):
                 self.restart_answer(parts[1] == "restart_yes", cq["id"], cq_mid)
             elif parts[0] == "k" and len(parts) == 2:
@@ -2142,6 +2186,8 @@ class Scout:
             self.panel("help")
         elif cmd in ("/price", "/status", "/positions", "/pause", "/resume", "/restart"):
             self.panel({"/positions": "pos"}.get(cmd, cmd[1:]))
+        elif cmd == "/settings":
+            self.settings_show()
         elif cmd == "/alert":
             self.price_alert_cmd(msg)
         elif cmd == "/alerts":
@@ -2150,6 +2196,201 @@ class Scout:
             bits = msg.split()
             if len(bits) > 1 and bits[1].isdigit():
                 self.close(int(bits[1]))
+
+    # ------------------------------------------------------- تنظیمات از تلگرام
+    def _cap_usd(self, which: str) -> float:
+        """سقف دلاری فعلی (sl / emerg)."""
+        usd = getattr(self, "sl_cap_usd" if which == "sl" else "emerg_cap_usd", None)
+        if usd is not None:
+            return float(usd or 0.0)
+        dist = self.sl_cap if which == "sl" else self.emerg_cap
+        return float(dist or 0.0) * 100.0 * self.lot
+
+    def _settings_note(self) -> str:
+        """یک خط برای پیام روشن شدن: تنظیمات تلگرام فعال / خطای فایل."""
+        warn = getattr(self, "_settings_warn", None)
+        if warn:
+            return f"⚠️ {html.escape(warn)} — پیش‌فرض‌های فایل YAML به کار رفت.\n"
+        base = getattr(self, "_settings_defaults", None)
+        if not base:
+            return ""
+        d = sset.diff(self.current_settings(), base)
+        if not d:
+            return ""
+        return "🛠 تنظیمات تلگرام فعال: " + " · ".join(f"{sset.SPECS[k]['fa']} {sset.fmt(k, v)}" for k, v in d.items()) + "\n"
+
+    def current_settings(self) -> Dict[str, Any]:
+        return {"lot": round(float(self.lot), 2), "sl_cap": self._cap_usd("sl"), "emerg_cap": self._cap_usd("emerg"),
+                "max_open": int(self.max_open), "max_risk": float(self.max_total_risk),
+                "expiry_min": int(self.expiry // 60)}
+
+    def _set_values(self, values: Dict[str, Any]) -> None:
+        """مقدارها را روی خود ربات بگذار؛ سقف‌های قیمتی از روی دلار و لات جدید دوباره حساب می‌شود."""
+        if "lot" in values:
+            self.lot = float(values["lot"])
+        if "sl_cap" in values:
+            self.sl_cap_usd = float(values["sl_cap"])
+        if "emerg_cap" in values:
+            self.emerg_cap_usd = float(values["emerg_cap"])
+        if "max_open" in values:
+            self.max_open = int(values["max_open"])
+        if "max_risk" in values:
+            self.max_total_risk = float(values["max_risk"])
+        if "expiry_min" in values:
+            self.expiry = int(values["expiry_min"]) * 60
+        self.sl_cap = self._cap_dist(self._cap_usd("sl"), self.lot)
+        self.emerg_cap = self._cap_dist(self._cap_usd("emerg"), self.lot)
+
+    def settings_text(self, extra: str = "") -> str:
+        cur, base = self.current_settings(), getattr(self, "_settings_defaults", None) or self.current_settings()
+        lines = ["🛠 <b>تنظیمات اسکات</b> (فقط ادمین)"]
+        for k, sp in sset.SPECS.items():
+            mark = "" if abs(float(cur[k]) - float(base.get(k, cur[k]))) < 1e-9 else \
+                f"  <i>(پیش‌فرض {sset.fmt(k, base[k])})</i>"
+            lines.append(f"• {sp['fa']}: <b>{sset.fmt(k, cur[k])}</b>{mark}")
+        lines.append("<i>تغییر از سیگنال بعدی اعمال می‌شود؛ پوزیشن‌های باز دست نمی‌خورند. ری‌استارت لازم نیست.</i>")
+        return "\n".join(lines) + (("\n\n" + extra) if extra else "")
+
+    def settings_buttons(self) -> list:
+        cur = self.current_settings()
+        rows = [[{"text": f"{sp['fa']}: {sset.fmt(k, cur[k])}", "callback_data": f"g|i|{k}"},
+                 {"text": "➖", "callback_data": f"g|{k}|-"}, {"text": "➕", "callback_data": f"g|{k}|+"}]
+                for k, sp in sset.SPECS.items()]
+        rows.append([{"text": "↩️ پیش‌فرض‌ها", "callback_data": "g|reset"},
+                     {"text": "✖️ بستن", "callback_data": "g|close"}])
+        return rows
+
+    def settings_show(self) -> None:
+        old = getattr(self, "_settings_mid", None)
+        if old:                                           # فقط یک پیام تنظیمات زنده بماند
+            self.tg.delete(old)
+        self._settings_ask = None
+        self._settings_mid = self.tg.send(self.settings_text(), self.settings_buttons())
+
+    def _settings_refresh(self, extra: str = "") -> None:
+        if getattr(self, "_settings_mid", None):
+            self.tg.edit(self._settings_mid, self.settings_text(extra), self.settings_buttons())
+
+    def settings_tap(self, args: list, cb: str, mid: Optional[int]) -> None:
+        cur_mid = getattr(self, "_settings_mid", None)
+        if mid is not None and mid != cur_mid:            # پیام تنظیمات قدیمی (مثلاً قبل از ری‌استارت)
+            self.tg.ack(cb, "این پیام تنظیمات قدیمی است؛ دوباره «🛠 تنظیمات» را بزنید")
+            return
+        what = args[0]
+        cur = self.current_settings()
+        if what == "i":
+            k = args[1] if len(args) > 1 else ""
+            sp = sset.SPECS.get(k)
+            self.tg.ack(cb, f"{sp['fa']}: بین {sset.fmt(k, sp['lo'])} و {sset.fmt(k, sp['hi'])}، قدم "
+                            f"{sset.fmt(k, sp['step'])}" if sp else "")
+            return
+        if what == "close":
+            self.tg.ack(cb, "بسته شد")
+            if cur_mid:
+                self.tg.delete(cur_mid)
+            self._settings_mid, self._settings_ask = None, None
+            return
+        if what == "back":
+            self.tg.ack(cb, "لغو شد")
+            self._settings_ask = None
+            self._settings_refresh()
+            return
+        if what == "reset":
+            base = self._settings_defaults
+            changes = {k: (cur[k], base[k]) for k in sset.SPECS if abs(float(cur[k]) - float(base[k])) > 1e-9}
+            if not changes:
+                self.tg.ack(cb, "همین الان همه پیش‌فرض است")
+                return
+            if len(args) > 1 and args[1] == "ok":
+                if self._settings_ask != ("reset",):
+                    self.tg.ack(cb, "این سؤال دیگر معتبر نیست")
+                    self._settings_refresh()
+                    return
+                self.tg.ack(cb, "برگشت به پیش‌فرض")
+                self._settings_apply(changes, reset=True)
+                return
+            self._settings_ask = ("reset",)
+            self.tg.ack(cb)
+            lines = "\n".join(f"• {sset.SPECS[k]['fa']}: {sset.fmt(k, a)} → <b>{sset.fmt(k, b)}</b>"
+                              for k, (a, b) in changes.items())
+            self.tg.edit(cur_mid, self.settings_text(f"↩️ <b>همه به پیش‌فرض برگردد؟</b>\n{lines}"),
+                         [[{"text": "✅ بله، برگردان", "callback_data": "g|reset|ok"},
+                           {"text": "↩️ نه", "callback_data": "g|back"}]])
+            return
+        k = what
+        if k not in sset.SPECS or len(args) < 2:
+            self.tg.ack(cb)
+            return
+        if args[1] == "ok":                               # تأیید تغییر بزرگ / لات
+            try:
+                new = sset.norm(k, args[2])
+            except (IndexError, TypeError, ValueError, OverflowError):
+                self.tg.ack(cb)
+                return
+            if self._settings_ask != (k, new) or not sset.in_range(k, new):
+                self.tg.ack(cb, "این سؤال دیگر معتبر نیست")
+                self._settings_refresh()
+                return
+            bad = sset.problems(dict(cur, **{k: new}))
+            if bad:
+                self.tg.ack(cb, bad[0][:190])
+                self._settings_refresh()
+                return
+            self.tg.ack(cb, "ثبت شد")
+            self._settings_apply({k: (cur[k], new)})
+            return
+        if args[1] not in ("+", "-"):
+            self.tg.ack(cb)
+            return
+        new = sset.step(k, cur[k], args[1])
+        if abs(float(new) - float(cur[k])) < 1e-9:
+            self.tg.ack(cb, "به حداقل رسیده" if args[1] == "-" else "به حداکثر رسیده")
+            return
+        bad = sset.problems(dict(cur, **{k: new}))
+        if bad:
+            self.tg.ack(cb, bad[0][:190])
+            return
+        if sset.needs_confirm(k, cur[k], new):
+            self._settings_ask = (k, new)
+            self.tg.ack(cb)
+            why = ("لات مستقیم روی اندازهٔ سود و ضرر اثر دارد" if k == "lot"
+                   else "بیشتر از دو برابر مقدار فعلی است")
+            extra = (f"⚠️ <b>{sset.SPECS[k]['fa']}: {sset.fmt(k, cur[k])} → {sset.fmt(k, new)}</b>؟\n{why}.")
+            if k == "lot":
+                extra += (f"\nبا لات {sset.fmt(k, new)}، سقف {sset.fmt('sl_cap', cur['sl_cap'])} یعنی حد ضرر "
+                          f"حداکثر {cur['sl_cap'] / (100 * float(new)):.2f} دلار فاصلهٔ قیمت.")
+            self.tg.edit(cur_mid, self.settings_text(extra),
+                         [[{"text": "✅ بله، عوض کن", "callback_data": f"g|{k}|ok|{new}"},
+                           {"text": "↩️ نه", "callback_data": "g|back"}]])
+            return
+        self.tg.ack(cb, f"{sset.SPECS[k]['fa']}: {sset.fmt(k, new)}")
+        self._settings_apply({k: (cur[k], new)})
+
+    def _settings_apply(self, changes: Dict[str, tuple], reset: bool = False) -> None:
+        """changes: {key: (قبلی، جدید)} — اعمال، ذخیره، ژورنال، اعلام در گروه."""
+        if "lot" in changes:                              # پوزیشن‌های باز با لات قبلی خودشان حساب شوند
+            for info in self.open.values():
+                info.setdefault("lot", float(changes["lot"][0]))
+        self._set_values({k: v[1] for k, v in changes.items()})
+        self._settings_ask = None
+        saved = True
+        try:
+            sset.save(self.settings_path, sset.diff(self.current_settings(), self._settings_defaults))
+            self._settings_warn = None
+        except OSError as exc:
+            saved = False
+            logger.warning("scout settings not saved: {}", exc)
+        if self.open:
+            self._save_state()
+        who = self._who or "?"
+        note = ";".join(f"{k}:{a}->{b}" for k, (a, b) in changes.items()) + f";by={who}" + (";reset" if reset else "")
+        self.log(event="setting", note=note[:250])
+        lines = "\n".join(f"• {sset.SPECS[k]['fa']}: {sset.fmt(k, a)} → <b>{sset.fmt(k, b)}</b>"
+                          for k, (a, b) in changes.items())
+        self.tg.send(f"🛠 <b>{'تنظیمات به پیش‌فرض برگشت' if reset else 'تنظیم عوض شد'}</b> · {who}\n{lines}\n"
+                     "از سیگنال بعدی اعمال می‌شود؛ پوزیشن‌های باز دست نمی‌خورند."
+                     + ("" if saved else "\n⚠️ در فایل ذخیره نشد؛ با ری‌استارت به قبل برمی‌گردد."))
+        self._settings_refresh()
 
     def panel(self, what: str) -> None:
         try:
@@ -2179,14 +2420,15 @@ class Scout:
                 self.restart()
             elif what == "palert":
                 self.price_alerts_list()
+            elif what == "settings":
+                self.settings_show()
             elif what == "score":
                 self.send_scoreboard(force=True)
             elif what == "restart_no":
                 self.tg.send("ری‌استارت لغو شد.")
             elif what == "help":
                 self.tg.send(ctl.HELP_TEXT.format(max_open=self.max_open, risk=self.max_total_risk,
-                                                  sl=(self.sl_cap or 0) * 100 * self.lot,
-                                                  em=(self.emerg_cap or 0) * 100 * self.lot,
+                                                  sl=self._cap_usd("sl"), em=self._cap_usd("emerg"),
                                                   status=int(self.status_every // 60)))
         except Exception as exc:
             logger.warning("scout panel {} failed: {}", what, exc)
@@ -2377,7 +2619,7 @@ class Scout:
                 bots[str(b.get("name"))] = dash.bot_trades(b.get("db", ""))
             except Exception as exc:
                 logger.warning("scout dashboard: {} results unavailable ({})", b.get("name"), exc)
-        st["compare"] = dash.build_compare(dash.scout_trades(events, self.lot), bots)
+        st["compare"] = dash.build_compare(dash.scout_trades(events, float((getattr(self, "_settings_defaults", None) or {}).get("lot") or self.lot)), bots)
         st["picks"] = dash.build_picks(self._virtual_rows)
         return st
 
@@ -2419,7 +2661,7 @@ class Scout:
                 entry, sl, risk = 0.0, float(p.get("sl") or 0.0), 0.0
             pending.append({"id": aid, "side": row.side, "setup": str(row.get("setups_all", row.setup)),
                             "price": float(entry), "sl": float(sl), "risk": float(risk or 0.0),
-                            "left_min": max(0, int((self.expiry - (now - p["t"])) // 60)),
+                            "left_min": max(0, int((float(p.get("exp") or self.expiry) - (now - p["t"])) // 60)),
                             "analysis": self._an_short.get(aid, "")})
         return {
             "status": {"alive": True, "mt5": bool(self.client.is_connected), "market": ctl.market_open_utc(utc),
@@ -2431,8 +2673,8 @@ class Scout:
             "price": {"bid": float(tick.bid), "ask": float(tick.ask)} if tick is not None else None,
             "open": opened, "open_risk": self.open_risk_usd(), "pending": pending,
             "audit": getattr(self, "_audit", None),
-            "rules": {"lot": self.lot, "sl_cap": round((self.sl_cap or 0) * 100 * self.lot, 2),
-                      "emerg_cap": round((self.emerg_cap or 0) * 100 * self.lot, 2),
+            "rules": {"lot": self.lot, "sl_cap": round(self._cap_usd("sl"), 2),
+                      "emerg_cap": round(self._cap_usd("emerg"), 2),
                       "approach": int(self.approach_frac * 100), "max_open": self.max_open,
                       "max_risk": self.max_total_risk, "expiry_min": self.expiry // 60,
                       "status_min": int(self.status_every // 60)},
@@ -2652,6 +2894,7 @@ class Scout:
                      f"حساب {getattr(acc,'login','?')} ({self.account_kind(acc)}) · {getattr(acc,'server','?')} · "
                      f"موجودی ${getattr(acc,'balance',0):.2f}\nلات {self.lot} · انقضای هشدار "
                      f"{self.expiry//60} دقیقه\n{self._one_line_state()}\n"
+                     + self._settings_note() +
                      "دکمه‌های پایین صفحه: 📋 پوزیشن‌ها (بستن/نگه داشتن) · 💰 قیمت · 📊 وضعیت · 🎛 منو",
                      keyboard=self.KEYBOARD)
         logger.info("scout online")
