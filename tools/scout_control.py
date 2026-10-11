@@ -3,7 +3,7 @@
 - InstanceLock: one Scout process per lock file (an OS file lock, released by the OS
   if the process dies), so a restart or a second launch can never run two Scouts.
 - Flags: small persisted switches (alerts paused).
-- market_open_utc: XAUUSD trading hours (approximate, UTC) for the feed watchdog.
+- market_open_utc: XAUUSD trading hours (New York based, US daylight saving aware) for the feed watchdog.
 - journal_summary / status texts for the /status and daily health messages.
 """
 from __future__ import annotations
@@ -84,17 +84,34 @@ def save_flags(path: Path, flags: Dict[str, Any]) -> None:
     os.replace(tmp, path)
 
 
+def _nth_sunday_utc(year: int, month: int, n: int, hour_utc: int) -> datetime:
+    d = datetime(year, month, 1, hour_utc, tzinfo=timezone.utc)
+    d += timedelta(days=(6 - d.weekday()) % 7)            # اولین یکشنبه
+    return d + timedelta(weeks=n - 1)
+
+
+def new_york_offset_hours(now_utc: datetime) -> int:
+    """اختلاف ساعت نیویورک با UTC (‎-4 تابستان، ‎-5 زمستان) با قاعدهٔ آمریکا؛ بدون نیاز به tzdata روی ویندوز.
+    تابستانی: یکشنبهٔ دوم مارس ساعت 2 بامداد محلی (07:00 UTC) تا یکشنبهٔ اول نوامبر ساعت 2 (06:00 UTC)."""
+    y = now_utc.year
+    start, end = _nth_sunday_utc(y, 3, 2, 7), _nth_sunday_utc(y, 11, 1, 6)
+    return -4 if start <= now_utc < end else -5
+
+
 def market_open_utc(now: datetime) -> bool:
-    """Gold CFD hours, approximate: Sun 22:00 → Fri 21:00 UTC, daily break 21:00–22:00 UTC."""
+    """Gold CFD hours (New York based, follows US daylight saving):
+    Sun 18:00 → Fri 17:00 New York, daily break 17:00–18:00 New York.
+    Summer = Sun 22:00 → Fri 21:00 UTC, break 21–22 UTC; winter = one hour later."""
     now = now.astimezone(timezone.utc) if now.tzinfo else now.replace(tzinfo=timezone.utc)
-    wd, h = now.weekday(), now.hour
+    ny = now + timedelta(hours=new_york_offset_hours(now))
+    wd, h = ny.weekday(), ny.hour
     if wd == 5:
         return False
     if wd == 6:
-        return h >= 22
-    if h == 21:
+        return h >= 18
+    if h == 17:
         return False
-    return not (wd == 4 and h >= 21)
+    return not (wd == 4 and h >= 17)
 
 
 def journal_summary(path: Path, since: datetime) -> Dict[str, Any]:

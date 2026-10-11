@@ -1946,6 +1946,17 @@ class Scout:
         except (TypeError, ValueError):
             return False
 
+    def _stale_alert_tap(self, aid: str, cq_mid: Optional[int], cb: str) -> bool:
+        """شمارهٔ هشدار بعد از ری‌استارت از ۱ شروع می‌شود؛ دکمهٔ پیام قدیمی نباید هشدار جدیدِ هم‌شماره را باز کند.
+        فقط وقتی پیامی که دکمه‌اش زده شد همان پیام هشدار فعلی باشد، دکمه کار می‌کند."""
+        p = self.pending.get(aid)
+        if p is None or cq_mid is None or cq_mid == p.get("mid"):
+            return False
+        self.tg.ack(cb, "این دکمه مال یک هشدار قدیمی است (قبل از ری‌استارت) و دیگر معتبر نیست")
+        logger.warning("scout: stale alert button ignored (alert {} msg {} != {})", aid, cq_mid, p.get("mid"))
+        self.log(event="stale_tap", alert=aid, note=f"msg={cq_mid};current={p.get('mid')}")
+        return True
+
     def handle_update(self, u: dict) -> None:
         if not self.is_admin(u):
             logger.warning("scout: ignored telegram update from non-admin")
@@ -1956,6 +1967,8 @@ class Scout:
         if cq:
             cq_mid = (cq.get("message") or {}).get("message_id")     # پیامی که دکمه‌اش زده شد
             parts = str(cq.get("data", "")).split("|")
+            if parts[0] in ("a", "v", "x") and len(parts) >= 2 and self._stale_alert_tap(parts[1], cq_mid, cq["id"]):
+                return
             if parts[0] == "a" and len(parts) == 3:
                 code = parts[2]
                 self.decide(parts[1], code in ("y", "o", "r", "b", "q"), cq["id"], override=code in ("o", "q"),
