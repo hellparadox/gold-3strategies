@@ -14,12 +14,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 # ترتیب همین ترتیب نمایش است
 SPECS: Dict[str, Dict[str, Any]] = {
-    "lot":        {"fa": "لات", "step": 0.01, "lo": 0.01, "hi": 0.10, "nd": 2, "unit": ""},
-    "sl_cap":     {"fa": "سقف حد ضرر سیگنال", "step": 1.0, "lo": 3.0, "hi": 30.0, "nd": 0, "unit": "$"},
-    "emerg_cap":  {"fa": "سقف حد ضرر اضطراری", "step": 1.0, "lo": 5.0, "hi": 50.0, "nd": 0, "unit": "$"},
-    "max_open":   {"fa": "پوزیشن هم‌زمان", "step": 1.0, "lo": 1.0, "hi": 5.0, "nd": 0, "unit": ""},
-    "max_risk":   {"fa": "سقف ریسک کل", "step": 5.0, "lo": 5.0, "hi": 100.0, "nd": 0, "unit": "$"},
-    "expiry_min": {"fa": "مهلت جواب هشدار", "step": 5.0, "lo": 5.0, "hi": 120.0, "nd": 0, "unit": " دقیقه"},
+    "lot":        {"short": "لات", "fa": "لات", "step": 0.01, "lo": 0.01, "hi": 0.10, "nd": 2, "unit": ""},
+    "sl_cap":     {"short": "حد ضرر", "fa": "سقف حد ضرر سیگنال", "step": 1.0, "lo": 3.0, "hi": 30.0, "nd": 0, "unit": "$"},
+    "emerg_cap":  {"short": "اضطراری", "fa": "سقف حد ضرر اضطراری", "step": 1.0, "lo": 5.0, "hi": 50.0, "nd": 0, "unit": "$"},
+    "max_open":   {"short": "پوزیشن", "fa": "پوزیشن هم‌زمان", "step": 1.0, "lo": 1.0, "hi": 5.0, "nd": 0, "unit": ""},
+    "max_risk":   {"short": "ریسک کل", "fa": "سقف ریسک کل", "step": 5.0, "lo": 5.0, "hi": 100.0, "nd": 0, "unit": "$"},
+    "expiry_min": {"short": "مهلت", "fa": "مهلت جواب هشدار", "step": 5.0, "lo": 5.0, "hi": 120.0, "nd": 0, "unit": " دقیقه"},
 }
 INT_KEYS = {"max_open", "expiry_min"}
 
@@ -35,6 +35,18 @@ def fmt(key: str, value: Any) -> str:
     v = float(value)
     txt = f"{v:.2f}" if sp["nd"] == 2 else f"{v:.0f}"
     return (sp["unit"] + txt) if sp["unit"] == "$" else (txt + sp["unit"])
+
+
+def short_fmt(key: str, value: Any) -> str:
+    """متن کوتاه روی دکمه (تلگرام عرض دکمه‌های یک ردیف را برابر می‌کند؛ متن بلند بریده می‌شود)."""
+    sp = SPECS[key]
+    v = float(value)
+    txt = f"{v:.2f}" if sp["nd"] == 2 else f"{v:.0f}"
+    if sp["unit"] == "$":
+        txt = "$" + txt
+    elif key == "expiry_min":
+        txt += "د"
+    return f"{sp['short']} {txt}"
 
 
 def step(key: str, current: Any, direction: str) -> Any:

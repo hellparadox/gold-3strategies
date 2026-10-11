@@ -98,6 +98,8 @@ class Telegram(unittest.TestCase):
         self.assertIn("سقف ریسک کل: <b>$20</b>", text)
         self.assertEqual(len(buttons), len(sset.SPECS) + 1)
         self.assertEqual([b["callback_data"] for b in buttons[0]], ["g|i|lot", "g|lot|-", "g|lot|+"])
+        self.assertEqual([r[0]["text"] for r in buttons[:-1]],
+                         ["لات 0.01", "حد ضرر $10", "اضطراری $20", "پوزیشن 2", "ریسک کل $20", "مهلت 30د"])
         self.assertEqual(buttons[-1][0]["callback_data"], "g|reset")
 
     def test_simple_change_applies_now_and_is_saved(self):

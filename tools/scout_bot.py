@@ -2253,7 +2253,7 @@ class Scout:
 
     def settings_buttons(self) -> list:
         cur = self.current_settings()
-        rows = [[{"text": f"{sp['fa']}: {sset.fmt(k, cur[k])}", "callback_data": f"g|i|{k}"},
+        rows = [[{"text": sset.short_fmt(k, cur[k]), "callback_data": f"g|i|{k}"},
                  {"text": "➖", "callback_data": f"g|{k}|-"}, {"text": "➕", "callback_data": f"g|{k}|+"}]
                 for k, sp in sset.SPECS.items()]
         rows.append([{"text": "↩️ پیش‌فرض‌ها", "callback_data": "g|reset"},
