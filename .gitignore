@@ -18,6 +18,7 @@ data/scout_mode.json.tmp
 data/scout_flags.json
 data/scout_flags.json.tmp
 data/scout.lock
+data/scout_startup_fail.json
 snapshots/
 exports/
 

@@ -94,10 +94,19 @@ class Live(unittest.TestCase):
     def test_alert_shows_line(self):
         self.sc.audit_tick(now=10_000.0)
         line = self.sc.audit_line("tk_cross,rejection")
-        self.assertIn("✅<code>tk_cross</code> 100٪ (1)", line)
-        self.assertIn("⚠️<code>rejection</code> 0٪ (1)", line)
-        self.assertIn("اکثراً اول خلاف جهت رفته", self.sc.audit_line("rejection"))
+        self.assertIn("<code>tk_cross</code> 100٪ (1)", line)          # یک نمونه: علامت نمی‌گیرد
+        self.assertNotIn("✅", line)
+        self.assertNotIn("⚠️", line)
+        self.assertNotIn("اکثراً اول خلاف جهت رفته", self.sc.audit_line("rejection"))
         self.assertEqual(self.sc.audit_line("unknown"), "")
+        saved = self.sc._audit_setups
+        self.sc._audit_setups = {"tk_cross": {"n": 40, "plus": 30, "minus": 10, "both": 0, "first": 0.75},
+                                 "rejection": {"n": 40, "plus": 10, "minus": 30, "both": 0, "first": 0.25}}
+        line = self.sc.audit_line("tk_cross,rejection")                     # همان منطق بازهٔ ۹۵٪ برچسب
+        self.assertIn("✅<code>tk_cross</code> 75٪ (40)", line)
+        self.assertIn("⚠️<code>rejection</code> 25٪ (40)", line)
+        self.assertIn("اکثراً اول خلاف جهت رفته", self.sc.audit_line("rejection"))
+        self.sc._audit_setups = saved
         self.sc.audit_min_n = 5
         self.assertEqual(self.sc.audit_line("tk_cross"), "")                # نمونهٔ کم: چیزی نمی‌گوید
         self.sc.audit_min_n = 1

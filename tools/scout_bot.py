@@ -76,6 +76,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from types import SimpleNamespace
 from typing import Any, Dict, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -153,9 +154,14 @@ class TG:
             self.last_error = "" if d.get("ok") else str(d.get("description") or "")
             return d.get("result") if d.get("ok") else None
         except Exception as exc:
-            self.last_error = str(exc)                 # خطای قبلی («not modified») نماند
-            logger.warning("telegram {} failed: {}", method, exc)
+            self.last_error = self._clean(exc)         # خطای قبلی («not modified») نماند
+            logger.warning("telegram {} failed: {}", method, self.last_error)
             return None
+
+    def _clean(self, x: Any) -> str:
+        """متن خطا بدون توکن ربات (آدرس درخواست‌ها توکن دارد و نباید در لاگ بماند)."""
+        t = str(x)
+        return t.replace(self.token, "***") if getattr(self, "token", "") else t
 
     def send(self, text: str, buttons: Optional[list] = None,
              keyboard: Optional[dict] = None, reply_to: Optional[int] = None) -> Optional[int]:
@@ -185,7 +191,7 @@ class TG:
                 return None
             return (d.get("result") or {}).get("message_id")
         except Exception as exc:
-            logger.warning("telegram sendPhoto failed: {}", exc)
+            logger.warning("telegram sendPhoto failed: {}", self._clean(exc))
             return None
 
     def delete(self, message_id: int) -> None:
@@ -1064,6 +1070,8 @@ class Scout:
             return
         if self.open and not self.dry:
             if hedge == "reverse" and self.opposite_of(r.side):
+                if not override and self._reverse_cap_ask(aid, p, r, cb):
+                    return                                # اول سقف را بپرس، بعد چیزی ببند
                 if not self._reverse(aid, p, r, cb):
                     return
             new_risk = self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"]))
@@ -1197,6 +1205,40 @@ class Scout:
              [{"text": "❌ رد", "callback_data": f"a|{aid}|n"}]])
         self.log(event="hedge_confirm", alert=aid, setup=r.setup, side=r.side, note=",".join(map(str, opp)))
 
+    def _reverse_cap_ask(self, aid: str, p: dict, r: pd.Series, cb: Optional[str]) -> bool:
+        """«ببند و جهت را عوض کن»: اگر بعد از بستن پوزیشن مخالف هم سقف پر است، همین الان (قبل از بستن) بپرس.
+        True = سؤال فرستاده شد و هنوز چیزی بسته نشده."""
+        opp = self.opposite_of(r.side)
+        new_risk = self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"]))
+        saved = {tk: self.open[tk].get("closing") for tk in opp}
+        try:
+            for tk in opp:                                # فرض: مخالف‌ها بسته شده‌اند
+                self.open[tk]["closing"] = True
+            block = self.entry_block(r.side, new_risk, allow_hedge=True)
+            total = round(self.open_risk_usd() + new_risk, 2)
+            n_after = len(self.active_open()) + 1
+        finally:
+            for tk, v in saved.items():
+                if v is None:
+                    self.open[tk].pop("closing", None)
+                else:
+                    self.open[tk]["closing"] = v
+        if not block:
+            return False
+        names = "، ".join(f"#{t}" for t in opp)
+        self.pending[aid] = p
+        if cb:
+            self.tg.ack(cb, "سقف پر است — تصمیم با شما")
+        self.tg.edit(p["mid"], p["txt"] + (
+            f"\n\n⚠️ <b>{block}</b> (حتی بعد از بستن {names}).\nاگر {names} را ببندم و این را باز کنم، با "
+            f"{n_after} پوزیشن ضرر احتمالی کل تا حد ضرر فعلی‌شان می‌شود <b>{total:.2f}$</b> "
+            f"(سقف {self.max_total_risk:.0f}$). هنوز چیزی بسته نشده. ادامه بدهم؟"),
+            [[{"text": f"✅ می‌دانم، {names} را ببند و باز کن", "callback_data": f"a|{aid}|x"},
+              {"text": "❌ رد", "callback_data": f"a|{aid}|n"}]])
+        self.log(event="limit_confirm", alert=aid, setup=r.setup, side=r.side,
+                 note=f"reverse;{block[:140]};total={total}")
+        return True
+
     def _reverse(self, aid: str, p: dict, r: pd.Series, cb: Optional[str]) -> bool:
         """پوزیشن(های) خلاف جهت را می‌بندد تا سیگنال جدید باز شود. False = چیزی باز نمی‌شود (هشدار زنده می‌ماند
         یا اگر قیمت از حد ضرر هشدار رد شده، باطل می‌شود — قبل از بستن چک می‌شود تا بی‌دلیل نبندیم)."""
@@ -1274,7 +1316,11 @@ class Scout:
                 if cb:
                     self.tg.ack(cb, "این پوزیشن قبلاً بسته شده")
                 return
-        res = self.client.close_position(int(tk), comment=why)
+        try:
+            res = self.client.close_position(int(tk), comment=why)
+        except Exception as exc:                       # MT5 لحظه‌ای جواب نداد
+            logger.warning("scout close #{} failed: {}", tk, exc)
+            res = SimpleNamespace(ok=False, comment="MT5 جواب نداد؛ دوباره بزنید", price=0.0)
         if not res.ok:
             self._closing_t.pop(int(tk), None)         # ناموفق: زدن دوبارهٔ «بستن» همین الان مجاز است
         elif int(tk) in self.open:
@@ -1304,99 +1350,116 @@ class Scout:
         live = {int(p.ticket): p for p in self.client.positions(magic_only=True)}
         now = time.time()
         mkt = self.market_open()
-        server_now: Optional[float] = None
+        ctx: Dict[str, Any] = {"server_now": None}
         for tk in list(self.open):
-            if tk not in live:                       # دستی، در حد ضرر یا اضطراری بسته شده
-                pnl, px = self.realized(tk)
-                if pnl is None and now - self.open[tk].get("gone_t", now) < 30:
-                    self.open[tk].setdefault("gone_t", now)   # تاریخچه هنوز نیامده
-                    continue
-                info = self.open.pop(tk)
-                self._ai_futs.pop(tk, None)
-                self._live.pop(tk, None)
-                self._save_state()
-                res_txt = f" · نتیجه ${pnl:+.2f}" if pnl is not None else ""
-                emerg, risk = info.get("emerg"), float(info.get("risk") or 0.0)
-                kind = None
-                xtp, xsl = info.get("xtp"), info.get("xsl")
-                if px and info.get("why") is None and (xtp or xsl):    # قیمت خروج شما روی بروکر
-                    tol = max(0.5, 0.25 * risk)
-                    near = [(abs(float(px) - float(v)), k) for k, v in (("exit_tp", xtp), ("exit_sl", xsl)) if v]
-                    d, k = min(near)
-                    if d <= tol:
-                        kind = k
-                elif info.get("why") in ("exit_tp", "exit_sl"):
-                    kind = info["why"]
-                if kind is None and px and risk > 0:
-                    if emerg and abs(float(px) - float(emerg)) <= 0.25 * risk:
-                        kind = "emergency_sl"
-                    elif abs(float(px) - float(info["sl"])) <= 0.25 * risk:
-                        kind = "signal_sl"
-                why = {"emergency_sl": "\n🛑 با حد ضرر اضطراری بسته شد.",
-                       "signal_sl": "\n⛔ در حد ضرر سیگنال بسته شد.",
-                       "exit_tp": f"\n🎯 به قیمت خروج شما ({float(xtp or 0):.2f}) رسید و بسته شد.",
-                       "exit_sl": f"\n🎯 به قیمت خروج پایین شما ({float(xsl or 0):.2f}) رسید و بسته شد."
-                       }.get(kind or "", "")
-                if info.get("locked") and kind == "exit_tp":
-                    why = f"\n🎯 به هدف 2R ({float(xtp or 0):.2f}) رسید و بسته شد."
-                elif info.get("locked") and kind == "exit_sl":
-                    why = f"\n🔒 به قیمت ورود ({float(xsl or 0):.2f}) برگشت و سر به سر بسته شد (بی‌ضرر)."
-                self.tg.send(f"ℹ️ پوزیشن #{tk} ({info['setup']}) بسته شد{res_txt}.{why}"
-                             + ("\n🔔 هشدارها دوباره فعال شد." if not self.open else ""))
-                if info.get("status_mid"):
-                    self.tg.edit(info["status_mid"],
-                                 f"📊 <b>#{tk}</b> · <code>{info['setup']}</code>\n"
-                                 f"✅ <b>بسته شد</b>{res_txt}" + (f" @ {px:.2f}" if px else ""))
-                self.log(event="gone", alert=info.get("alert"), ticket=tk, setup=info["setup"],
-                         side=info["side"], entry=round(float(info["entry"]), 2), price=px, profit=pnl,
-                         note=kind)
-                self._exit_ask.pop(tk, None)
-                if self.card_enabled and pnl is not None and px:
-                    self.send_trade_card(tk, info, pnl, float(px), kind)
-                continue
-            p, info = live[tk], self.open[tk]
-            profit = float(getattr(p, "profit", 0.0))
-            swap = float(getattr(p, "swap", 0.0) or 0.0)
-            price = float(getattr(p, "price_current", 0.0))
-            self._live[tk] = {"price": price, "profit": profit + swap,
-                              "broker_sl": float(getattr(p, "sl", 0.0) or 0.0)}
-            d = trk.signed_move(info["side"], float(info["entry"]), price)
-            if not info["r1"] and info["risk"] > 0 and d >= info["risk"]:
-                info["r1"] = True
-                self.tg.send(f"🎯 #{tk} ({info['setup']}) به ۱ برابر ریسک رسید. سود فعلی ${profit:.2f}\n"
-                             "🔒 با «بی‌ضرر کن» حد ضرر به قیمت ورود و هدف به 2R می‌رود (روی بروکر).",
-                             self._close_buttons(tk) + [[{"text": "🔒 بی‌ضرر کن + هدف 2R",
-                                                          "callback_data": f"z|{tk}"}]])
-                self.log(event="reached_1R", ticket=tk, setup=info["setup"], profit=profit)
-            last = f.iloc[-1]
-            broke = (info["side"] == "BUY" and last.close < last.tenkan) or \
-                    (info["side"] == "SELL" and last.close > last.tenkan)
-            if broke and not info.get("warned"):
-                info["warned"] = True
-                self.tg.send(f"⚠️ #{tk} ({info['setup']}) ساختار شکست — بسته شدن کندل خلاف جهت تنکان. "
-                             f"سود فعلی ${profit:.2f}", self._close_buttons(tk))
-                self.log(event="structure_break", ticket=tk, setup=info["setup"], profit=profit)
-            if self.soft_stop and price > 0 and mkt:     # بازار بسته: بروکر تغییر حد ضرر را رد می‌کند
-                if self._manage_stop(tk, info, p, price, profit, now, f):
-                    continue                              # همین الان بسته شد
-            if not mkt:                                   # یک پیام «بازار بسته» و بعد سکوت تا باز شدن
-                if price > 0 and not info.get("closed_note"):
-                    info["closed_note"] = True
-                    self._push_status(tk, info, price, profit, swap, None, None, now, closed=True)
-                continue
-            if info.pop("closed_note", None):
-                info["status_t"] = 0.0                    # با باز شدن بازار گزارش فوراً ادامه پیدا کند
-            if price > 0 and now - float(info.get("status_t", 0.0)) >= self.status_every:
-                if server_now is None:
-                    tick = None
-                    try:
-                        tick = self.client.get_tick()
-                    except Exception:                  # pragma: no cover
-                        pass
-                    server_now = float(getattr(tick, "time", 0) or 0) or None
-                opened_srv = float(getattr(p, "time", 0) or 0)
-                secs = (server_now - opened_srv) if (server_now and opened_srv) else None
-                self._push_status(tk, info, price, profit, swap, secs, server_now, now)
+            try:                                          # خطای لحظه‌ای MT5 روی یک پوزیشن، بقیه را از دور خارج نکند
+                self._monitor_one(tk, live, now, mkt, f, ctx)
+            except Exception as exc:
+                logger.exception("scout monitor #{} failed: {}", tk, exc)
+                fails = self.__dict__.setdefault("_mon_fail_t", {})
+                if now - fails.get(tk, 0.0) > 600 and tk in self.open:
+                    fails[tk] = now                       # حداکثر هر ۱۰ دقیقه یک پیام
+                    self.tg.send(f"⚠️ مدیریت #{tk} یک لحظه انجام نشد (MT5 جواب نداد: "
+                                 f"{html.escape(str(exc))[:80]}). حد ضرر روی بروکر سر جایش است؛ "
+                                 "چند ثانیه بعد دوباره امتحان می‌شود.", self._close_buttons(tk))
+
+    def _monitor_one(self, tk: int, live: Dict[int, Any], now: float, mkt: bool, f: pd.DataFrame,
+                     ctx: Dict[str, Any]) -> None:
+        if tk not in live:                       # دستی، در حد ضرر یا اضطراری بسته شده
+            pnl, px = self.realized(tk)
+            if pnl is None and now - self.open[tk].get("gone_t", now) < 30:
+                self.open[tk].setdefault("gone_t", now)   # تاریخچه هنوز نیامده
+                return
+            info = self.open.pop(tk)
+            self._ai_futs.pop(tk, None)
+            self._live.pop(tk, None)
+            self._save_state()
+            res_txt = f" · نتیجه ${pnl:+.2f}" if pnl is not None else ""
+            emerg, risk = info.get("emerg"), float(info.get("risk") or 0.0)
+            kind = None
+            xtp, xsl = info.get("xtp"), info.get("xsl")
+            if px and info.get("why") is None and (xtp or xsl):    # قیمت خروج شما روی بروکر
+                tol = max(0.5, 0.25 * risk)
+                near = [(abs(float(px) - float(v)), k) for k, v in (("exit_tp", xtp), ("exit_sl", xsl)) if v]
+                d, k = min(near)
+                if d <= tol:
+                    kind = k
+            elif info.get("why") in ("exit_tp", "exit_sl"):
+                kind = info["why"]
+            if kind is None and px and risk > 0:
+                if emerg and abs(float(px) - float(emerg)) <= 0.25 * risk:
+                    kind = "emergency_sl"
+                elif abs(float(px) - float(info["sl"])) <= 0.25 * risk:
+                    kind = "signal_sl"
+            why = {"emergency_sl": "\n🛑 با حد ضرر اضطراری بسته شد.",
+                   "signal_sl": "\n⛔ در حد ضرر سیگنال بسته شد.",
+                   "exit_tp": f"\n🎯 به قیمت خروج شما ({float(xtp or 0):.2f}) رسید و بسته شد.",
+                   "exit_sl": f"\n🎯 به قیمت خروج پایین شما ({float(xsl or 0):.2f}) رسید و بسته شد."
+                   }.get(kind or "", "")
+            if info.get("locked") and kind == "exit_tp":
+                why = f"\n🎯 به هدف 2R ({float(xtp or 0):.2f}) رسید و بسته شد."
+            elif info.get("locked") and kind == "exit_sl":
+                why = f"\n🔒 به قیمت ورود ({float(xsl or 0):.2f}) برگشت و سر به سر بسته شد (بی‌ضرر)."
+            self.tg.send(f"ℹ️ پوزیشن #{tk} ({info['setup']}) بسته شد{res_txt}.{why}"
+                         + ("\n🔔 هشدارها دوباره فعال شد." if not self.open else ""))
+            if info.get("status_mid"):
+                self.tg.edit(info["status_mid"],
+                             f"📊 <b>#{tk}</b> · <code>{info['setup']}</code>\n"
+                             f"✅ <b>بسته شد</b>{res_txt}" + (f" @ {px:.2f}" if px else ""))
+            self.log(event="gone", alert=info.get("alert"), ticket=tk, setup=info["setup"],
+                     side=info["side"], entry=round(float(info["entry"]), 2), price=px, profit=pnl,
+                     note=kind)
+            self._exit_ask.pop(tk, None)
+            if self.card_enabled and pnl is not None and px:
+                self.send_trade_card(tk, info, pnl, float(px), kind)
+            return
+        p, info = live[tk], self.open[tk]
+        profit = float(getattr(p, "profit", 0.0))
+        swap = float(getattr(p, "swap", 0.0) or 0.0)
+        price = float(getattr(p, "price_current", 0.0))
+        self._live[tk] = {"price": price, "profit": profit + swap,
+                          "broker_sl": float(getattr(p, "sl", 0.0) or 0.0)}
+        d = trk.signed_move(info["side"], float(info["entry"]), price)
+        if not info["r1"] and info["risk"] > 0 and d >= info["risk"]:
+            info["r1"] = True
+            self.tg.send(f"🎯 #{tk} ({info['setup']}) به ۱ برابر ریسک رسید. سود فعلی ${profit:.2f}\n"
+                         "🔒 با «بی‌ضرر کن» حد ضرر به قیمت ورود و هدف به 2R می‌رود (روی بروکر).",
+                         self._close_buttons(tk) + [[{"text": "🔒 بی‌ضرر کن + هدف 2R",
+                                                      "callback_data": f"z|{tk}"}]])
+            self.log(event="reached_1R", ticket=tk, setup=info["setup"], profit=profit)
+        last = f.iloc[-1]
+        broke = (info["side"] == "BUY" and last.close < last.tenkan) or \
+                (info["side"] == "SELL" and last.close > last.tenkan)
+        if broke and not info.get("warned"):
+            info["warned"] = True
+            self.tg.send(f"⚠️ #{tk} ({info['setup']}) ساختار شکست — بسته شدن کندل خلاف جهت تنکان. "
+                         f"سود فعلی ${profit:.2f}", self._close_buttons(tk))
+            self.log(event="structure_break", ticket=tk, setup=info["setup"], profit=profit)
+        if self.soft_stop and price > 0 and mkt:     # بازار بسته: بروکر تغییر حد ضرر را رد می‌کند
+            if self._manage_stop(tk, info, p, price, profit, now, f):
+                return                              # همین الان بسته شد
+        elif price > 0 and mkt and info.get("xdirty"):
+            # soft_stop خاموش: قیمت‌های خروجی که با بازار بسته یا «لغو نگه داشتن» عوض شد، یک بار روی بروکر برود
+            if self._sync_exits_plain(tk, info, p, price, profit, now):
+                return
+        if not mkt:                                   # یک پیام «بازار بسته» و بعد سکوت تا باز شدن
+            if price > 0 and not info.get("closed_note"):
+                info["closed_note"] = True
+                self._push_status(tk, info, price, profit, swap, None, None, now, closed=True)
+            return
+        if info.pop("closed_note", None):
+            info["status_t"] = 0.0                    # با باز شدن بازار گزارش فوراً ادامه پیدا کند
+        if price > 0 and now - float(info.get("status_t", 0.0)) >= self.status_every:
+            if ctx["server_now"] is None:
+                tick = None
+                try:
+                    tick = self.client.get_tick()
+                except Exception:                  # pragma: no cover
+                    pass
+                ctx["server_now"] = float(getattr(tick, "time", 0) or 0) or None
+            opened_srv = float(getattr(p, "time", 0) or 0)
+            secs = (ctx["server_now"] - opened_srv) if (ctx["server_now"] and opened_srv) else None
+            self._push_status(tk, info, price, profit, swap, secs, ctx["server_now"], now)
 
     def _manage_stop(self, tk: int, info: dict, p: Any, price: float, profit: float, now: float,
                      f: Optional[pd.DataFrame]) -> bool:
@@ -1461,6 +1524,56 @@ class Scout:
                     self.tg.send(f"⚠️ قیمت خروج #{tk} روی بروکر گذاشته نشد: "
                                  f"{html.escape(str(res.comment))[:80]}. هر دقیقه بی‌صدا دوباره تلاش می‌شود.",
                                  self._close_buttons(tk))
+        return False
+
+    def _sync_exits_plain(self, tk: int, info: dict, p: Any, price: float, profit: float, now: float) -> bool:
+        """soft_stop خاموش: فقط یک بار قیمت‌های خروج تازهٔ مالک (یا برداشتنشان) روی بروکر برود؛
+        بعدش اسکات دیگر به حد ضرر/حد سود بروکر دست نمی‌زند (تغییر دستی شما در MT5 می‌ماند).
+        True = همین الان بسته شد (فقط وقتی قیمت از قیمت خروج خود شما رد شده باشد)."""
+        side = info["side"]
+        held = bool(info.get("hold"))
+        xtp = float(info.get("xtp") or 0.0) if held else 0.0
+        xsl = float(info.get("xsl") or 0.0) if held else 0.0
+        if xtp > 0 and trk.reached(side, price, xtp, upper=True):     # بازار با فاصله از قیمت خروج شما باز شد
+            return self._close_at_stop(tk, info, price, profit, "رسیدن به قیمت خروج شما", code="exit_tp")
+        if xsl > 0 and trk.beyond_soft_sl(side, price, xsl):
+            return self._close_at_stop(tk, info, price, profit, "رسیدن به قیمت خروج پایین شما", code="exit_sl")
+        if now - self._sl_fail_t.get(tk, 0.0) <= 60:     # بستن بالا با close_retry خودش؛ تغییر حد هر دقیقه
+            return False
+        have = float(getattr(p, "sl", 0.0) or 0.0)
+        have_tp = float(getattr(p, "tp", 0.0) or 0.0)
+        want = round(xsl or float(info["sl"]), 2)
+        note = ""
+        if trk.beyond_soft_sl(side, price, want):         # حد ضرر سیگنال از قیمت رد شده؛ بروکر قبول نمی‌کند
+            note = (f"\nℹ️ حد ضرر سیگنال ({want:.2f}) از قیمت فعلی رد شده؛ حد ضرر بروکر همان قبلی "
+                    f"({have:.2f}) ماند. اگر می‌خواهید، خودتان ببندید.")
+            want = have
+        tp_arg: Optional[float] = xtp if xtp > 0 else (0.0 if info.get("tp_owned") else None)
+        if abs(want - have) <= 0.095 and (tp_arg is None or abs(tp_arg - have_tp) <= 0.095):
+            info.pop("xdirty", None)                      # بروکر همین حالا درست است
+            self._save_state()
+            return False
+        res = (self.client.modify_sltp(tk, sl=want) if tp_arg is None
+               else self.client.modify_sltp(tk, sl=want, tp=tp_arg))
+        if res.ok:
+            self._sl_fail_t.pop(tk, None)
+            if tp_arg is not None:
+                info["tp_owned"] = tp_arg > 0
+            info.pop("xdirty", None)
+            info.pop("xfail", None)
+            self._save_state()
+            logger.info("scout #{} exits synced (plain stop): SL {} -> {} TP {} -> {}", tk, have, want, have_tp, tp_arg)
+            if note:
+                self.tg.send(f"#{tk}: قیمت‌های خروج روی بروکر اعمال شد." + note, self._close_buttons(tk))
+        else:
+            self._sl_fail_t[tk] = now                     # یک دقیقه بعد دوباره (xdirty می‌ماند)
+            logger.warning("scout #{} exits not set (plain stop): {}", tk, res.comment)
+            if not info.get("xfail"):
+                info["xfail"] = True
+                self._save_state()
+                self.tg.send(f"⚠️ قیمت خروج #{tk} روی بروکر گذاشته نشد: "
+                             f"{html.escape(str(res.comment))[:80]}. هر دقیقه بی‌صدا دوباره تلاش می‌شود.",
+                             self._close_buttons(tk))
         return False
 
     def _close_at_stop(self, tk: int, info: dict, price: float, profit: float, why: str,
@@ -1574,6 +1687,8 @@ class Scout:
             info["xtp"] = info["xsl"] = info["xprompt"] = None
             info["locked"] = False
             self._exit_ask.pop(int(tk), None)
+            if had_exits and not self.soft_stop:
+                info["xdirty"] = True                     # تیک بعدی مانیتور روی بروکر هم برمی‌دارد
         self._save_state()
         if cb:
             self.tg.ack(cb, "نگه داشته شد" if on else "نگه داشتن لغو شد")
@@ -1734,7 +1849,10 @@ class Scout:
             if tp_arg is not None:
                 info["tp_owned"] = tp_arg > 0
             self._sl_fail_t.pop(tk, None)
+            info.pop("xdirty", None)
             live = True
+        elif not self.soft_stop:
+            info["xdirty"] = True                         # با باز شدن بازار روی بروکر می‌رود
         self._save_state()
         if deleted:
             em = float(info.get("emerg") or info["sl"])
@@ -1971,8 +2089,9 @@ class Scout:
                 return
             if parts[0] == "a" and len(parts) == 3:
                 code = parts[2]
-                self.decide(parts[1], code in ("y", "o", "r", "b", "q"), cq["id"], override=code in ("o", "q"),
-                            hedge={"r": "reverse", "b": "both", "q": "both"}.get(code))
+                self.decide(parts[1], code in ("y", "o", "r", "b", "q", "x"), cq["id"],
+                            override=code in ("o", "q", "x"),
+                            hedge={"r": "reverse", "x": "reverse", "b": "both", "q": "both"}.get(code))
             elif parts[0] == "c" and len(parts) == 2:
                 self.close(int(parts[1]), cq["id"])
             elif parts[0] == "h" and len(parts) == 2:
@@ -2363,8 +2482,11 @@ class Scout:
             if not st or st.get("first") is None or st.get("n", 0) < getattr(self, "audit_min_n", 5):
                 continue
             pct = int(round(st["first"] * 100))
-            mark = "✅" if st["first"] >= 0.6 else ("⚠️" if st["first"] < 0.5 else "")
-            weak = weak or st["first"] < 0.5
+            # همان منطق برچسب بالای هشدار (بازهٔ ۹۵٪)، تا دو خط یک هشدار با هم تناقض نداشته باشند
+            decided = int(st.get("plus", 0)) + int(st.get("minus", 0)) + int(st.get("both", 0))
+            lo, hi = sig_audit.wilson(int(st.get("plus", 0)), decided)
+            mark = "✅" if lo > 0.5 else ("⚠️" if hi < 0.5 else "")
+            weak = weak or hi < 0.5
             parts.append(f"{mark}<code>{name}</code> {pct}٪ ({st['n']})")
         if not parts:
             return ""
@@ -2486,8 +2608,41 @@ class Scout:
         self.alert(r, self.client.spread_points() or 0.0)
 
     # -------------------------------------------------------------------- loop
+    def _startup_failed(self, why: str, now: Optional[float] = None) -> None:
+        """اسکات نتوانست روشن شود: در تلگرام بگو (حداکثر هر startup_notify_minutes یک بار، چون
+        تسک ویندوز هر چند دقیقه دوباره امتحان می‌کند)."""
+        now = time.time() if now is None else now
+        path = Path(str(self.s.get("scout.startup_fail_file", "data/scout_startup_fail.json")))
+        every = float(self.s.get("scout.startup_notify_minutes", 30)) * 60.0
+        last = float((fu.load_json(path, {}) or {}).get("t", 0.0) or 0.0)
+        logger.error("scout startup failed: {}", why)
+        if now - last < every:
+            return
+        self.tg.send(f"⚠️ <b>اسکات روشن نشد</b>: {html.escape(why)[:200]}\n"
+                     "پوزیشن‌های باز فقط با حد ضرر روی بروکر محافظت می‌شوند. تسک ویندوز چند دقیقه بعد "
+                     "دوباره امتحان می‌کند؛ اگر نشد، MT5 را روی VPS باز و وصل کنید.")
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps({"t": now, "why": why[:200]}), encoding="utf-8")
+        except OSError:                                # pragma: no cover
+            pass
+
+    def _safe_update(self, u: dict) -> None:
+        """خطای یک دکمه/پیام بقیهٔ صف و حلقه را نگه ندارد؛ به مالک هم بگو."""
+        try:
+            self.handle_update(u)
+        except Exception as exc:
+            logger.exception("scout: telegram update failed: {}", exc)
+            cq = u.get("callback_query") or {}
+            if cq.get("id"):
+                try:
+                    self.tg.ack(cq["id"], "خطا در ارتباط با MT5 — چند ثانیه بعد دوباره بزنید")
+                except Exception:                      # pragma: no cover
+                    pass
+
     def run(self) -> None:
         if not self.client.connect():
+            self._startup_failed("اتصال به MT5 برقرار نشد")
             raise SystemExit("MT5 connect failed")
         acc = self.client.account_info()
         self.restore()                                  # اول پوزیشن‌های باز، تا پیام روشن شدن تعدادشان را درست بگوید
@@ -2508,7 +2663,7 @@ class Scout:
             try:
                 self.beat()
                 while not self.tg.q.empty():
-                    self.handle_update(self.tg.q.get_nowait())
+                    self._safe_update(self.tg.q.get_nowait())
 
                 self.expire()
                 m15 = self.client.get_rates("M15", 700)

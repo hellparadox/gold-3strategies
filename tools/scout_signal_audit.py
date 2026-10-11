@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import csv
 import sys
+from datetime import timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -132,9 +133,25 @@ def audit(alerts: pd.DataFrame, m1: Optional[pd.DataFrame], horizon: int = 60,
     return df
 
 
-def tehran_hour(bar: Any, offset_min: int, bar_minutes: int = 15) -> Optional[int]:
+def server_to_tehran_minutes(bar: Any) -> int:
+    """ساعت تهران منهای ساعت سرور بروکر، برای همان لحظه.
+    فرض: ساعت سرور = نیویورک + ۷ (رایج‌ترین قرار بروکرهای طلا: تابستان UTC+3، زمستان UTC+2)؛
+    تهران همیشه UTC+3:30 (ساعت تابستانی ندارد). تابستان ۳۰ دقیقه، زمستان ۹۰ دقیقه."""
     try:
-        t = pd.Timestamp(bar) + pd.Timedelta(minutes=bar_minutes + offset_min)
+        from tools import scout_control as ctl
+    except Exception:                      # pragma: no cover
+        import scout_control as ctl
+    t = pd.Timestamp(bar).to_pydatetime()
+    guess_utc = t.replace(tzinfo=timezone.utc) - timedelta(hours=3)
+    server = ctl.new_york_offset_hours(guess_utc) + 7
+    return 210 - server * 60
+
+
+def tehran_hour(bar: Any, offset_min: Optional[int] = None, bar_minutes: int = 15) -> Optional[int]:
+    """ساعت تهرانِ بسته شدن کندل؛ offset_min=None یعنی خودکار (server_to_tehran_minutes)."""
+    try:
+        off = server_to_tehran_minutes(bar) if offset_min is None else int(offset_min)
+        t = pd.Timestamp(bar) + pd.Timedelta(minutes=bar_minutes + off)
     except (TypeError, ValueError):
         return None
     return int(t.hour)
@@ -216,7 +233,7 @@ DECISION_FA = {"contra": "خلاف جهت گرفتید", "taken": "تأیید ک
                "order_failed": "خطای سفارش", "order_uncertain": "سفارش نامشخص"}
 
 
-def audit_report(df: pd.DataFrame, offset_min: int = 30, tight: float = TIGHT_STOP) -> Dict[str, Any]:
+def audit_report(df: pd.DataFrame, offset_min: Optional[int] = None, tight: float = TIGHT_STOP) -> Dict[str, Any]:
     """کارنامهٔ سیگنال‌ها برای داشبورد: کل، برچسب، جهت، ستاپ، ساعت تهران، تصمیم."""
     rep: Dict[str, Any] = {"n": int(len(df)), "all": group_stats(df),
                            "from": str(df.ts.min()) if len(df) else None, "to": str(df.ts.max()) if len(df) else None}
@@ -233,7 +250,7 @@ def audit_report(df: pd.DataFrame, offset_min: int = 30, tight: float = TIGHT_ST
     return rep
 
 
-def summarize(df: pd.DataFrame, offset_min: int = 30) -> str:
+def summarize(df: pd.DataFrame, offset_min: Optional[int] = None) -> str:
     ok = df[df.status != "no_data"]
     out = [f"SCOUT SIGNAL AUDIT  alerts={len(df)}  with data={len(ok)}  "
            f"(from {df.ts.min() if len(df) else '-'} to {df.ts.max() if len(df) else '-'})",
@@ -273,7 +290,8 @@ def main() -> None:
     ap.add_argument("--until", default=None)
     ap.add_argument("--horizon", type=int, default=60, help="دقیقه برای MFE/MAE")
     ap.add_argument("--race", type=int, default=240, help="دقیقه برای «اول ‎+1R یا ‎-1R»")
-    ap.add_argument("--tehran-offset", type=int, default=30, help="دقیقه: ساعت تهران منهای ساعت سرور بروکر")
+    ap.add_argument("--tehran-offset", type=int, default=None,
+                    help="دقیقه: ساعت تهران منهای ساعت سرور بروکر (پیش‌فرض خودکار: تابستان 30، زمستان 90)")
     ap.add_argument("--out", default="data/scout_signal_audit.csv")
     a = ap.parse_args()
     from core import Settings
