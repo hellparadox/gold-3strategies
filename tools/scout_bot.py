@@ -122,7 +122,7 @@ JOURNAL_FIELDS = ["ts", "event", "alert", "setup", "n_setups", "side", "bar", "p
 SETUP_ABBR = {
     "kijun_pullback": "kp", "tenkan_momentum": "tm", "range_break": "rb",
     "pullback_resume": "pr", "cloud_break": "cb", "tk_cross": "tk", "rejection": "rj",
-    "engulfing": "en", "ignition": "ig", "exhaustion": "ex",
+    "engulfing": "en", "ignition": "ig", "exhaustion": "ex", "manual": "man",
 }
 
 
@@ -588,7 +588,7 @@ class Scout:
 
     # ------------------------------------------------------- what-if
     def track_whatif(self, aid: str, p: dict, decision: str) -> None:
-        if not self.whatif_enabled:
+        if not self.whatif_enabled or p.get("manual"):      # سفارش دستی سیگنال نبود؛ «اگر گرفته بودید» ندارد
             return
         try:
             r = p["row"]
@@ -929,6 +929,69 @@ class Scout:
                  n_setups=n_set, side=r.side, bar=str(r.bar),
                  price=entry, sl=round(sl, 2), tp=round(tp, 2), atr=round(r.atr, 3),
                  spread=spread_pts, risk_usd=risk)
+
+    # ------------------------------------------------------------- سفارش دستی (/buy /sell)
+    MANUAL_EXPIRY = 300                                   # قیمت دستی زود کهنه می‌شود: ۵ دقیقه
+
+    def manual_start(self, side: str, extra: str = "") -> None:
+        """/buy یا /sell: کارت تأیید با حد ضرر = سقف تنظیمات؛ باز کردن فقط با «✅ تأیید» (همان مسیر decide)."""
+        side = "BUY" if str(side).upper() == "BUY" else "SELL"
+        if not self.market_open():
+            self.tg.send("⛔ بازار بسته است؛ سفارش دستی ساخته نشد.")
+            return
+        if not self.sl_cap:
+            self.tg.send("⛔ سقف حد ضرر در تنظیمات صفر/خالی است؛ بدون آن سفارش دستی نمی‌سازم. "
+                         "از 🛠 تنظیمات «حد ضرر» را تعیین کنید.")
+            return
+        try:
+            tick = self.client.get_tick()
+        except Exception as exc:                          # pragma: no cover
+            logger.warning("scout manual: tick failed: {}", exc)
+            tick = None
+        entry = float(getattr(tick, "ask" if side == "BUY" else "bid", 0.0) or 0.0) if tick is not None else 0.0
+        if entry <= 0:
+            self.tg.send("⚠️ قیمت از MT5 نرسید؛ سفارش دستی ساخته نشد. چند ثانیه بعد دوباره امتحان کنید.")
+            return
+        try:
+            spread_pts = float(self.client.spread_points() or 0.0)
+        except Exception:                                 # pragma: no cover
+            spread_pts = 0.0
+        try:
+            atr = float(self._frame["atr"].iloc[-1])
+        except Exception:
+            atr = 0.0
+        for old in [k for k, v in self.pending.items() if v.get("manual")]:     # فقط یک کارت دستی زنده
+            q = self.pending.pop(old)
+            if q["mid"]:
+                self.tg.edit(q["mid"], q["txt"] + "\n\n↩️ <b>کارت جدیدتر جایگزین شد</b>")
+            self.log(event="cancelled", alert=old, setup="manual", side=q["row"].side, note="replaced")
+        self.n += 1
+        aid = f"m{self.n}"                                # پیشوند m: با شمارهٔ هشدارهای سیگنال (که بعد از ری‌استارت از ۱ شروع می‌شود) قاطی نشود
+        dist = float(self.sl_cap)
+        r = pd.Series({"setup": "manual", "side": side, "ref_close": entry, "sl_dist": dist,
+                       "tp_dist": 2.0 * dist, "atr": atr, "bar": pd.Timestamp(datetime.now())})
+        _e, sl, tp, risk, _n = self.levels(r)
+        exp = min(float(self.expiry), float(self.MANUAL_EXPIRY))
+        txt = (f"✋ <b>سفارش دستی — {'🟢 BUY' if side == 'BUY' else '🔴 SELL'}</b>\n"
+               f"قیمت: <b>{entry:.2f}</b> ({'ask' if side == 'BUY' else 'bid'}) · اسپرد {spread_pts:.0f}\n"
+               f"حد ضرر: {sl:.2f} ({dist:.2f} = سقف تنظیمات) · لات {self.lot}\n"
+               f"ریسک: ${risk} · هدف ندارد؛ خروج با خود شما (دکمهٔ بستن)\n"
+               f"<i>{int(exp // 60)} دقیقه فرصت پاسخ؛ قیمت ورود لحظهٔ تأیید دوباره خوانده می‌شود</i>")
+        if extra:
+            txt += "\nℹ️ عدد/متن بعد از دستور نادیده گرفته شد: حد ضرر همیشه سقف تنظیمات است."
+        if self.open:
+            block = self.entry_block(side, self.new_risk_usd(side, entry, sl))
+            hedge = bool(block) and block.startswith("پوزیشن خلاف")
+            txt += (f"\n⚠️ پوزیشن باز: {self.open_summary()}"
+                    + (f"\n⚠️ {block}؛ با تأیید، اسکات می‌پرسد: پوزیشن قبلی را ببندد و جهت را عوض کند، "
+                       "هر دو باز بمانند، یا رد." if hedge else
+                       f"\n⚠️ {block}؛ با تأیید، اسکات ضرر احتمالی کل را می‌گوید و از شما می‌پرسد." if block else
+                       f"\nبا تأیید، پوزیشن دوم باز می‌شود (ریسک کل حداکثر {self.max_total_risk:.0f}$)."))
+        mid = self.tg.send(txt, self.alert_buttons(aid, analyze=False))
+        self.pending[aid] = {"row": r, "sl": sl, "tp": tp, "mid": mid, "t": time.time(), "txt": txt,
+                             "lot": self.lot, "exp": exp, "ctx": "", "wctx": {}, "manual": True}
+        self.log(event="manual_card", alert=aid, setup="manual", side=side, price=entry, sl=round(sl, 2),
+                 atr=round(atr, 3), spread=spread_pts, risk_usd=risk)
 
     @staticmethod
     def alert_buttons(aid: str, analyze: bool = True, reverse_side: Optional[str] = None) -> list:
@@ -2105,6 +2168,7 @@ class Scout:
          {"text": "▶️ ادامهٔ هشدارها", "callback_data": "k|resume"}],
         [{"text": "🔔 هشدار قیمت", "callback_data": "k|palert"},
          {"text": "🏁 جدول امتیاز", "callback_data": "k|score"}],
+        [{"text": "🟢 خرید دستی", "callback_data": "k|buy"}, {"text": "🔴 فروش دستی", "callback_data": "k|sell"}],
         [{"text": "🛠 تنظیمات", "callback_data": "k|settings"}],
         [{"text": "🔄 ری‌استارت", "callback_data": "k|restart"},
          {"text": "❓ راهنما", "callback_data": "k|help"}],
@@ -2210,6 +2274,8 @@ class Scout:
             self.panel({"/positions": "pos"}.get(cmd, cmd[1:]))
         elif cmd == "/settings":
             self.settings_show()
+        elif cmd in ("/buy", "/sell"):
+            self.manual_start(cmd[1:].upper(), extra=" ".join(msg.split()[1:]))
         elif cmd == "/alert":
             self.price_alert_cmd(msg)
         elif cmd == "/alerts":
@@ -2444,6 +2510,8 @@ class Scout:
                 self.price_alerts_list()
             elif what == "settings":
                 self.settings_show()
+            elif what in ("buy", "sell"):
+                self.manual_start(what.upper())
             elif what == "score":
                 self.send_scoreboard(force=True)
             elif what == "restart_no":

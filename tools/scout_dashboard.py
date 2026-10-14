@@ -40,7 +40,7 @@ EVENT_FA = {
     "reached_1R": "🎯 رسید به 1R", "structure_break": "⚠️ شکست ساختار", "hold": "⏸ نگه دار",
     "unhold": "▶️ لغو نگه داشتن", "sl_close": "⛔ بسته در حد ضرر", "ai_hold": "🤖 هوش مصنوعی نگه داشت",
     "ai_close": "🤖 هوش مصنوعی بست", "analysis": "🤖 تحلیل", "feed_stale": "📡 قطع داده",
-    "feed_ok": "📡 داده برگشت", "approved_dry": "🧪 تأیید آزمایشی",
+    "feed_ok": "📡 داده برگشت", "approved_dry": "🧪 تأیید آزمایشی", "manual_card": "✋ کارت سفارش دستی",
 }
 HIDDEN_EVENTS = {"suppressed"}
 
@@ -921,7 +921,7 @@ function render(d){
   ].map(([k,v,sub,c])=>`<div class="tile"><div class="k">${k}</div><div class="v num ${c}">${v}</div><div class="s">${sub}</div></div>`).join('');
   const op=d.open||[];
   $('open').innerHTML=op.length?op.map(p=>`<div class="card ${p.side==='BUY'?'buy':'sell'}">
-     <div class="top"><b>${p.side==='BUY'?'🟢 خرید':'🔴 فروش'} <span class="mono">#${p.ticket}</span> · <span class="mono">${esc(p.setup)}</span></b>
+     <div class="top"><b>${p.side==='BUY'?'🟢 خرید':'🔴 فروش'} <span class="mono">#${p.ticket}</span> · <span class="mono">${esc(setupFa(p.setup))}</span></b>
      <span class="pnl num ${cls(p.profit)}">${money(p.profit)}</span></div>
      <div class="kv"><span>ورود <b class="num">${p.entry.toFixed(2)}</b></span><span>الان <b class="num">${p.price?p.price.toFixed(2):'—'}</b></span>
      <span>حد ضرر سیگنال <b class="num">${p.sl.toFixed(2)}</b></span><span>روی بروکر <b class="num">${p.broker_sl?p.broker_sl.toFixed(2):'—'}</b></span>
@@ -930,7 +930,7 @@ function render(d){
     :'<div class="empty">پوزیشن بازی نیست.</div>';
   const pe=d.pending||[];
   $('pending').innerHTML=pe.length?pe.map(p=>`<div class="card ${p.side==='BUY'?'buy':'sell'}">
-     <div class="top"><b>${p.side==='BUY'?'🟢 خرید':'🔴 فروش'} · <span class="mono">${esc(p.setup)}</span></b><span class="muted">${p.left_min} دقیقه مانده</span></div>
+     <div class="top"><b>${p.side==='BUY'?'🟢 خرید':'🔴 فروش'} · <span class="mono">${esc(setupFa(p.setup))}</span></b><span class="muted">${p.left_min} دقیقه مانده</span></div>
      <div class="kv"><span>قیمت <b class="num">${p.price.toFixed(2)}</b></span><span>حد ضرر <b class="num">${p.sl.toFixed(2)}</b></span><span>ریسک <b class="num">$${p.risk.toFixed(2)}</b></span></div>
      ${p.analysis?`<div class="muted">🤖 ${esc(p.analysis)}</div>`:''}</div>`).join('')
     :'<div class="empty">هشدار بی‌جوابی نیست. جواب دادن فقط از تلگرام است.</div>';
@@ -940,7 +940,7 @@ function render(d){
      return `<div class="b" title="${x.d}: ${money(x.pnl)} · ${x.n} معامله"><i class="${x.pnl>=0?'p':'n'}" style="height:${x.pnl?h:0}%"></i></div>`}).join('');
   $('blab').innerHTML=days.map(x=>`<span>${x.d.slice(5).replace('-','/')}</span>`).join('');
   $('vnote').textContent=st.has_virtual?'':'(نتیجهٔ فرضی هنوز حساب نشده)';
-  $('setups').innerHTML=(st.setups||[]).map(r=>`<tr><td class="mono">${esc(r.setup)}</td><td class="n">${r.alerts}</td><td class="n">${r.taken}</td><td class="n">${r.trades}</td>
+  $('setups').innerHTML=(st.setups||[]).map(r=>`<tr><td class="mono">${esc(setupFa(r.setup))}</td><td class="n">${r.alerts}</td><td class="n">${r.taken}</td><td class="n">${r.trades}</td>
      <td class="n ${cls(r.pnl)}">${r.trades?money(r.pnl):'—'}</td><td class="n ${cls(r.avg_R)}">${r.avg_R!=null?(r.avg_R>0?'+':'')+r.avg_R.toFixed(2)+'R':'—'}</td>
      <td class="n">${r.win_R!=null?r.win_R+'٪':'—'}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">هنوز داده‌ای نیست</td></tr>';
   const sd=st.sides||{};
@@ -970,6 +970,7 @@ function renderPicks(p){
 }
 
 const SIDE_FA={BUY:'🟢 خرید',SELL:'🔴 فروش'};
+const setupFa=s=>String(s)==='manual'?'✋ دستی':String(s);
 function dur(sec){if(sec==null)return '—';const m=Math.round(sec/60);if(m<60)return m+' د';const h=Math.floor(m/60),r=m%60;return h+' س'+(r?' '+r+' د':'');}
 function renderTrades(list){
   list=list||[];
@@ -995,7 +996,7 @@ function renderTrades(list){
     const tags=[x.held?'<span class="tag">⏸ نگه داشته</span>':'',x.contra?'<span class="tag">↔️ خلاف سیگنال</span>':'',x.locked?'<span class="tag">🔒 بی‌ضرر شد</span>':''].join(' ');
     html+=`<tr><td class="mono nw">#${esc(x.ticket)}</td>
       <td class="n nw">${esc(od+x.open_hm)} → ${esc(x.close_hm)}<span class="sub">${dur(x.secs)}</span></td>
-      <td class="nw">${SIDE_FA[x.side]||esc(x.side)}</td><td class="mono setup">${esc(x.setup).replace(/\+/g,' + ').replace(/_/g,'_<wbr>')}</td>
+      <td class="nw">${SIDE_FA[x.side]||esc(x.side)}</td><td class="mono setup">${esc(setupFa(x.setup)).replace(/\+/g,' + ').replace(/_/g,'_<wbr>')}</td>
       <td class="n">${x.lot!=null?Number(x.lot).toFixed(2):'—'}</td>
       <td class="n nw">${x.entry!=null?x.entry.toFixed(2):'—'} → ${x.exit!=null?x.exit.toFixed(2):'—'}</td>
       <td class="n nw ${cls(x.profit)}"><b>${money(x.profit)}</b><span class="sub">${x.r!=null?(x.r>0?'+':'')+x.r.toFixed(2)+'R':''}</span></td>

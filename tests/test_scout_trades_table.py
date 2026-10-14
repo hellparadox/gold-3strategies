@@ -224,7 +224,8 @@ class Page(unittest.TestCase):
         js = page.split("<script>", 1)[1].rsplit("</script>", 1)[0]
         rows = dash.build_trades(trade("9", 6, "10:00", "11:14", gone_note=";how=manual;by=H;cby=H", profit=-16.74,
                                        note_open="lot=0.01;by=H")
-                                 + trade("8", 5, "09:00", "09:30", side="BUY", profit=4.2, gone_note="exit_tp;how=exit_tp;by=H;cby="))
+                                 + trade("8", 5, "09:00", "09:30", side="BUY", profit=4.2, setup="manual",
+                                         gone_note="exit_tp;how=manual;by=H;cby="))
         harness = r"""
 const els={};const mk=id=>els[id]||(els[id]={id,innerHTML:'',textContent:'',value:'',hidden:false,
   setAttribute(){},addEventListener(){},scrollIntoView(){}});
@@ -237,6 +238,7 @@ const out=els.trbody.innerHTML;
 if(!out.includes('#9')||!out.includes('#8'))throw new Error('rows missing');
 if(out.indexOf('#9')>out.indexOf('#8'))throw new Error('order');
 if(!out.includes('dayrow'))throw new Error('day header');
+if(!out.includes('✋ دستی'))throw new Error('manual label');
 if(!els.trtiles.innerHTML.includes('2'))throw new Error('tiles');
 TR.res='win';renderTrades(%s);
 if(els.trbody.innerHTML.includes('#9'))throw new Error('filter');
