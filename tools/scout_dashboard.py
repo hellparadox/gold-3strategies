@@ -1,10 +1,9 @@
-"""داشبورد وب اسکات — مثل داشبورد دو ربات دیگر، از داخل خود پروسهٔ اسکات.
+"""داشبورد وب اسکات — از داخل خود پروسهٔ اسکات.
 
 http://SERVER_IP:8082/?token=...   (پورت در scout.dashboard.port)
 
 - بدون وابستگی تازه: ThreadingHTTPServer روی یک نخ daemon.
-- توکن از env (DASHBOARD_TOKEN_SCOUT یا DASHBOARD_TOKEN، همان توکن دو داشبورد دیگر) یا از
-  scout.dashboard.token. بدون توکن داشبورد اصلاً روشن نمی‌شود (هیچ‌وقت عمومی نیست).
+- توکن از env (DASHBOARD_TOKEN_SCOUT یا DASHBOARD_TOKEN) یا از scout.dashboard.token. بدون توکن داشبورد اصلاً روشن نمی‌شود (هیچ‌وقت عمومی نیست).
 - نخ وب هیچ‌وقت MT5 را صدا نمی‌زند: فقط عکس‌لحظه‌ای را می‌خواند که حلقهٔ اصلی می‌سازد، به‌علاوهٔ
   ژورنال روی دیسک. فقط خواندنی است؛ هیچ دکمه‌ای سفارش نمی‌دهد یا چیزی را تغییر نمی‌دهد.
 """
@@ -25,6 +24,11 @@ from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
 from loguru import logger
+
+try:
+    from tools import scout_followup as _fu
+except Exception:                      # pragma: no cover
+    import scout_followup as _fu
 
 TEHRAN = timezone(timedelta(hours=3, minutes=30))     # ایران از ۱۴۰۱ ساعت تابستانی ندارد
 
@@ -174,6 +178,140 @@ def build_compare(scout: List[Dict[str, Any]], bots: Dict[str, List[Dict[str, An
     return out
 
 
+# --------------------------------------------------------------------------- جدول معاملات
+# «چه کسی/چه چیزی بست»: برای معاملات جدید از یادداشت gone (how=…;by=…;cby=…)، برای قدیمی‌ها از
+# رویدادهای closed / sl_close و نوع خروج.
+CLOSER = {
+    "manual":       ("شما", "دکمهٔ بستن"),
+    "reverse":      ("شما", "عوض کردن جهت"),
+    "ai":           ("هوش مصنوعی", "تصمیم در حد ضرر"),
+    "stop":         ("ربات", "حد ضرر سیگنال"),
+    "signal_sl":    ("ربات", "حد ضرر سیگنال"),
+    "emergency_sl": ("بروکر", "حد ضرر اضطراری"),
+    "emergency_bot": ("ربات", "حد ضرر اضطراری"),
+    "exit_tp":      ("ربات", "قیمت خروج شما (بالا)"),
+    "exit_sl":      ("ربات", "قیمت خروج شما (پایین)"),
+    "external":     ("بیرون از اسکات", "متاتریدر یا بروکر"),
+}
+
+
+def _kv(note: Any) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    for part in str(note or "").split(";"):
+        k, sep, v = part.partition("=")
+        if sep and k.strip():
+            out[k.strip()] = v.strip()
+    return out
+
+
+def _ok(v: Any) -> bool:
+    return str(v).strip().lower() in ("true", "1")
+
+
+def _old_close_code(evs: List[Dict[str, str]], kind: str) -> str:
+    """معاملات قدیمی (بدون how در gone): از رویدادهای همان تیکت حدس می‌زنیم."""
+    for e in evs:
+        if e.get("event") == "closed" and _ok(e.get("ok")):
+            return "reverse" if str(e.get("note") or "").startswith("reverse") else "manual"
+    for e in evs:
+        if e.get("event") == "ai_close":
+            return "ai"
+    for e in evs:
+        if e.get("event") == "sl_close" and _ok(e.get("ok")):
+            n = str(e.get("note") or "")
+            if "قیمت خروج پایین" in n:
+                return "exit_sl"
+            if "قیمت خروج" in n:
+                return "exit_tp"
+            if "اضطراری" in n:
+                return "emergency_bot"
+            if "هوش مصنوعی" in n:
+                return "ai"
+            return "stop"
+    return kind if kind in ("emergency_sl", "signal_sl", "exit_tp", "exit_sl") else "external"
+
+
+def build_trades(events: List[Dict[str, str]], lot: float = 0.01,
+                 actual_by_ticket: Optional[Dict[str, float]] = None, limit: int = 1000) -> List[Dict[str, Any]]:
+    """معاملات تأییدشده و بسته‌شدهٔ اسکات، جدیدترین بالا. هر ردیف همه‌چیز را دارد: باز/بسته چه کسی،
+    کی، جهت، ستاپ، ورود/خروج، سود و R، و چطور بسته شد."""
+    actual_by_ticket = actual_by_ticket or {}
+    by_tk: Dict[str, List[Dict[str, str]]] = {}
+    for e in events:
+        tk = str(e.get("ticket") or "").strip()
+        if tk:
+            by_tk.setdefault(tk, []).append(e)
+    rows: List[Dict[str, Any]] = []
+    for tk, evs in by_tk.items():
+        gone = next((e for e in evs if e.get("event") == "gone"), None)
+        if gone is None:
+            continue
+        opened = next((e for e in evs if e.get("event") == "opened"), None)
+        adopted = next((e for e in evs if e.get("event") == "adopted"), None)
+        profit = _f(gone.get("profit"))
+        if math.isnan(profit) and tk in actual_by_ticket:
+            profit = float(actual_by_ticket[tk])
+        t_close = _tehran(gone.get("ts", ""))
+        if math.isnan(profit) or t_close is None:
+            continue
+        o = opened or {}
+        gk = _kv(gone.get("note"))
+        ok_ = _kv(o.get("note"))
+        kind = str(gone.get("note") or "").split(";")[0].strip()
+        t_open = _tehran((opened or adopted or {}).get("ts", ""))
+        entry = _f(o.get("price"))
+        if math.isnan(entry):
+            entry = _f(gone.get("entry"))
+        exit_px = _f(gone.get("price"))
+        sl = _f(o.get("sl"))
+        if math.isnan(sl) and adopted is not None:
+            sl = _f(adopted.get("sl"))
+        trade_lot = _note_lot(o.get("note"), lot)
+        r = None if (math.isnan(entry) or math.isnan(sl)) else _r(profit, entry, sl, trade_lot)
+
+        code = gk.get("how") or ""
+        if code == "stop":                       # ربات بست؛ حد سیگنال یا اضطراری؟ از نوع خروج
+            code = "emergency_bot" if kind == "emergency_sl" else "stop"
+        elif not code:
+            code = _old_close_code(evs, kind)
+        who, how = CLOSER.get(code, CLOSER["external"])
+        cname = gk.get("cby") or next((_kv(e.get("note")).get("by", "") for e in evs
+                                        if e.get("event") == "closed" and _ok(e.get("ok"))), "")
+        closed_by = who + (f" ({cname})" if who == "شما" and cname else "")
+
+        oname = ok_.get("by") or gk.get("by") or ""
+        if adopted is not None and opened is None:
+            opened_by = "بیرون از اسکات (پیدا و تحت نظر گرفته شد)"
+        elif oname:
+            opened_by = f"شما ({oname})"
+        else:
+            opened_by = "شما (نام ثبت نشده)"
+        secs = (t_close - t_open).total_seconds() if t_open else None
+        held = any(e.get("event") == "hold" for e in evs) or gk.get("held") == "1"
+        rows.append({
+            "ticket": tk, "alert": str(gone.get("alert") or o.get("alert") or ""),
+            "t_close": t_close.astimezone(timezone.utc).isoformat(),
+            "day": t_close.date().isoformat(), "day_fa": _fu.jalali_label(t_close.date()),
+            "open_hm": t_open.strftime("%H:%M") if t_open else "—",
+            "open_day": t_open.date().isoformat() if t_open else "",
+            "close_hm": t_close.strftime("%H:%M"),
+            "secs": None if secs is None or secs < 0 else int(secs),
+            "side": gone.get("side") or o.get("side") or "",
+            "setup": str(gone.get("setup") or o.get("setup") or "").replace(",", "+") or "—",
+            "lot": trade_lot,
+            "entry": None if math.isnan(entry) else round(entry, 2),
+            "exit": None if math.isnan(exit_px) else round(exit_px, 2),
+            "sl": None if math.isnan(sl) else round(sl, 2),
+            "profit": round(profit, 2), "r": r,
+            "opened_by": opened_by, "closed_by": closed_by, "closed_how": how, "close_code": code,
+            "held": bool(held), "contra": "contra=1" in str(o.get("note") or ""),
+            "locked": gk.get("locked") == "1",
+        })
+    rows.sort(key=lambda x: x["t_close"], reverse=True)
+    return rows[:limit]
+
+
+
 def build_picks(virtual: Optional[List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
     """انتخاب‌های شما در برابر بقیهٔ سیگنال‌ها، با نتیجهٔ فرضی (هدف 2R) برای همه به یک شکل."""
     if not virtual:
@@ -194,7 +332,7 @@ def build_picks(virtual: Optional[List[Dict[str, Any]]]) -> Optional[Dict[str, A
 
 def build_stats(events: List[Dict[str, str]], now: Optional[datetime] = None,
                 virtual: Optional[List[Dict[str, Any]]] = None,
-                actual_by_ticket: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
+                actual_by_ticket: Optional[Dict[str, float]] = None, lot: float = 0.01) -> Dict[str, Any]:
     """آمار صفحه از ژورنال. virtual = ردیف‌های scout_stats (setup, side, status, R) اگر حساب شده باشد."""
     now = (now or datetime.now(TEHRAN)).astimezone(TEHRAN)
     actual_by_ticket = actual_by_ticket or {}
@@ -300,6 +438,7 @@ def build_stats(events: List[Dict[str, str]], now: Optional[datetime] = None,
         "sides": {s: {"n": len(v), "sum_R": round(sum(v), 1) if v else None} for s, v in sides.items()},
         "has_virtual": bool(virtual),
         "recent": recent,
+        "trades": build_trades(events, lot, actual_by_ticket),
     }
 
 
@@ -405,7 +544,7 @@ class _Handler(BaseHTTPRequestHandler):
 GUIDE = r'''<div class="pane guide" id="p-guide" role="tabpanel" aria-labelledby="t-guide" hidden>
 
   <section><h2>اسکات چیست؟</h2>
-    <p>اسکات سومین ربات طلاست و با دو ربات دیگر یک فرق اصلی دارد: <b>خودش وارد معامله نمی‌شود.</b> ORB و ایچیموکو خودکار معامله می‌کنند، ولی اسکات فقط ستاپ‌ها را پیدا می‌کند، در تلگرام خبر می‌دهد و تصمیم را به شما می‌سپارد.</p>
+    <p>اسکات یک دیدبان است، نه ربات خودکار: <b>خودش وارد معامله نمی‌شود.</b> فقط ستاپ‌ها را پیدا می‌کند، در تلگرام خبر می‌دهد و تصمیم را به شما می‌سپارد.</p>
     <p>همهٔ معاملات با حجم ثابت <b data-r="lot">0.01</b> لات روی حساب دمو انجام می‌شوند تا نتیجهٔ ستاپ‌ها منصفانه مقایسه شود. همه‌چیز در دفتر اسکات ثبت می‌شود، حتی هشدارهایی که رد کرده‌اید. همین‌طور می‌شود فهمید کدام ستاپ واقعاً جواب می‌دهد.</p>
   </section>
 
@@ -475,16 +614,19 @@ GUIDE = r'''<div class="pane guide" id="p-guide" role="tabpanel" aria-labelledby
     <p class="hint">در حالت «نگه داشتن» هر پوزیشن تا حد ضرر اضطراری (حداکثر <b data-r="emerg_cap" data-pre="$">$20</b>) حساب می‌شود؛ برای همین با یک پوزیشن باز، سقف ۲۰ دلاری معمولاً پر است و اسکات برای دومی از شما می‌پرسد.</p>
   </section>
 
-  <section><h2>بخش رقابت چطور حساب می‌شود</h2>
-    <p>هر معامله با <b>R</b> سنجیده می‌شود: سود تقسیم بر ریسک اولیه (فاصلهٔ ورود تا حد ضرر ضرب در حجم). مثلاً اگر ریسک یک معامله ۱۰ دلار بوده و ۲۰ دلار سود داده، نتیجه‌اش ‎+2R است. این‌طوری ربات‌هایی که حجم متفاوت دارند منصفانه مقایسه می‌شوند.</p>
-    <p>نتایج ORB و ایچیموکو از دیتابیس خودشان خوانده می‌شود (فقط خواندن). نتایج اسکات معاملاتی است که شما تأیید کرده‌اید. بخش «انتخاب‌های شما» همهٔ سیگنال‌های اسکات را با یک معیار فرضی مقایسه می‌کند تا معلوم شود انتخاب شما بهتر از گرفتن همهٔ سیگنال‌هاست یا نه.</p>
+  <section><h2>R و انتخاب‌های شما</h2>
+    <p>هر معامله با <b>R</b> سنجیده می‌شود: سود تقسیم بر ریسک اولیه (فاصلهٔ ورود تا حد ضرر ضرب در حجم). مثلاً اگر ریسک یک معامله ۱۰ دلار بوده و ۲۰ دلار سود داده، نتیجه‌اش ‎+2R است. بخش «انتخاب‌های شما» همهٔ سیگنال‌های اسکات را با یک معیار فرضی مقایسه می‌کند تا معلوم شود انتخاب شما بهتر از گرفتن همهٔ سیگنال‌هاست یا نه.</p>
+  </section>
+
+  <section><h2>تب «معاملات»</h2>
+    <p>فهرست همهٔ معاملاتی که تأیید و بسته شده‌اند، جدیدترین بالا و به تفکیک روز. برای هر معامله: زمان باز و بسته شدن، مدت، جهت، ستاپ، لات، قیمت ورود و خروج، سود و ضرر، و اینکه چه کسی باز کرد و چه کسی یا چه چیزی بست (شما با دکمهٔ بستن، حد ضرر سیگنال، حد ضرر اضطراری، هوش مصنوعی، قیمت خروجی که شما گذاشتید، یا بیرون از اسکات). نام کسی که تأیید یا بسته است از این نسخه به بعد ثبت می‌شود؛ معاملات قدیمی‌تر «نام ثبت نشده» دارند.</p>
   </section>
 
   <section><h2>نمودار، «اگر گرفته بودید» و ابزارها</h2>
     <div class="gl">
       <div><b>📊 نمودار هشدار</b><span>زیر هر هشدار یک نمودار ۱۵ دقیقه‌ای می‌آید. سبز: از ورود تا هدف 2R (محدودهٔ سود). قرمز: از ورود تا حد ضرر. کهربایی: محدودهٔ خنثی دور ورود، جایی که بستن به‌خاطر اسپرد تقریباً سر به سر است. خط نقطه‌چین سبز: 1R.</span></div>
       <div><b>🔮 اگر گرفته بودید…</b><span>هشداری که رد کنید، منقضی شود یا به‌خاطر سقف باز نشود، بی‌صدا دنبال می‌شود. وقتی به هدف یا حد ضرر رسید (حداکثر ۲۴ ساعت)، نتیجه و دلیلش زیر همان هشدار می‌آید: هم‌جهت یا خلاف روند یک‌ساعته، جای قیمت نسبت به ابر، خبر، و مسیر قیمت.</span></div>
-      <div><b>🏁 جدول امتیاز شبانه</b><span>هر شب ساعت ۲۳:۵۵ تهران: امروز و ۷ روز اخیر، شما + اسکات در برابر ORB و ایچیموکو با R، به‌علاوهٔ تعداد ردهای درست. روزهای بی‌فعالیت پیامی نمی‌آید؛ از منو هر وقت خواستید.</span></div>
+      <div><b>🏁 جدول امتیاز شبانه</b><span>هر شب ساعت ۲۳:۵۵ تهران: امروز و ۷ روز اخیر با R، به‌علاوهٔ تعداد ردهای درست. روزهای بی‌فعالیت پیامی نمی‌آید؛ از منو هر وقت خواستید.</span></div>
       <div><b>🔔 هشدار قیمت</b><span><span class="mono">/alert 4150</span> وقتی طلا به ۴۱۵۰ برسد خبر می‌دهد (با یادداشت هم می‌شود). <span class="mono">/alerts</span> فهرست و حذف.</span></div>
     </div>
   </section>
@@ -623,7 +765,17 @@ footer{font-size:.78rem;color:var(--muted);border-top:1px solid var(--line);padd
 .picks{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media (max-width:720px){.picks{grid-template-columns:repeat(2,minmax(0,1fr))}}
 tr.me td{background:color-mix(in srgb,var(--gold-soft) 55%,transparent);font-weight:700}
-#cmpwin{margin-top:0}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.filters select{font:inherit;font-size:.88rem;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 10px}
+table.wide{min-width:940px}
+table.wide td{vertical-align:top}
+table.wide th,table.wide td{padding:8px 7px}
+.nw{white-space:nowrap}
+.setup{min-width:138px}
+.tag{white-space:nowrap}
+.sub{display:block;color:var(--muted);font-size:.74rem}
+tr.dayrow td{background:color-mix(in srgb,var(--gold-soft) 55%,var(--surface));font-weight:700;font-size:.86rem}
+.who{font-size:.84rem;line-height:1.5} .who small{display:block;color:var(--muted);font-size:.74rem}
 .hint{margin:-6px 0 0;font-size:.84rem;color:var(--muted);max-width:75ch}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:-14px}
 .tab{font:inherit;font-size:.92rem;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:8px;padding:5px 14px;cursor:pointer}
@@ -660,6 +812,7 @@ details p{margin-top:6px;color:var(--muted);font-size:.9rem}
   </header>
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="t-dash" aria-selected="true" aria-controls="p-dash">📊 داشبورد</button>
+    <button class="tab" role="tab" id="t-trades" aria-selected="false" aria-controls="p-trades">🧾 معاملات</button>
     <button class="tab" role="tab" id="t-audit" aria-selected="false" aria-controls="p-audit">🧭 کارنامهٔ سیگنال‌ها</button>
     <button class="tab" role="tab" id="t-guide" aria-selected="false" aria-controls="p-guide">📖 راهنمای اسکات</button>
   </div>
@@ -672,16 +825,6 @@ details p{margin-top:6px;color:var(--muted);font-size:.9rem}
   <section><h2>امروز و کل <small id="asof"></small></h2>
     <p class="hint">موجودی و اکوییتی از خود حساب می‌آید. «اکوییتی» یعنی موجودی به‌علاوهٔ سود و زیان پوزیشن‌های باز. سود امروز و ۷ روز فقط معاملات بسته‌شدهٔ اسکات را می‌شمارد، به روز تهران.</p>
     <div class="tiles" id="tiles"></div></section>
-
-  <section><h2>🏁 رقابت <small id="cmpnote">شما + اسکات در برابر دو ربات خودکار</small></h2>
-    <p class="hint">مقایسهٔ اصلی با <b>R</b> است: سود هر معامله تقسیم بر ریسک اولیه‌اش. چون حجم معاملهٔ ربات‌ها با هم فرق دارد، دلار به‌تنهایی مقایسهٔ منصفانه‌ای نیست و فقط برای اطلاع آمده است. «جمع R» یعنی در کل چند برابر ریسک یک معامله سود یا ضرر شده.</p>
-    <div class="tabs" role="tablist" id="cmpwin">
-      <button class="tab" data-w="7d" aria-selected="true">۷ روز اخیر</button>
-      <button class="tab" data-w="30d" aria-selected="false">۳۰ روز</button>
-      <button class="tab" data-w="start" aria-selected="false">از شروع اسکات</button>
-    </div>
-    <div class="tablewrap"><table><thead><tr><th>رقیب</th><th>معامله</th><th>برد</th><th>میانگین R</th><th>جمع R</th><th>سود دلاری</th></tr></thead><tbody id="cmp"></tbody></table></div>
-  </section>
 
   <section><h2>انتخاب‌های شما در برابر همهٔ سیگنال‌ها</h2>
     <p class="hint">همهٔ سیگنال‌ها با یک معیار سنجیده شده‌اند: اگر هر کدام با حد ضرر خودش و هدف 2R گرفته می‌شد. اگر ستون «تأییدشده‌های شما» از «همهٔ سیگنال‌ها» بهتر باشد، یعنی انتخاب شما به نتیجه اضافه می‌کند.</p>
@@ -716,6 +859,19 @@ details p{margin-top:6px;color:var(--muted);font-size:.9rem}
     <p class="hint">حدهایی که اسکات الان با آن‌ها کار می‌کند. توضیح هر کدام در راهنما آمده است.</p>
     <div class="rules" id="rules"></div></section>
   </div>
+
+<div class="pane" id="p-trades" role="tabpanel" aria-labelledby="t-trades" hidden>
+  <section><h2>معاملات تأییدشده <small id="trnote"></small></h2>
+    <p class="hint">همهٔ معاملاتی که با تأیید شما باز شدند و بسته شده‌اند، جدیدترین بالا و به تفکیک روز (به وقت تهران). «چه کسی بست» نشان می‌دهد خودتان با دکمهٔ بستن بستید یا حد ضرر، هوش مصنوعی، قیمت خروج شما یا بروکر. نام تأییدکننده از نسخهٔ جدید به بعد ثبت می‌شود. پوزیشن‌های باز در تب داشبورد هستند.</p>
+    <div class="tiles" id="trtiles"></div>
+    <div class="filters">
+      <select id="trday" aria-label="روز"></select>
+      <select id="trres" aria-label="نتیجه"><option value="">سود و ضرر</option><option value="win">فقط سودده</option><option value="loss">فقط ضررده</option></select>
+      <select id="trside" aria-label="جهت"><option value="">خرید و فروش</option><option value="BUY">فقط خرید</option><option value="SELL">فقط فروش</option></select>
+    </div>
+    <div class="tablewrap"><table class="wide"><thead><tr><th>تیکت</th><th>باز شد ← بسته شد</th><th>جهت</th><th>ستاپ</th><th>لات</th><th>ورود ← خروج</th><th>سود / ضرر</th><th>چه کسی باز کرد</th><th>چه کسی بست</th><th>توضیح</th></tr></thead><tbody id="trbody"></tbody></table></div>
+  </section>
+</div>
 
 <div class="pane" id="p-audit" role="tabpanel" aria-labelledby="t-audit" hidden>
   <section><h2>بعد از هر سیگنال، بازار به کدام طرف رفت؟ <small id="aunote"></small></h2>
@@ -798,20 +954,11 @@ function render(d){
     ['مهلت جواب',r.expiry_min+' دقیقه'],['گزارش زنده','هر '+r.status_min+' دقیقه']]
     .map(([k,v])=>`<div class="rule">${k}<b>${esc(v)}</b></div>`).join('');
   $('upd').textContent=s.version?('نسخه '+s.version):'';
-  LAST=st; renderCompare(); renderPicks(st.picks); renderAudit(d.audit);
+  LAST=st; renderPicks(st.picks); renderAudit(d.audit); renderTrades(st.trades);
   document.querySelectorAll('[data-r]').forEach(el=>{const v=r[el.dataset.r];if(v!=null)el.textContent=(el.dataset.pre||'')+v+(el.dataset.suf||'');});
 }
-let LAST={}, WIN='7d';
+let LAST={};
 const rfmt=v=>v==null?'—':(v>0?'+':'')+v.toFixed(2)+'R';
-function renderCompare(){
-  const c=LAST.compare||{}; const rows=c[WIN]||[];
-  const best=Math.max(...rows.filter(r=>r.sum_r!=null).map(r=>r.sum_r));
-  $('cmp').innerHTML=rows.map(r=>`<tr class="${r.me?'me':''}"><td>${r.sum_r!=null&&r.sum_r===best&&r.n?'🏆 ':''}${esc(r.name)}</td>
-    <td class="n">${r.n}</td><td class="n">${r.win!=null?r.win+'٪':'—'}</td><td class="n ${cls(r.avg_r)}">${rfmt(r.avg_r)}</td>
-    <td class="n ${cls(r.sum_r)}">${r.sum_r!=null?(r.sum_r>0?'+':'')+r.sum_r.toFixed(1)+'R':'—'}</td><td class="n ${cls(r.pnl)}">${r.n?money(r.pnl):'—'}</td></tr>`).join('')
-    ||'<tr><td colspan="6" class="muted">هنوز معامله‌ای برای مقایسه نیست</td></tr>';
-  $('cmpnote').textContent='شما + اسکات در برابر دو ربات خودکار'+(c.since?(' · اسکات از '+c.since):'');
-}
 function renderPicks(p){
   if(!p){$('picks').innerHTML='<div class="empty">نتیجهٔ فرضی هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';$('picksay').textContent='';return;}
   const card=(k,t)=>{const v=p[k]||{};return `<div class="tile"><div class="k">${t}</div><div class="v num ${cls(v.avg_r)}">${rfmt(v.avg_r)}</div><div class="s">${fa(v.n)} نمونه · برد ${v.win!=null?v.win+'٪':'—'}</div></div>`};
@@ -821,8 +968,45 @@ function renderPicks(p){
     :(a.avg_r>b.avg_r?`انتخاب‌های شما تا الان به‌طور میانگین ${(a.avg_r-b.avg_r).toFixed(2)}R در هر معامله بهتر از کل سیگنال‌ها بوده است.`
     :`انتخاب‌های شما فعلاً ${(b.avg_r-a.avg_r).toFixed(2)}R در هر معامله پایین‌تر از کل سیگنال‌هاست؛ با معاملات بیشتر دقیق‌تر می‌شود.`);
 }
-document.querySelectorAll('#cmpwin .tab').forEach(b=>b.onclick=()=>{WIN=b.dataset.w;
-  document.querySelectorAll('#cmpwin .tab').forEach(x=>x.setAttribute('aria-selected',String(x===b)));renderCompare();});
+
+const SIDE_FA={BUY:'🟢 خرید',SELL:'🔴 فروش'};
+function dur(sec){if(sec==null)return '—';const m=Math.round(sec/60);if(m<60)return m+' د';const h=Math.floor(m/60),r=m%60;return h+' س'+(r?' '+r+' د':'');}
+function renderTrades(list){
+  list=list||[];
+  const days=[...new Set(list.map(x=>x.day))];
+  if(TR.day&&!days.includes(TR.day))TR.day='';
+  $('trday').innerHTML='<option value="">همهٔ روزها</option>'+days.map(d=>{const x=list.find(y=>y.day===d);
+    return `<option value="${esc(d)}"${TR.day===d?' selected':''}>${esc(x.day_fa)} · ${esc(d)}</option>`}).join('');
+  $('trres').value=TR.res; $('trside').value=TR.side;
+  const rows=list.filter(x=>(!TR.day||x.day===TR.day)&&(!TR.side||x.side===TR.side)
+    &&(!TR.res||(TR.res==='win'?x.profit>0:x.profit<0)));
+  const n=rows.length, pnl=rows.reduce((a,x)=>a+x.profit,0), wins=rows.filter(x=>x.profit>0).length;
+  const rs=rows.filter(x=>x.r!=null), sr=rs.reduce((a,x)=>a+x.r,0);
+  $('trtiles').innerHTML=[['معاملات',fa(n),list.length!==n?('از '+list.length+' کل'):'','' ],
+    ['جمع سود و ضرر',money(pnl),'',cls(pnl)],['برد',n?Math.round(100*wins/n)+'٪':'—',`${wins} سودده · ${n-wins} غیر سودده`,''],
+    ['جمع R',rs.length?(sr>0?'+':'')+sr.toFixed(1)+'R':'—','',cls(sr)]]
+    .map(([k,v,sub,c])=>`<div class="tile"><div class="k">${k}</div><div class="v num ${c}">${v}</div><div class="s">${sub}</div></div>`).join('');
+  $('trnote').textContent=list.length?`${list.length} معامله در دفتر`:'';
+  let html='',cur=null;
+  for(const x of rows){
+    if(x.day!==cur){cur=x.day;const dr=rows.filter(y=>y.day===cur);const dp=dr.reduce((a,y)=>a+y.profit,0);
+      html+=`<tr class="dayrow"><td colspan="10">${esc(x.day_fa)} · <span class="num">${esc(cur)}</span> · ${dr.length} معامله · <span class="num ${cls(dp)}">${money(dp)}</span></td></tr>`;}
+    const od=x.open_day&&x.open_day!==x.day?x.open_day.slice(5).replace('-','/')+' ':'';
+    const tags=[x.held?'<span class="tag">⏸ نگه داشته</span>':'',x.contra?'<span class="tag">↔️ خلاف سیگنال</span>':'',x.locked?'<span class="tag">🔒 بی‌ضرر شد</span>':''].join(' ');
+    html+=`<tr><td class="mono nw">#${esc(x.ticket)}</td>
+      <td class="n nw">${esc(od+x.open_hm)} → ${esc(x.close_hm)}<span class="sub">${dur(x.secs)}</span></td>
+      <td class="nw">${SIDE_FA[x.side]||esc(x.side)}</td><td class="mono setup">${esc(x.setup).replace(/\+/g,' + ').replace(/_/g,'_<wbr>')}</td>
+      <td class="n">${x.lot!=null?Number(x.lot).toFixed(2):'—'}</td>
+      <td class="n nw">${x.entry!=null?x.entry.toFixed(2):'—'} → ${x.exit!=null?x.exit.toFixed(2):'—'}</td>
+      <td class="n nw ${cls(x.profit)}"><b>${money(x.profit)}</b><span class="sub">${x.r!=null?(x.r>0?'+':'')+x.r.toFixed(2)+'R':''}</span></td>
+      <td class="who">${esc(x.opened_by)}</td><td class="who">${esc(x.closed_by)}<small>${esc(x.closed_how)}</small></td><td>${tags}</td></tr>`;
+  }
+  $('trbody').innerHTML=html||'<tr><td colspan="10" class="muted">'+(list.length?'با این فیلترها معامله‌ای نیست':'هنوز معامله بسته‌شده‌ای نیست')+'</td></tr>';
+}
+let TR={day:'',res:'',side:''};
+$('trday').onchange=e=>{TR.day=e.target.value;renderTrades(LAST.trades)};
+$('trres').onchange=e=>{TR.res=e.target.value;renderTrades(LAST.trades)};
+$('trside').onchange=e=>{TR.side=e.target.value;renderTrades(LAST.trades)};
 const AUH='<tr><th>گروه</th><th>نمونه</th><th>اول ‎+1R</th><th>‎+1R / ‎-1R</th><th>۱۵ دقیقه در جهت</th><th>۶۰ دقیقه در جهت</th><th>میانگین R در ۶۰ دقیقه</th><th>حرکت به نفع / به ضرر (R)</th></tr>';
 const pct=v=>v==null?'—':Math.round(v*100)+'٪';
 function auRow(x,label,inverse){
@@ -853,7 +1037,7 @@ function renderAudit(a){
   $('audec').innerHTML=(a.decision||[]).map(r=>auRow(r,r.fa||r.key,r.key==='rejected')).join('');
   $('auside').innerHTML=(a.side||[]).map(r=>auRow(r,r.key==='BUY'?'خرید':r.key==='SELL'?'فروش':r.key)).join('');
 }
-const PANES=['dash','audit','guide'];
+const PANES=['dash','trades','audit','guide'];
 function show(tab){
   if(!PANES.includes(tab))tab='dash';
   PANES.forEach(k=>{$('p-'+k).hidden=k!==tab;$('t-'+k).setAttribute('aria-selected',String(k===tab));});

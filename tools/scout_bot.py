@@ -377,6 +377,17 @@ class Scout:
                 w.writeheader()
             w.writerow(row)
 
+    def _who_plain(self) -> str:
+        """نام کسی که الان دکمه زد، برای ژورنال (بدون HTML و بدون ; و = که یادداشت را می‌شکنند)."""
+        name = html.unescape(str(getattr(self, "_who", "") or ""))
+        for ch in (";", "=", "\n", "\r", ","):
+            name = name.replace(ch, " ")
+        return " ".join(name.split())[:40]
+
+    def _by_note(self) -> str:
+        w = self._who_plain()
+        return f";by={w}" if w else ""
+
     # ----------------------------------------------------------------- alerts
     @staticmethod
     def merge(grp: pd.DataFrame) -> pd.Series:
@@ -1188,11 +1199,11 @@ class Scout:
                      self._close_buttons(tk))
         self.log(event="opened", alert=aid, setup=r.setup, side=r.side, ticket=tk,
                  price=res.price, sl=round(sl_now, 2),
-                 note=(f"broker_sl={broker_sl};emergency_sl={emerg};mode={self.mode}"
-                       + (";over_cap=owner" if override else "")
-                       + (f";hedge={hedge}" if hedge else "")
-                       + (";contra=1" if p.get("contra") else "") + f";lot={lot}") if self.soft_stop else
-                 ((";contra=1" if p.get("contra") else "") + f";lot={lot}"))
+                 note=((f"broker_sl={broker_sl};emergency_sl={emerg};mode={self.mode}"
+                        + (";over_cap=owner" if override else "")
+                        + (f";hedge={hedge}" if hedge else "")
+                        + (";contra=1" if p.get("contra") else "") + f";lot={lot}") if self.soft_stop else
+                       ((";contra=1" if p.get("contra") else "") + f";lot={lot}")) + self._by_note())
         if not self.alert_while_open:
             self.cancel_pending("معامله‌ای باز شد")
 
@@ -1285,7 +1296,7 @@ class Scout:
             info = self.open[tk]
             res = self.client.close_position(int(tk), comment="scout reverse")
             self.log(event="closed", ticket=tk, setup=info.get("setup"), side=info.get("side"),
-                     price=res.price, ok=res.ok, note="reverse")
+                     price=res.price, ok=res.ok, note="reverse" + self._by_note())
             if not res.ok:
                 self.pending[aid] = p
                 self.tg.ack(cb, "بستن انجام نشد")
@@ -1297,6 +1308,7 @@ class Scout:
                 return False
             info["closing"] = True                         # نتیجه را monitor مثل همیشه ثبت می‌کند
             info["why"] = "reverse"
+            info["cby"] = self._who_plain() or None
             self.tg.send(f"🔄 #{tk} ({self._side_fa(info['side'])}) بسته شد @ {res.price:.2f} — برای باز کردن "
                          f"{self._side_fa(r.side)} هشدار #{aid}.")
         return True
@@ -1352,12 +1364,13 @@ class Scout:
             self._closing_t.pop(int(tk), None)         # ناموفق: زدن دوبارهٔ «بستن» همین الان مجاز است
         elif int(tk) in self.open:
             self.open[int(tk)]["why"] = "manual"         # برای کارت پایان معامله
+            self.open[int(tk)]["cby"] = self._who_plain() or None
         if cb:
             self.tg.ack(cb, "بسته شد" if res.ok else f"خطا: {res.comment}")
         info = self.open.get(int(tk), {})
         self.tg.send(f"{'✅' if res.ok else '⚠️'} بستن #{tk}: {res.comment or 'OK'} @ {res.price:.2f}")
         self.log(event="closed", ticket=tk, setup=info.get("setup"), side=info.get("side"),
-                 price=res.price, ok=res.ok)
+                 price=res.price, ok=res.ok, note=self._by_note().lstrip(";"))
 
     # -------------------------------------------------------------- monitoring
     def _close_buttons(self, tk: int, hold: Optional[bool] = None) -> list:
@@ -1433,9 +1446,17 @@ class Scout:
                 self.tg.edit(info["status_mid"],
                              f"📊 <b>#{tk}</b> · <code>{info['setup']}</code>\n"
                              f"✅ <b>بسته شد</b>{res_txt}" + (f" @ {px:.2f}" if px else ""))
+            by, cby = html.unescape(str(info.get("by") or "")), str(info.get("cby") or "")
+            for ch in (";", "=", "\n", "\r", ","):
+                by, cby = by.replace(ch, " "), cby.replace(ch, " ")
+            extra = [f"how={info.get('why') or ''}", f"by={by.strip()[:40]}", f"cby={cby.strip()[:40]}"]
+            if info.get("hold"):
+                extra.append("held=1")
+            if info.get("locked"):
+                extra.append("locked=1")
             self.log(event="gone", alert=info.get("alert"), ticket=tk, setup=info["setup"],
                      side=info["side"], entry=round(float(info["entry"]), 2), price=px, profit=pnl,
-                     note=kind)
+                     note=";".join([str(kind or "")] + extra))
             self._exit_ask.pop(tk, None)
             if self.card_enabled and pnl is not None and px:
                 self.send_trade_card(tk, info, pnl, float(px), kind)
@@ -1729,7 +1750,8 @@ class Scout:
             self.tg.send(f"▶️ #{tk}: نگه داشتن لغو شد · از این به بعد در حد ضرر: "
                          f"<b>{trk.POLICY_FA[self.mode]}</b>."
                          + ("\n🎯 قیمت‌های خروج شما هم حذف شد." if had_exits else ""), self._close_buttons(tk))
-        self.log(event="hold" if on else "unhold", ticket=tk, setup=info["setup"], side=info["side"])
+        self.log(event="hold" if on else "unhold", ticket=tk, setup=info["setup"], side=info["side"],
+                 note=self._by_note().lstrip(";"))
 
     # -------------------------------------------------- قیمت خروج پوزیشن نگه‌داشته
     def _close_px(self, tk: int, side: str) -> float:
@@ -2612,14 +2634,8 @@ class Scout:
     def dash_stats(self) -> Dict[str, Any]:
         """از نخ وب صدا زده می‌شود: فقط دیسک و حافظه، بدون MT5."""
         events = dash.read_journal(self.journal)
-        st = dash.build_stats(events, virtual=self._virtual_rows, actual_by_ticket=self._actual_map)
-        bots: Dict[str, list] = {}
-        for b in self.compare_bots:                    # فقط خواندن دیتابیس دو ربات دیگر
-            try:
-                bots[str(b.get("name"))] = dash.bot_trades(b.get("db", ""))
-            except Exception as exc:
-                logger.warning("scout dashboard: {} results unavailable ({})", b.get("name"), exc)
-        st["compare"] = dash.build_compare(dash.scout_trades(events, float((getattr(self, "_settings_defaults", None) or {}).get("lot") or self.lot)), bots)
+        lot = float((getattr(self, "_settings_defaults", None) or {}).get("lot") or self.lot)
+        st = dash.build_stats(events, virtual=self._virtual_rows, actual_by_ticket=self._actual_map, lot=lot)
         st["picks"] = dash.build_picks(self._virtual_rows)
         return st
 

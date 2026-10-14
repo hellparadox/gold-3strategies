@@ -129,7 +129,7 @@ class Live(unittest.TestCase):
 
 class Page(unittest.TestCase):
     def test_dashboard_has_tab(self):
-        for part in ('id="t-audit"', 'id="p-audit"', "renderAudit(d.audit)", "const PANES=['dash','audit','guide']"):
+        for part in ('id="t-audit"', 'id="p-audit"', "renderAudit(d.audit)", "const PANES=['dash','trades','audit','guide']"):
             self.assertIn(part, dash.PAGE)
 
 

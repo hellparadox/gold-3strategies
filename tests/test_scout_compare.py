@@ -2,6 +2,7 @@
 import sqlite3
 import tempfile
 import unittest
+import unittest.mock
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -75,17 +76,24 @@ class Compare(unittest.TestCase):
         self.assertEqual(p["all"]["n"], 12)
         self.assertIsNone(dash.build_picks(None))
 
-    def test_bot_wiring_reads_other_dbs(self):
+    def test_dashboard_no_longer_shows_other_bots(self):
+        """داشبورد فقط اسکات است: دیتابیس ORB/ایچیموکو خوانده نمی‌شود و بخش رقابت در آمار نیست
+        (جدول امتیاز شبانهٔ تلگرام از همان build_compare/compare_since استفاده می‌کند و دست‌نخورده است)."""
         sc = make_scout(self.tmp)
         db = self.tmp / "ichi.db"
-        make_db(db, [(0.02, 4100.0, 4095.0, 10.0, ts(1))])   # ریسک 10$ → +1R
-        sc.compare_bots = [{"name": "ایچیموکو", "db": str(db)}, {"name": "ORB", "db": str(self.tmp / "none.db")}]
+        make_db(db, [(0.02, 4100.0, 4095.0, 10.0, ts(1))])
+        sc.compare_bots = [{"name": "ایچیموکو", "db": str(db)}]
         sc.client.reset_mock()
-        st = sc.dash_stats()
-        names = [r["name"] for r in st["compare"]["start"]]
-        self.assertEqual(names, ["شما + اسکات", "ایچیموکو", "ORB"])
-        self.assertEqual(st["compare"]["30d"][1]["sum_r"], 1.0)
+        with unittest.mock.patch.object(dash, "bot_trades", side_effect=AssertionError("db read")):
+            st = sc.dash_stats()
+        self.assertNotIn("compare", st)
+        self.assertIn("trades", st)
         self.assertEqual(sc.client.method_calls, [])                 # نخ وب هیچ‌وقت MT5 را صدا نمی‌زند
+
+    def test_page_has_no_competition_section(self):
+        page = dash.PAGE.replace("<!--GUIDE-->", dash.GUIDE)
+        for gone in ("🏁 رقابت", "renderCompare", 'id="cmp"', "دو ربات خودکار", "ORB"):
+            self.assertNotIn(gone, page, gone)
 
 
 if __name__ == "__main__":
