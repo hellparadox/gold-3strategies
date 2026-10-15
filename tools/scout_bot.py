@@ -1534,8 +1534,8 @@ class Scout:
         if not info["r1"] and info["risk"] > 0 and d >= info["risk"]:
             info["r1"] = True
             self.tg.send(f"🎯 #{tk} ({info['setup']}) به ۱ برابر ریسک رسید. سود فعلی ${profit:.2f}\n"
-                         "🔒 با «بی‌ضرر کن» حد ضرر به قیمت ورود و هدف به 2R می‌رود (روی بروکر).",
-                         self._close_buttons(tk) + [[{"text": "🔒 بی‌ضرر کن + هدف 2R",
+                         "🔒 با «بی‌ضرر کن» حد ضرر به قیمت ورود می‌رود (روی بروکر)؛ هدف نمی‌گذارد و سود باز می‌ماند.",
+                         self._close_buttons(tk) + [[{"text": "🔒 بی‌ضرر کن",
                                                       "callback_data": f"z|{tk}"}]])
             self.log(event="reached_1R", ticket=tk, setup=info["setup"], profit=profit)
         last = f.iloc[-1]
@@ -1973,12 +1973,17 @@ class Scout:
                     + ("" if live else "\n🔒 بازار بسته است؛ با باز شدن بازار روی بروکر هم اعمال می‌شود."))
             self.tg.send(head, self._close_buttons(tk))
         elif lock:
-            head = (f"🔒 <b>#{tk} بی‌ضرر شد</b> · حد ضرر {float(sl):.2f} (قیمت ورود) · هدف 2R {float(tp):.2f} "
-                    f"(حدود {self._level_usd(info, tp):+.2f}$)")
+            if tp:                                        # قفل قدیمی با هدف 2R (پوزیشن‌هایی که قبل از این تغییر قفل شده‌اند)
+                head = (f"🔒 <b>#{tk} بی‌ضرر شد</b> · حد ضرر {float(sl):.2f} (قیمت ورود) · هدف 2R {float(tp):.2f} "
+                        f"(حدود {self._level_usd(info, tp):+.2f}$)")
+                tail_txt = "\nاز این به بعد یا به هدف می‌رسد یا سر به سر بسته می‌شود؛ هر دو روی بروکر."
+            else:
+                head = (f"🔒 <b>#{tk} بی‌ضرر شد</b> · حد ضرر {float(sl):.2f} (قیمت ورود) · بدون هدف")
+                tail_txt = ("\nاز این به بعد ضرری ندارد: اگر قیمت به ورود برگردد سر به سر بسته می‌شود، "
+                            "وگرنه سود باز می‌ماند و بستن با شماست. برای گذاشتن هدف «🎯 قیمت خروج» را بزنید.")
             if not live:
                 head += "\n🔒 بازار بسته است؛ با باز شدن بازار روی بروکر می‌رود."
-            self.tg.send(head + "\nاز این به بعد یا به هدف می‌رسد یا سر به سر بسته می‌شود؛ هر دو روی بروکر.",
-                         self._exit_buttons(tk))
+            self.tg.send(head + tail_txt, self._exit_buttons(tk))
         else:
             head = (f"✅ <b>ثبت شد روی بروکر</b> · #{tk}" if live else
                     f"🔒 <b>بازار بسته است</b> — #{tk} ذخیره شد و با باز شدن بازار خودکار روی بروکر می‌رود.")
@@ -1990,7 +1995,7 @@ class Scout:
         return True
 
     def lock_profit(self, tk: int, cb: Optional[str] = None) -> None:
-        """«🔒 بی‌ضرر کن + هدف 2R»: حد ضرر روی قیمت ورود، حد سود روی 2R — هر دو روی بروکر (با سازوکار قیمت خروج)."""
+        """«🔒 بی‌ضرر کن»: حد ضرر روی قیمت ورود روی بروکر؛ هدف نمی‌گذارد (سود تا هرجا برود باز می‌ماند)."""
         info = self.open.get(int(tk))
         if info is None:
             if cb:
@@ -2001,7 +2006,6 @@ class Scout:
             if cb:
                 self.tg.ack(cb, "ریسک این پوزیشن معلوم نیست؛ از «🎯 قیمت خروج» استفاده کنید")
             return
-        tp = round(entry + 2 * risk if side == "BUY" else entry - 2 * risk, 2)
         sl = round(entry, 2)
         px = self._close_px(tk, side)
         if px <= 0:
@@ -2015,18 +2019,12 @@ class Scout:
                          f"{'زیر' if side == 'BUY' else 'بالای'} قیمت ورود ({entry:.2f}) است. چیزی عوض نشد.",
                          self._close_buttons(tk))
             return
-        if trk.reached(side, px, tp, upper=True):
-            if cb:
-                self.tg.ack(cb, "از هدف رد شده")
-            self.tg.send(f"🎯 #{tk}: قیمت ({px:.2f}) همین الان از هدف 2R ({tp:.2f}) رد شده؛ "
-                         "اگر می‌خواهید سود را بگیرید، ببندید.", [[{"text": "🔻 بستن", "callback_data": f"c|{tk}"}]])
-            return
         if cb:
             self.tg.ack(cb, "بی‌ضرر می‌شود")
         was_hold = bool(info.get("hold"))
         info["hold"] = True                               # قیمت‌های خروج فقط روی پوزیشن نگه‌داشته معنا دارند
         self._exit_ask.pop(int(tk), None)
-        if not self._apply_exits(int(tk), tp, sl, lock=True):
+        if not self._apply_exits(int(tk), None, sl, lock=True):
             info["hold"] = was_hold                       # بروکر قبول نکرد: همه‌چیز مثل قبل
             self._save_state()
 
