@@ -5,7 +5,7 @@
 - حرکت در جهت سیگنال بعد از ۱۵، ۳۰ و ۶۰ دقیقه (دلار و R؛ R = فاصلهٔ حد ضرر هشدار)
 - بیشترین حرکت به نفع (MFE) و به ضرر (MAE) در ۶۰ دقیقهٔ اول
 - کدام زودتر رسید: ‎+1R یا ‎-1R (تا ۴ ساعت؛ هر دو در یک کندل = «هر دو»)
-خلاصه به تفکیک جهت، ستاپ، ساعت تهران و تصمیم شما؛ جزئیات هر هشدار در CSV.
+خلاصه به تفکیک جهت، ستاپ، ساعت تهران، روز هفته، دیرهنگام، اسپرد، خبر و تصمیم شما؛ جزئیات هر هشدار در CSV.
 
 اجرا روی سرور (کنار اسکات؛ اسکات لازم نیست خاموش شود):
     py -3.11 tools/scout_signal_audit.py --since 2026-10-05
@@ -43,6 +43,23 @@ def _f(x: Any) -> float:
         return float("nan")
 
 
+EXTRA_COLS = ["late_bars", "spread_sl", "news_near", "latency_s", "slip"]
+# روزهای هفته به ترتیب ایرانی (pandas: دوشنبه=0 … یکشنبه=6)
+WEEKDAYS = ((5, "Saturday", "شنبه"), (6, "Sunday", "یکشنبه"), (0, "Monday", "دوشنبه"), (1, "Tuesday", "سه‌شنبه"),
+            (2, "Wednesday", "چهارشنبه"), (3, "Thursday", "پنجشنبه"), (4, "Friday", "جمعه"))
+SPREAD_BUCKETS = ((0.0, 0.05, "<5%", "اسپرد کمتر از ۵٪ حد ضرر"), (0.05, 0.10, "5-10%", "اسپرد ۵ تا ۱۰٪ حد ضرر"),
+                  (0.10, float("inf"), ">=10%", "اسپرد ۱۰٪ حد ضرر یا بیشتر"))
+
+
+def _note_kv(note: Any) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    for part in str(note or "").split(";"):
+        if "=" in part:
+            k, v = part.split("=", 1)
+            out[k.strip()] = v.strip()
+    return out
+
+
 def read_alerts(journal: Path, since: Optional[str] = None, until: Optional[str] = None) -> pd.DataFrame:
     """هشدارهای ژورنال با تصمیم شما (شمارهٔ هشدار بعد از هر ری‌استارت از ۱ شروع می‌شود؛ تصمیم به
     آخرین هشدارِ همان شماره وصل می‌شود)."""
@@ -52,20 +69,27 @@ def read_alerts(journal: Path, since: Optional[str] = None, until: Optional[str]
         for d in csv.DictReader(fh):
             e = d.get("event")
             if e == "alert":
+                kv = _note_kv(d.get("note"))                # ردیف‌های قدیمی این‌ها را ندارند ← NaN
                 r = {"ts": d.get("ts", ""), "setup": d.get("setup", ""), "side": d.get("side", ""),
                      "bar": d.get("bar", ""), "price": _f(d.get("price")), "sl": _f(d.get("sl")),
-                     "decision": "pending"}
+                     "decision": "pending", "late_bars": _f(kv.get("late_bars")),
+                     "spread_sl": _f(kv.get("spread_sl")), "news_near": _f(kv.get("news_near")),
+                     "latency_s": float("nan"), "slip": float("nan")}
                 recs.append(r)
                 latest[str(d.get("alert"))] = r
             elif e in DECISIONS:
                 r = latest.get(str(d.get("alert")))
                 if r is not None and r["decision"] == "pending":
+                    kv = _note_kv(d.get("note"))
+                    r["latency_s"] = _f(kv.get("latency_s"))
+                    if e == "opened":
+                        r["slip"] = _f(kv.get("slip"))
                     if e == "opened" and "contra=1" in str(d.get("note") or ""):
                         r["decision"] = "contra"          # خلاف جهت سیگنال گرفته شد
                     else:
                         r["decision"] = "taken" if e in ("opened", "approved_dry") else (
                             "blocked" if e.startswith("blocked") else e)
-    df = pd.DataFrame(recs, columns=["ts", "setup", "side", "bar", "price", "sl", "decision"])
+    df = pd.DataFrame(recs, columns=["ts", "setup", "side", "bar", "price", "sl", "decision"] + EXTRA_COLS)
     if since:
         df = df[df.ts >= since]
     if until:
@@ -145,6 +169,45 @@ def server_to_tehran_minutes(bar: Any) -> int:
     guess_utc = t.replace(tzinfo=timezone.utc) - timedelta(hours=3)
     server = ctl.new_york_offset_hours(guess_utc) + 7
     return 210 - server * 60
+
+
+def tehran_weekday(bar: Any, offset_min: Optional[int] = None, bar_minutes: int = 15) -> Optional[int]:
+    """روز هفتهٔ تهرانِ بسته شدن کندل (pandas: دوشنبه=0)."""
+    try:
+        off = server_to_tehran_minutes(bar) if offset_min is None else int(offset_min)
+        t = pd.Timestamp(bar) + pd.Timedelta(minutes=bar_minutes + off)
+    except (TypeError, ValueError):
+        return None
+    return int(t.dayofweek)
+
+
+def _col(df: pd.DataFrame, name: str) -> pd.Series:
+    """ستون عددی؛ اگر نیست (CSV قدیمی) همه NaN."""
+    if name in df.columns:
+        return pd.to_numeric(df[name], errors="coerce")
+    return pd.Series(np.nan, index=df.index, dtype=float)
+
+
+def condition_slices(df: pd.DataFrame, offset_min: Optional[int] = None) -> Dict[str, List[tuple]]:
+    """(کلید، برچسب فارسی، زیرمجموعه) برای روز هفته، دیرهنگام، اسپرد و خبر. ردیف‌های بدون داده حساب نمی‌شوند."""
+    out: Dict[str, List[tuple]] = {}
+    wd = df.bar.map(lambda b: tehran_weekday(b, offset_min)) if len(df) else pd.Series([], dtype=object)
+    out["weekday"] = [(en, fa, df[wd == n]) for n, en, fa in WEEKDAYS if int((wd == n).sum())]
+    late = _col(df, "late_bars")
+    out["late"] = [("on_time", "سر وقت", df[late == 0]), ("late", "دیرهنگام (کندل قبل)", df[late >= 1])]
+    sp = _col(df, "spread_sl")
+    out["spread"] = [(k, fa, df[(sp >= lo) & (sp < hi)]) for lo, hi, k, fa in SPREAD_BUCKETS]
+    nw = _col(df, "news_near")
+    out["news"] = [("news", "خبر مهم نزدیک", df[nw == 1]), ("no_news", "بدون خبر نزدیک", df[nw == 0])]
+    return out
+
+
+def slip_stats(df: pd.DataFrame) -> Dict[str, Any]:
+    """میانگین لغزش ورود (پوینت؛ مثبت = بدتر از قیمت هشدار) و میانهٔ زمان تصمیم (ثانیه)."""
+    sl = _col(df, "slip").dropna()
+    lat = _col(df, "latency_s").dropna()
+    return {"n": int(len(sl)), "avg": round(float(sl.mean()), 1) if len(sl) else None,
+            "lat_n": int(len(lat)), "lat_med": round(float(lat.median())) if len(lat) else None}
 
 
 def tehran_hour(bar: Any, offset_min: Optional[int] = None, bar_minutes: int = 15) -> Optional[int]:
@@ -234,7 +297,8 @@ DECISION_FA = {"contra": "خلاف جهت گرفتید", "taken": "تأیید ک
 
 
 def audit_report(df: pd.DataFrame, offset_min: Optional[int] = None, tight: float = TIGHT_STOP) -> Dict[str, Any]:
-    """کارنامهٔ سیگنال‌ها برای داشبورد: کل، برچسب، جهت، ستاپ، ساعت تهران، تصمیم."""
+    """کارنامهٔ سیگنال‌ها برای داشبورد: کل، برچسب، جهت، ستاپ، ساعت تهران، تصمیم، روز هفته، دیرهنگام، اسپرد،
+    خبر و لغزش ورود. فقط آمار توصیفی؛ هیچ سیگنالی حذف یا دیر نمی‌شود."""
     rep: Dict[str, Any] = {"n": int(len(df)), "all": group_stats(df),
                            "from": str(df.ts.min()) if len(df) else None, "to": str(df.ts.max()) if len(df) else None}
     rep["side"] = [dict(group_stats(g), key=str(k)) for k, g in df.groupby("side")]
@@ -247,6 +311,9 @@ def audit_report(df: pd.DataFrame, offset_min: Optional[int] = None, tight: floa
     lab = label_column(df, tight) if len(df) else pd.Series([], dtype=object)
     rep["label"] = [dict(group_stats(df[lab == k]), key=k, fa=LABEL_FA[k]) for k in LABEL_FA]
     rep["tight"] = tight
+    for name, rows in condition_slices(df, offset_min).items():
+        rep[name] = [dict(group_stats(g), key=k, fa=fa) for k, fa, g in rows]
+    rep["slip"] = slip_stats(df)
     return rep
 
 
@@ -279,6 +346,20 @@ def summarize(df: pd.DataFrame, offset_min: Optional[int] = None) -> str:
     th = df.bar.map(lambda b: tehran_hour(b, offset_min))
     for lo, hi in TEHRAN_BUCKETS:
         out.append(_line(f"{lo:02d}-{hi:02d}", df[(th >= lo) & (th < hi)]))
+    titles = {"weekday": "== BY WEEKDAY (Tehran, signal time) ==", "late": "== ON TIME vs LATE (late_bars) ==",
+              "spread": "== BY SPREAD (share of the alert stop) ==", "news": "== NEWS NEAR THE ALERT =="}
+    for name, rows in condition_slices(df, offset_min).items():
+        out.append("")
+        out.append(titles[name])
+        for k, _fa, g in rows:
+            out.append(_line(k, g))
+    ss = slip_stats(df)
+    out.append("")
+    out.append("== ENTRY SLIP / DECISION TIME ==")
+    out.append(f"  slip avg {ss['avg']:+.1f} pts over {ss['n']} entries (+ = worse than alert price)"
+               if ss["avg"] is not None else "  slip: no data yet")
+    out.append(f"  decision time median {ss['lat_med']} s over {ss['lat_n']} decisions"
+               if ss["lat_med"] is not None else "  decision time: no data yet")
     return "\n".join(out)
 
 

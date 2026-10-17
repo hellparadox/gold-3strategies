@@ -889,6 +889,11 @@ details p{margin-top:6px;color:var(--muted);font-size:.9rem}
     <div class="tablewrap"><table><thead class="auh"></thead><tbody id="audec"></tbody></table></div></section>
   <section><h2>خرید و فروش</h2>
     <div class="tablewrap"><table><thead class="auh"></thead><tbody id="auside"></tbody></table></div></section>
+  <section><h2>روز هفته (تهران)</h2>
+    <div class="tablewrap"><table><thead class="auh"></thead><tbody id="auweek"></tbody></table></div></section>
+  <section><h2>شرایط لحظهٔ هشدار <small>فقط هشدارهای بعد از این به‌روزرسانی این اطلاعات را دارند</small></h2>
+    <p class="hint">«دیرهنگام» یعنی هشدار مال کندل قبل بوده. «اسپرد» یعنی اسپرد لحظهٔ هشدار چند درصدِ فاصلهٔ حد ضرر بوده. «خبر» یعنی خبر مهم نزدیک بوده. فقط آمار است.</p>
+    <div class="tablewrap"><table><thead class="auh"></thead><tbody id="aucond"></tbody></table></div></section>
 </div>
 
 <!--GUIDE-->
@@ -1021,7 +1026,7 @@ function auRow(x,label,inverse){
 function renderAudit(a){
   document.querySelectorAll('.auh').forEach(h=>h.innerHTML=AUH); $('auhead').innerHTML=AUH;
   if(!a||!a.all){$('autiles').innerHTML='<div class="empty">کارنامه هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';
-    ['aulabel','ausetup','auhour','audec','auside'].forEach(id=>$(id).innerHTML='');$('aunote').textContent='';return;}
+    ['aulabel','ausetup','auhour','audec','auside','auweek','aucond'].forEach(id=>$(id).innerHTML='');$('aunote').textContent='';return;}
   const x=a.all;
   $('aunote').textContent=`${a.days} روز اخیر · به‌روز ${a.updated||''}`;
   $('autiles').innerHTML=[
@@ -1030,6 +1035,8 @@ function renderAudit(a){
     ['۱۵ دقیقه بعد',pct(x.up15),'در جهت سیگنال',''],
     ['۶۰ دقیقه بعد',pct(x.up60),'در جهت سیگنال',''],
     ['ساعت اول',x.mfe!=null?x.mfe.toFixed(2)+'R':'—',`بیشترین به نفع · به ضرر ${x.mae!=null?x.mae.toFixed(2)+'R':'—'}`,''],
+    ['لغزش ورود',a.slip&&a.slip.avg!=null?(a.slip.avg>0?'+':'')+a.slip.avg.toFixed(1)+' پوینت':'—',
+     a.slip&&a.slip.n?`میانگین ${a.slip.n} ورود · مثبت = بدتر از قیمت هشدار`:'هنوز داده‌ای نیست',''],
   ].map(([k,v,sub,c])=>`<div class="tile"><div class="k">${k}</div><div class="v num ${c}">${v}</div><div class="s">${sub}</div></div>`).join('');
   $('aulabel').innerHTML=(a.label||[]).map(r=>auRow(r,r.fa)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
   if(a.tight!=null)$('autight').textContent=String(a.tight);
@@ -1037,6 +1044,8 @@ function renderAudit(a){
   $('auhour').innerHTML=(a.hour||[]).map(r=>auRow(r,r.key.replace('-',' تا '))).join('');
   $('audec').innerHTML=(a.decision||[]).map(r=>auRow(r,r.fa||r.key,r.key==='rejected')).join('');
   $('auside').innerHTML=(a.side||[]).map(r=>auRow(r,r.key==='BUY'?'خرید':r.key==='SELL'?'فروش':r.key)).join('');
+  $('auweek').innerHTML=(a.weekday||[]).map(r=>auRow(r,r.fa||r.key)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
+  $('aucond').innerHTML=[...(a.late||[]),...(a.spread||[]),...(a.news||[])].map(r=>auRow(r,r.fa||r.key)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
 }
 const PANES=['dash','trades','audit','guide'];
 function show(tab){

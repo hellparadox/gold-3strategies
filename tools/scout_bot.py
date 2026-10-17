@@ -898,6 +898,14 @@ class Scout:
         aud = self.audit_line(str(r.get("setups_all", r.setup)))
         if aud:
             txt += "\n" + aud
+        try:
+            wctx = fu.context_flags(self._frame, r.side)
+        except Exception as exc:                       # pragma: no cover — هشدار نباید هیچ‌وقت به خاطر این نیاید
+            logger.warning("scout: context flags failed: {}", exc)
+            wctx = {}
+        trend = self.trend_line(wctx)
+        if trend:
+            txt += "\n" + trend
         if news:
             txt += f"\n📰 <b>خبر مهم نزدیک است</b>: {html.escape(news)}"
         if self.open:
@@ -918,7 +926,6 @@ class Scout:
         except Exception as exc:                       # pragma: no cover
             logger.warning("scout: analysis context failed: {}", exc)
             ctx = ""
-        wctx = fu.context_flags(self._frame, r.side)
         if news:
             wctx["news"] = True
         self.pending[aid] = {"row": r, "sl": sl, "tp": tp, "mid": mid, "t": time.time(), "txt": txt,
@@ -928,7 +935,50 @@ class Scout:
         self.log(event="alert", alert=aid, setup=str(r.get("setups_all", r.setup)),
                  n_setups=n_set, side=r.side, bar=str(r.bar),
                  price=entry, sl=round(sl, 2), tp=round(tp, 2), atr=round(r.atr, 3),
-                 spread=spread_pts, risk_usd=risk)
+                 spread=spread_pts, risk_usd=risk,
+                 note=self.alert_note(late_bars, spread_pts, abs(entry - sl), news))
+
+    @staticmethod
+    def trend_line(wctx: Optional[dict]) -> str:
+        """یک خط کوتاه روی کارت: سیگنال با H1 و EMA200 هم‌جهت است یا نه (فقط اطلاع؛ چیزی را عوض نمی‌کند)."""
+        try:
+            h, e = (wctx or {}).get("h1_with"), (wctx or {}).get("ema_with")
+            if h is None or e is None:
+                return ""
+            h, e = bool(h), bool(e)
+        except Exception:
+            return ""
+        if h and e:
+            return "📐 هم‌جهت با H1 و EMA200"
+        if not h and not e:
+            return "↕️ خلاف H1 و EMA200"
+        return "↕️ خلاف روند H1" if not h else "↕️ خلاف EMA200"
+
+    @staticmethod
+    def alert_note(late_bars: Any, spread_pts: Any, stop_dist: Any, news: Any) -> str:
+        """late_bars / spread_sl (اسپرد ÷ فاصلهٔ حد ضرر، هر دو به پوینت) / news_near، برای آمار."""
+        parts = []
+        try:
+            parts.append(f"late_bars={int(late_bars or 0)}")
+        except (TypeError, ValueError):
+            pass
+        try:
+            sp, dist = float(spread_pts), float(stop_dist)
+            if dist > 0 and sp == sp:
+                parts.append(f"spread_sl={sp / (dist * 100.0):.3f}")
+        except (TypeError, ValueError):
+            pass
+        parts.append(f"news_near={1 if news else 0}")
+        return ";".join(parts)
+
+    @staticmethod
+    def latency_note(p: dict, now: Optional[float] = None) -> str:
+        """ثانیه از فرستادن هشدار تا تصمیم شما (برای آمار)؛ هیچ‌وقت خطا نمی‌دهد."""
+        try:
+            lat = (time.time() if now is None else now) - float(p["t"])
+            return f"latency_s={max(0, int(round(lat)))}"
+        except Exception:
+            return ""
 
     # ------------------------------------------------------------- سفارش دستی (/buy /sell)
     MANUAL_EXPIRY = 300                                   # قیمت دستی زود کهنه می‌شود: ۵ دقیقه
@@ -1146,7 +1196,8 @@ class Scout:
             p = self.pending.pop(aid)
             if p["mid"]:
                 self.tg.edit(p["mid"], p["txt"] + "\n\n⏳ <b>منقضی شد</b>")
-            self.log(event="expired", alert=aid, setup=p["row"].setup, side=p["row"].side)
+            self.log(event="expired", alert=aid, setup=p["row"].setup, side=p["row"].side,
+                     note=self.latency_note(p, now) or None)
             self.track_whatif(aid, p, "expired")
 
     # ---------------------------------------------------------------- decision
@@ -1164,7 +1215,7 @@ class Scout:
                 r = p["row"]
             self.tg.ack(cb, "رد شد")
             self.tg.edit(p["mid"], p["txt"] + "\n\n❌ <b>رد شد</b>")
-            self.log(event="rejected", alert=aid, setup=r.setup, side=r.side)
+            self.log(event="rejected", alert=aid, setup=r.setup, side=r.side, note=self.latency_note(p) or None)
             self.track_whatif(aid, p, "rejected")
             return
         if self.open and not self.dry:
@@ -1266,9 +1317,22 @@ class Scout:
                         + (";over_cap=owner" if override else "")
                         + (f";hedge={hedge}" if hedge else "")
                         + (";contra=1" if p.get("contra") else "") + f";lot={lot}") if self.soft_stop else
-                       ((";contra=1" if p.get("contra") else "") + f";lot={lot}")) + self._by_note())
+                       ((";contra=1" if p.get("contra") else "") + f";lot={lot}")) + self._by_note()
+                 + self._open_extra(p, moved))
         if not self.alert_while_open:
             self.cancel_pending("معامله‌ای باز شد")
+
+    def _open_extra(self, p: dict, moved: Any) -> str:
+        """;latency_s=…;slip=… (لغزش ورود به پوینت؛ مثبت = بدتر از قیمت هشدار). فقط ثبت؛ هیچ‌وقت خطا نمی‌دهد."""
+        out = ""
+        try:
+            lat = self.latency_note(p)
+            if lat:
+                out += ";" + lat
+            out += f";slip={int(round(float(moved) * 100.0))}"
+        except Exception:
+            pass
+        return out
 
     def cancel_pending(self, why: str) -> None:
         for aid in list(self.pending):
