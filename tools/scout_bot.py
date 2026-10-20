@@ -69,6 +69,7 @@ import html
 import json
 import os
 import queue
+import re
 import subprocess
 import sys
 import threading
@@ -141,6 +142,9 @@ def scout_comment(setup: str) -> str:
     return safe_comment("scout_" + "_".join(parts), "scout")
 
 
+TEXT_CB = "txt"   # «callback» ساختگیِ دستور متنی: جواب‌هایی که برای دکمه فقط toast بودند، پیام می‌شوند
+
+
 class TG:
     def __init__(self, token: str, chat_id: int) -> None:
         self.token, self.chat = token, int(chat_id)
@@ -149,6 +153,7 @@ class TG:
         self._stop = threading.Event()
         self.last_mid: Optional[int] = None
         self.default_reply: Optional[int] = None       # وقتی یک بات دستور داده: جواب‌ها ریپلای به پیام او می‌شوند
+        self.echo_edits = False                        # بات ویرایش کارت را نمی‌بیند: ویرایش‌ها پیام تازه هم بشوند
 
     def _call(self, method: str, **kw: Any) -> Optional[dict]:
         try:
@@ -207,12 +212,18 @@ class TG:
         if buttons:
             kw["reply_markup"] = {"inline_keyboard": buttons}
         if self._call("editMessageText", **kw) is not None:
+            if getattr(self, "echo_edits", False):
+                self.send(ctl.echo_text(text, buttons))
             return True
         # متن تکراری (مثلاً بازار بسته و قیمت ثابت) خطا نیست؛ پیام تازه نفرست
         return "not modified" in (getattr(self, "last_error", "") or "")
 
     def ack(self, cb_id: str, text: str = "") -> None:
         if not cb_id:                                  # دستور متنی یک بات: دکمه‌ای نبوده که جوابش داده شود
+            return
+        if cb_id == TEXT_CB:                           # دستور متنی: toast دکمه دیده نمی‌شود؛ پیام شود
+            if text:
+                self.send(html.escape(str(text)))
             return
         self._call("answerCallbackQuery", callback_query_id=cb_id, text=text)
 
@@ -663,7 +674,8 @@ class Scout:
         rows = [[{"text": f"❌ {a['level']:.2f} {'⬆' if a['dir'] == 'up' else '⬇'}",
                   "callback_data": f"p|{a['id']}"}] for a in self._palerts]
         lines = [f"{'⬆' if a['dir'] == 'up' else '⬇'} <b>{a['level']:.2f}</b>"
-                 + (f" · {html.escape(a['note'])}" if a.get("note") else "") for a in self._palerts]
+                 + (f" · {html.escape(a['note'])}" if a.get("note") else "")
+                 + f" · <code>/alertdel {a['id']}</code>" for a in self._palerts]
         self.tg.send("🔔 <b>هشدارهای قیمت</b>\n" + "\n".join(lines) + "\nبرای حذف، دکمه‌اش را بزنید.", rows)
 
     def price_alert_delete(self, aid: str, cb: Optional[str] = None) -> None:
@@ -920,6 +932,7 @@ class Scout:
                        "هر دو باز بمانند، یا رد." if hedge else
                        f"\n⚠️ {block}؛ با تأیید، اسکات ضرر احتمالی کل را می‌گوید و از شما می‌پرسد." if block else
                        f"\nبا تأیید، پوزیشن دوم باز می‌شود (ریسک کل حداکثر {self.max_total_risk:.0f}$)."))
+        txt += f"\n<i>🤖 با متن: /yes {aid} · /no {aid}</i>"      # بات دکمه نمی‌زند و شماره را از همین‌جا می‌خواند
         mid = self.tg.send(txt, self.alert_buttons(aid, reverse_side=self.opposite_side(r.side)))
         if key is not None:                            # فرستاده شد: تلاش دوباره (بعد از خطا) تکرارش نمی‌کند
             self.seen_keys().add(key)
@@ -1043,6 +1056,7 @@ class Scout:
                        "هر دو باز بمانند، یا رد." if hedge else
                        f"\n⚠️ {block}؛ با تأیید، اسکات ضرر احتمالی کل را می‌گوید و از شما می‌پرسد." if block else
                        f"\nبا تأیید، پوزیشن دوم باز می‌شود (ریسک کل حداکثر {self.max_total_risk:.0f}$)."))
+        txt += f"\n<i>🤖 با متن: /yes {aid} · /no {aid}</i>"
         mid = self.tg.send(txt, self.alert_buttons(aid, analyze=False))
         self.pending[aid] = {"row": r, "sl": sl, "tp": tp, "mid": mid, "t": time.time(), "txt": txt,
                              "lot": self.lot, "exp": exp, "ctx": "", "wctx": {}, "manual": True}
@@ -1527,7 +1541,7 @@ class Scout:
         elif int(tk) in self.open:
             self.open[int(tk)]["why"] = "manual"         # برای کارت پایان معامله
             self.open[int(tk)]["cby"] = self._who_plain() or None
-        if cb:
+        if cb and cb != TEXT_CB:                          # دستور متنی: نتیجه همین پایین پیام می‌شود
             self.tg.ack(cb, "بسته شد" if res.ok else f"خطا: {res.comment}")
         info = self.open.get(int(tk), {})
         self.tg.send(f"{'✅' if res.ok else '⚠️'} بستن #{tk}: {res.comment or 'OK'} @ {res.price:.2f}")
@@ -2376,7 +2390,14 @@ class Scout:
         if cmd in ("/start", "/menu"):
             self.panel("menu")
         elif cmd in ("/mode", "/busy"):
-            self.mode_menu()
+            arg = (msg.split()[1].lower() if len(msg.split()) > 1 else "")
+            if arg in trk.POLICIES:
+                self.set_mode(arg, TEXT_CB)
+            elif arg:
+                self.tg.send("⚠️ حالت را یکی از این‌ها بنویسید: <code>/mode close</code> · <code>/mode hold</code> · "
+                             "<code>/mode ai</code>")
+            else:
+                self.mode_menu()
         elif cmd in ("/help", "/guide"):
             self.panel("help")
         elif cmd in ("/price", "/status", "/positions", "/pause", "/resume", "/restart"):
@@ -2391,9 +2412,214 @@ class Scout:
         elif cmd == "/alerts":
             self.price_alerts_list()
         elif cmd == "/close":
-            bits = msg.split()
-            if len(bits) > 1 and bits[1].isdigit():
-                self.close(int(bits[1]))
+            bits = msg.split()[1:]
+            tok = re.sub(r"@.*$", "", bits[0]).lstrip("#") if bits else ""
+            if tok.isdigit() and len(tok) >= 6:           # هر تیکتی که روی بروکر باشد (مثل قبل)
+                self.close(int(tok), TEXT_CB)
+            else:
+                tk, _rest = self._tk_arg(bits)
+                if tk is not None:
+                    self.close(tk, TEXT_CB)
+        else:
+            self._text_cmd(cmd, msg.split()[1:])
+
+    # ------------------------------------------------- دستورهای متنی (بات ادمین مثل Muse؛ آدم‌ها هم)
+    ID_RE = re.compile(r"^#?m?\d+$")
+
+    def _pending_list(self) -> str:
+        if not self.pending:
+            return "\nالان هشدار بازی نیست."
+        items = []
+        for k, q in self.pending.items():
+            try:
+                items.append(f"#{k} {q['row'].side}")
+            except Exception:
+                items.append(f"#{k}")
+        return "\nهشدارهای باز: " + "، ".join(items)
+
+    def _open_list(self) -> str:
+        if not self.open:
+            return "\nالان پوزیشن بازی نیست."
+        return "\nپوزیشن‌های باز: " + "، ".join(f"#{tk} {i.get('side', '')}" for tk, i in self.open.items())
+
+    def _alert_arg(self, args: list) -> tuple:
+        """(شمارهٔ هشدار، بقیهٔ آرگومان‌ها). بدون شماره و با یک هشدار باز، همان؛ وگرنه توضیح خطا و (None, [])."""
+        if args and self.ID_RE.match(args[0]):
+            aid = args[0].lstrip("#")
+            if aid in self.pending:
+                return aid, list(args[1:])
+            self.tg.send(f"⚠️ هشدار #{aid} دیگر معتبر نیست (جواب داده شده یا منقضی شده)." + self._pending_list())
+            return None, []
+        if len(self.pending) == 1:
+            return next(iter(self.pending)), list(args)
+        self.tg.send("⚠️ شمارهٔ هشدار را بنویسید، مثل <code>/yes 7</code>." + self._pending_list())
+        return None, []
+
+    def _tk_arg(self, args: list) -> tuple:
+        """(تیکت، بقیهٔ آرگومان‌ها). تیکت را می‌شود ننوشت اگر فقط یک پوزیشن باز است."""
+        if args:
+            tok = re.sub(r"@.*$", "", str(args[0])).lstrip("#")
+            if tok.isdigit() and int(tok) in self.open:
+                return int(tok), list(args[1:])
+            if tok.isdigit() and len(tok) >= 6:           # شکل تیکت است ولی باز نیست (اشتباه تایپی)
+                self.tg.send(f"⚠️ پوزیشن #{tok} باز نیست." + self._open_list())
+                return None, []
+        if len(self.open) == 1:
+            return next(iter(self.open)), list(args)
+        self.tg.send("⚠️ شمارهٔ تیکت را بنویسید، مثل <code>/close 123</code>." + self._open_list())
+        return None, []
+
+    def _text_cmd(self, cmd: str, args: list) -> bool:
+        """معادل متنی دکمه‌ها. True = دستور شناخته شد. هر جواب پیام می‌شود (ریپلای به پیام بات)."""
+        T = TEXT_CB
+        if cmd in ("/yes", "/no"):
+            aid, rest = self._alert_arg(args)
+            if aid is None:
+                return True
+            words = {str(w).lower() for w in rest}
+            hedge = "reverse" if "reverse" in words else "both" if "both" in words else None
+            self.tg.echo_edits = True                    # سؤال/نتیجه‌ای که فقط روی کارت ویرایش می‌شد، پیام هم بشود
+            try:
+                self.decide(aid, cmd == "/yes", T, override="force" in words, hedge=hedge)
+            finally:
+                self.tg.echo_edits = False
+        elif cmd == "/analyze":
+            aid, _rest = self._alert_arg(args)
+            if aid is not None:
+                self.analyze(aid, T)
+        elif cmd == "/contra":
+            aid, rest = self._alert_arg(args)
+            if aid is None:
+                return True
+            ans = (rest[0].lower() if rest else "")
+            if ans in ("yes", "y", "no", "n"):
+                self.tg.echo_edits = True
+                try:
+                    self.contra_answer(aid, ans in ("yes", "y"), T)
+                finally:
+                    self.tg.echo_edits = False
+            else:
+                p = self.pending[aid]
+                if p.get("contra"):
+                    p = self.pending[aid] = self._contra_restore(p)
+                side, entry, sl, tp, risk = self._contra_levels(p)
+                self.tg.send(f"🔄 <b>خلاف جهت سیگنال؟</b> {side} به‌جای {p['row'].side}\n"
+                             f"ورود حدود {entry:.2f} · حد ضرر {sl:.2f} · هدف 2R {tp:.2f} · ریسک {risk:.2f}$\n"
+                             f"باز کن: <code>/contra {aid} yes</code> · برگرد: <code>/contra {aid} no</code>")
+                self.log(event="contra_confirm", alert=aid, setup=p["row"].setup, side=side, price=entry, sl=sl)
+        elif cmd in ("/hold", "/unhold", "/lock"):
+            tk, _rest = self._tk_arg(args)
+            if tk is None:
+                return True
+            if cmd == "/lock":
+                self.lock_profit(tk, T)
+            else:
+                self.hold(tk, None, on=(cmd == "/hold"))      # نتیجه خودش پیام می‌شود
+        elif cmd == "/exit":
+            tk, rest = self._tk_arg(args)
+            if tk is None:
+                return True
+            if not self.open[tk].get("hold"):
+                self.tg.send(f"⚠️ اول <code>/hold {tk}</code> بزنید؛ قیمت خروج فقط روی پوزیشن نگه‌داشته ثبت می‌شود.")
+            elif not rest:
+                self.tg.send(f"🎯 قیمت‌ها را بنویسید، مثل <code>/exit {tk} 4120 4095</code> (بالا و/یا پایین).\n"
+                             + self._exit_lines(self.open[tk]))
+            else:
+                self.exit_reply(tk, " ".join(rest))
+        elif cmd in ("/exitok", "/exitno"):
+            tk, _rest = self._tk_arg(args)
+            if tk is not None:
+                self.exit_confirm(tk, cmd == "/exitok", T)
+        elif cmd == "/exitdel":
+            tk, _rest = self._tk_arg(args)
+            if tk is not None:
+                self.exit_delete(tk, T)
+        elif cmd == "/set":
+            self.set_text(args)
+        elif cmd == "/setok":
+            self.set_ok()
+        elif cmd == "/alertdel":
+            if not args:
+                self.tg.send("⚠️ شمارهٔ هشدار قیمت را بنویسید؛ فهرست: /alerts")
+            else:
+                self.price_alert_delete(args[0].lstrip("#"), T)
+        elif cmd == "/score":
+            self.panel("score")
+        elif cmd in ("/cmds", "/commands"):
+            self.tg.send(ctl.HELP_CMDS)
+        else:
+            return False
+        return True
+
+    def set_text(self, args: list) -> None:
+        """/set کلید مقدار — همان اعتبارسنجی دکمه‌های ➕➖: بازه، سازگاری و تأیید برای لات/تغییر بزرگ."""
+        keys = "، ".join(sset.SPECS)
+        if not args:
+            self.tg.send(self.settings_text() + f"\nتغییر: <code>/set lot 0.02</code> — کلیدها: {keys}")
+            return
+        cur = self.current_settings()
+        if args[0].lower() == "reset":
+            base = self._settings_defaults
+            changes = {k: (cur[k], base[k]) for k in sset.SPECS if abs(float(cur[k]) - float(base[k])) > 1e-9}
+            if not changes:
+                self.tg.send("همین الان همه پیش‌فرض است.")
+                return
+            self._settings_ask = ("reset",)
+            lines = "\n".join(f"• {sset.SPECS[k]['fa']}: {sset.fmt(k, a)} → <b>{sset.fmt(k, b)}</b>"
+                              for k, (a, b) in changes.items())
+            self.tg.send(f"↩️ <b>همه به پیش‌فرض برگردد؟</b>\n{lines}\nتأیید: <code>/setok</code>")
+            return
+        k = args[0].lower()
+        if k not in sset.SPECS or len(args) < 2:
+            self.tg.send(f"⚠️ شکل درست: <code>/set lot 0.02</code> — کلیدها: {keys}")
+            return
+        try:
+            new = sset.norm(k, float(args[1].replace(",", ".")))
+        except (TypeError, ValueError, OverflowError):
+            self.tg.send(f"⚠️ «{html.escape(args[1])}» عدد نیست.")
+            return
+        sp = sset.SPECS[k]
+        if not sset.in_range(k, new):
+            self.tg.send(f"⚠️ {sp['fa']} باید بین {sset.fmt(k, sp['lo'])} و {sset.fmt(k, sp['hi'])} باشد؛ عوض نشد.")
+            return
+        if abs(float(new) - float(cur[k])) < 1e-9:
+            self.tg.send(f"{sp['fa']} همین الان {sset.fmt(k, new)} است.")
+            return
+        bad = sset.problems(dict(cur, **{k: new}))
+        if bad:
+            self.tg.send(f"⚠️ {html.escape(bad[0])}")
+            return
+        if sset.needs_confirm(k, cur[k], new):
+            self._settings_ask = (k, new)
+            why = ("لات مستقیم روی اندازهٔ سود و ضرر اثر دارد" if k == "lot"
+                   else "بیشتر از دو برابر مقدار فعلی است")
+            self.tg.send(f"⚠️ <b>{sp['fa']}: {sset.fmt(k, cur[k])} → {sset.fmt(k, new)}</b>؟ {why}.\n"
+                         "تأیید: <code>/setok</code>")
+            return
+        self._settings_apply({k: (cur[k], new)})
+
+    def set_ok(self) -> None:
+        ask = getattr(self, "_settings_ask", None)
+        cur = self.current_settings()
+        if ask == ("reset",):
+            base = self._settings_defaults
+            changes = {k: (cur[k], base[k]) for k in sset.SPECS if abs(float(cur[k]) - float(base[k])) > 1e-9}
+            if changes:
+                self._settings_apply(changes, reset=True)
+            else:
+                self._settings_ask = None
+                self.tg.send("همین الان همه پیش‌فرض است.")
+            return
+        if not (isinstance(ask, tuple) and len(ask) == 2 and ask[0] in sset.SPECS):
+            self.tg.send("⚠️ سؤالی برای تأیید نیست. اول مثلاً <code>/set lot 0.02</code>.")
+            return
+        k, new = ask
+        bad = sset.problems(dict(cur, **{k: new})) if sset.in_range(k, new) else ["مقدار بیرون از بازه است"]
+        if bad:
+            self._settings_ask = None
+            self.tg.send(f"⚠️ {html.escape(bad[0])}")
+            return
+        self._settings_apply({k: (cur[k], new)})
 
     # ------------------------------------------------------- تنظیمات از تلگرام
     def _cap_usd(self, which: str) -> float:

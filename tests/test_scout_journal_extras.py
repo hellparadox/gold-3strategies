@@ -77,7 +77,8 @@ class Bot(unittest.TestCase):
         self.sc.alert(row(), 27.0)
         with_trend = self.sc.tg.sent[-1][0]
         self.assertIn("📐 هم‌جهت با H1 و EMA200", with_trend)
-        self.assertEqual(with_trend.replace("\n📐 هم‌جهت با H1 و EMA200", ""), plain)
+        same = lambda t: t.replace("/yes 2 · /no 2", "/yes 1 · /no 1")     # فقط شمارهٔ هشدار در خط «با متن» فرق دارد
+        self.assertEqual(same(with_trend.replace("\n📐 هم‌جهت با H1 و EMA200", "")), plain)
         self.assertNotIn("📐", plain)
 
     def test_against_h1_on_sell(self):

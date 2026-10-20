@@ -174,6 +174,14 @@ MENU_COMMANDS: List[Dict[str, str]] = [
     {"command": "sell", "description": "سفارش دستی فروش (اول کارت تأیید)"},
     {"command": "settings", "description": "تنظیمات (لات، سقف‌ها، مهلت هشدار)"},
     {"command": "restart", "description": "ری‌استارت ربات"},
+    {"command": "yes", "description": "تأیید هشدار با متن (مثلاً /yes 7)"},
+    {"command": "no", "description": "رد هشدار با متن (مثلاً /no 7)"},
+    {"command": "hold", "description": "نگه داشتن پوزیشن (/hold تیکت)"},
+    {"command": "unhold", "description": "لغو نگه داشتن (/unhold تیکت)"},
+    {"command": "lock", "description": "بی‌ضرر کردن پوزیشن (/lock تیکت)"},
+    {"command": "exit", "description": "قیمت خروج (/exit تیکت 4120 4095)"},
+    {"command": "set", "description": "تنظیمات با متن (/set lot 0.02)"},
+    {"command": "cmds", "description": "فهرست دستورهای متنی (برای ربات‌ها)"},
     {"command": "alert", "description": "هشدار قیمت (مثلاً /alert 4150)"},
     {"command": "alerts", "description": "فهرست و حذف هشدارهای قیمت"},
     {"command": "help", "description": "راهنمای دکمه‌ها"},
@@ -200,6 +208,8 @@ HELP_TEXT = """❓ <b>راهنمای اسکات</b>
 💰 <b>قیمت</b> — قیمت لحظه‌ای، اسپرد و تغییر امروز.
 📊 <b>وضعیت</b> — سلامت ربات، اتصال MT5، موجودی و خلاصهٔ ۲۴ ساعت.
 🎛 <b>منو</b> — پنل کامل (پایین). ❓ <b>راهنما</b> — همین پیام.
+
+<b>برای ربات‌ها</b> — همهٔ دکمه‌ها دستور متنی هم دارند: /cmds
 
 <b>سفارش دستی</b>
 🟢 <code>/buy</code> · 🔴 <code>/sell</code> (یا دکمه‌های «خرید/فروش دستی» در منو) — کارتی با قیمت، حد ضرر (همیشه سقف تنظیمات) و ریسک می‌آید؛ فقط با «✅ تأیید» باز می‌شود. سقف تعداد/ریسک و پوزیشن خلاف جهت مثل سیگنال‌ها پرسیده می‌شود. ۵ دقیقه فرصت دارد.
@@ -228,3 +238,94 @@ HELP_TEXT = """❓ <b>راهنمای اسکات</b>
 حد ضرر هر سیگنال حداکثر {sl:.0f}$ · حداکثر {max_open} پوزیشن هم‌زمان · ریسک کل حداکثر {risk:.0f}$ — اگر با تأیید جدید پر شود، اسکات ضرر احتمالی کل را می‌گوید و با «✅ می‌دانم، باز کن» از شما می‌پرسد · سیگنال خلاف جهت پوزیشن باز: با تأیید می‌پرسد «🔄 ببند و جهت را عوض کن»، «✅ هر دو بمانند» یا «❌ رد».
 
 <b>دستورها</b>: /menu /price /status /positions /buy /sell /mode /pause /resume /settings /restart /alert /alerts /help — /close شمارهٔ_تیکت"""
+
+
+# ----------------------------------------------------------------- دستورهای متنی (بات ادمین مثل Muse)
+# یک بات نمی‌تواند دکمهٔ اینلاین بزند؛ برای هر دکمه یک دستور متنی هم هست و جواب‌هایی که Scout فقط با
+# ویرایش کارت می‌داد (که بات نمی‌بیند) به‌صورت پیام جدید هم فرستاده می‌شوند.
+_A_CMDS = {"y": "/yes {}", "n": "/no {}", "r": "/yes {} reverse", "b": "/yes {} both",
+           "o": "/yes {} force", "q": "/yes {} both force", "x": "/yes {} reverse force"}
+
+
+def button_command(data: Any) -> Optional[str]:
+    """callback_data یک دکمه → دستور متنی معادلش (None = معادلی ندارد)."""
+    p = str(data or "").split("|")
+    k, n = p[0], len(p)
+    try:
+        if k == "a" and n == 3:
+            return _A_CMDS[p[2]].format(p[1])
+        if k == "x" and n == 2:
+            return f"/analyze {p[1]}"
+        if k == "v" and n == 2:
+            return f"/contra {p[1]}"
+        if k == "v" and n == 3 and p[2] in ("y", "n"):
+            return f"/contra {p[1]} " + ("yes" if p[2] == "y" else "no")
+        if k == "c" and n == 2:
+            return f"/close {p[1]}"
+        if k == "h" and n == 2:
+            return f"/hold {p[1]}"
+        if k == "u" and n == 2:
+            return f"/unhold {p[1]}"
+        if k == "z" and n == 2:
+            return f"/lock {p[1]}"
+        if k == "e" and n == 2:
+            return f"/exit {p[1]} <قیمت بالا> <قیمت پایین>"
+        if k == "e" and n == 3 and p[2] == "d":
+            return f"/exitdel {p[1]}"
+        if k == "e" and n == 3 and p[2] in ("y", "n"):
+            return f"/exit{'ok' if p[2] == 'y' else 'no'} {p[1]}"
+        if k == "m" and n == 2:
+            return f"/mode {p[1]}"
+        if k == "p" and n == 2:
+            return f"/alertdel {p[1]}"
+    except KeyError:
+        return None
+    return None
+
+
+def buttons_as_commands(buttons: Any) -> str:
+    """ردیف دکمه‌ها → یک خط «دکمه ← دستور» برای باتی که دکمه نمی‌بیند. بدون معادل = خط خالی."""
+    import html as _html
+    out = []
+    for row in buttons or []:
+        for b in row:
+            cmd = button_command((b or {}).get("callback_data"))
+            if cmd:
+                out.append(f"{_html.escape(str(b.get('text', '')))} ← <code>{_html.escape(cmd)}</code>")
+    return ("🤖 با متن:\n" + "\n".join(out)) if out else ""
+
+
+def echo_text(text: str, buttons: Any = None, limit: int = 3500) -> str:
+    """کارتی که فقط ویرایش شد را برای بات پیام تازه کن: فقط بند آخر (چیزی که اضافه شده) + دستورهای معادل دکمه‌ها."""
+    t = str(text or "")
+    if "\n\n" in t:
+        t = t.rsplit("\n\n", 1)[-1]
+    hint = buttons_as_commands(buttons)
+    return (t[:limit] + (("\n\n" + hint) if hint else "")).strip()
+
+
+HELP_CMDS = """🤖 <b>دستورهای متنی اسکات</b> (برای ربات ادمین مثل Muse؛ آدم‌ها هم می‌توانند)
+اگر در گروه چند ربات هست، بعد از اسم دستور بنویسید: <code>/yes@HellTreid_bot 7</code>
+
+<b>هشدار سیگنال</b> (شمارهٔ هشدار زیر هر کارت است؛ اگر فقط یک هشدار باز باشد شماره لازم نیست)
+<code>/yes 7</code> تأیید · <code>/no 7</code> رد · <code>/analyze 7</code> تحلیل هوش مصنوعی
+اگر پوزیشن خلاف جهت باز بود و اسکات پرسید: <code>/yes 7 reverse</code> (ببند و جهت را عوض کن) یا <code>/yes 7 both</code> (هر دو بمانند).
+اگر سقف تعداد/ریسک پر بود و پرسید: <code>/yes 7 force</code> (می‌دانم، باز کن) — با reverse یا both هم ترکیب می‌شود.
+خلاف جهت سیگنال: <code>/contra 7</code> سطح‌ها را نشان می‌دهد، <code>/contra 7 yes</code> باز می‌کند، <code>/contra 7 no</code> برمی‌گردد.
+
+<b>سفارش دستی</b>
+<code>/buy</code> · <code>/sell</code> — ربات ادمین مستقیم باز می‌کند.
+
+<b>پوزیشن باز</b> (تیکت را از /positions بخوانید؛ اگر فقط یکی باز است تیکت لازم نیست)
+<code>/close 123</code> بستن · <code>/hold 123</code> نگه دار · <code>/unhold 123</code> لغو نگه داشتن
+<code>/lock 123</code> بی‌ضرر (حد ضرر روی ورود، بدون هدف)
+<code>/exit 123 4120 4095</code> قیمت خروج بالا و/یا پایین (فقط روی پوزیشن نگه‌داشته) · اگر بیش از سقف ضرر بود: <code>/exitok 123</code> یا <code>/exitno 123</code> · <code>/exitdel 123</code> حذف قیمت‌های خروج
+
+<b>تنظیمات</b>
+<code>/settings</code> مقدارها · <code>/set lot 0.02</code> · کلیدها: lot, sl_cap, emerg_cap, max_open, max_risk, expiry_min
+لات و تغییر بیش از دو برابر اول می‌پرسد: <code>/setok</code> تأیید · <code>/set reset</code> برگشت به پیش‌فرض (آن هم با /setok)
+<code>/mode close</code> · <code>/mode hold</code> · <code>/mode ai</code> — در حد ضرر چه شود
+
+<b>بقیه</b>
+<code>/status</code> <code>/positions</code> <code>/price</code> <code>/pause</code> <code>/resume</code> <code>/score</code>
+<code>/alert 4150 یادداشت</code> · <code>/alerts</code> · <code>/alertdel شماره</code>"""
