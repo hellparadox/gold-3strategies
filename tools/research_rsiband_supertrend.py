@@ -15,7 +15,7 @@
 گروه کنترل «contra»: همان ورودها با جهت برعکس — اگر هر دو سودده باشند، سود از سیگنال نیست (از رانش بازار است).
 
 اجرا روی VPS (MT5 دارد):
-    python tools/research_rsiband_supertrend.py --mt5 --bars 500000
+    python tools/research_rsiband_supertrend.py --mt5            # M1/M5/M15 مستقیم از MT5 (تا ۱۰۰٬۰۰۰ کندل هرکدام)
     python tools/research_rsiband_supertrend.py --mt5 --long-pkl _sp2l_data_5y.pkl      # M5/M15 پنج‌ساله هم
 """
 from __future__ import annotations
@@ -260,24 +260,37 @@ def run_one(df: pd.DataFrame, tf: str, spread_default: float,
     return rows, trades
 
 
-def load_mt5(bars: int, symbol: Optional[str]) -> pd.DataFrame:
+MT5_MAX_BARS = 100000       # سقف پیش‌فرض ترمینال (Tools → Options → Charts → Max bars in chart)
+
+
+def load_mt5(bars: int, symbol: Optional[str], tf: str = "M1") -> pd.DataFrame:
+    """کندل‌های خود MT5 برای یک تایم‌فریم (M1/M5/M15). اگر ترمینال تعداد درخواستی را نداد، کمتر می‌خواهد."""
     import MetaTrader5 as mt5                       # فقط روی VPS لازم است
     if not mt5.initialize():
         raise SystemExit(f"MT5 initialize failed: {mt5.last_error()}")
     try:
-        sym = symbol
+        sym = None
+        for cand in ([symbol] if symbol else []) + ["XAUUSD@", "XAUUSD", "GOLD", "XAUUSDm", "XAUUSD.a", "XAUUSD.pro"]:
+            if mt5.symbol_info(cand) is not None and mt5.symbol_select(cand, True):
+                sym = cand
+                break
         if not sym:
-            for cand in ("XAUUSD@", "XAUUSD", "GOLD", "XAUUSDm", "XAUUSD.a", "XAUUSD.pro"):
-                if mt5.symbol_info(cand) is not None and mt5.symbol_select(cand, True):
-                    sym = cand
-                    break
-        if not sym:
-            raise SystemExit("no gold symbol found; pass --symbol")
-        raw = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_M1, 0, int(bars))
+            names = [x.name for x in (mt5.symbols_get() or []) if "XAU" in x.name.upper() or "GOLD" in x.name.upper()]
+            raise SystemExit(f"نماد طلا پیدا نشد؛ نمادهای شبیه: {names}. با --symbol بدهید")
+        code = getattr(mt5, f"TIMEFRAME_{tf}")
+        raw, n = None, int(bars)
+        while n >= 1000:
+            raw = mt5.copy_rates_from_pos(sym, code, 0, n)
+            if raw is not None and len(raw) > 0:
+                break
+            n //= 2                                    # بیش از سقف max-bars ترمینال: نصف کن
+        info = mt5.terminal_info()
     finally:
         mt5.shutdown()
     if raw is None or len(raw) == 0:
-        raise SystemExit("MT5 returned no M1 bars")
+        raise SystemExit(f"MT5 برای {sym} {tf} کندلی نداد (max-bars ترمینال: "
+                         f"{getattr(info, 'maxbars', '?')}؛ خطا: {mt5.last_error()})")
+    print(f"{tf}: نماد {sym}، {len(raw)} کندل", flush=True)
     d = pd.DataFrame(raw)
     d["time"] = pd.to_datetime(d["time"], unit="s")
     d = d.set_index("time").sort_index()
@@ -294,8 +307,9 @@ def fmt_table(rows: List[dict], top: int = 40) -> str:
 
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mt5", action="store_true", help="M1 را از MT5 بخوان")
-    ap.add_argument("--bars", type=int, default=500000)
+    ap.add_argument("--mt5", action="store_true", help="M1، M5 و M15 را هرکدام مستقیم از MT5 بخوان")
+    ap.add_argument("--bars", type=int, default=MT5_MAX_BARS,
+                    help="کندل برای هر تایم‌فریم؛ ترمینال معمولاً حداکثر ۱۰۰٬۰۰۰ می‌دهد")
     ap.add_argument("--symbol", default=None)
     ap.add_argument("--m1-pkl", default=None, help="DataFrame M1 (open/high/low/close[/spread]) به‌جای MT5")
     ap.add_argument("--long-pkl", default=None, help="pickle پنج‌ساله (M5, M15, H1) برای M5/M15 طولانی")
@@ -306,8 +320,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     out.mkdir(parents=True, exist_ok=True)
 
     frames: List[Tuple[str, pd.DataFrame]] = []
-    if a.mt5 or a.m1_pkl:
-        m1 = load_mt5(a.bars, a.symbol) if a.mt5 else pd.read_pickle(a.m1_pkl)
+    if a.mt5:
+        for tf in ("M1", "M5", "M15"):                 # هر تایم‌فریم تاریخچهٔ خودش را دارد: M15 حدود ۴ سال
+            d = load_mt5(a.bars, a.symbol, tf)
+            print(f"   {d.index[0]} → {d.index[-1]}", flush=True)
+            frames.append((tf, d))
+    elif a.m1_pkl:
+        m1 = pd.read_pickle(a.m1_pkl)
         print(f"M1: {len(m1)} کندل  {m1.index[0]} → {m1.index[-1]}", flush=True)
         frames += [("M1", m1), ("M5", resample(m1, "5min")), ("M15", resample(m1, "15min"))]
     if a.long_pkl:

@@ -235,5 +235,62 @@ class Stats(unittest.TestCase):
         self.assertGreater(flip["avgR"], 0.5)
 
 
+class FakeMT5:
+    """ترمینالی که بیش از max_bars کندل نمی‌دهد و فقط نماد XAUUSD@ را دارد."""
+    TIMEFRAME_M1, TIMEFRAME_M5, TIMEFRAME_M15 = 1, 5, 15
+
+    def __init__(self, max_bars=100000):
+        self.max_bars, self.calls = max_bars, []
+
+    def initialize(self):
+        return True
+
+    def shutdown(self):
+        pass
+
+    def last_error(self):
+        return (-1, "Terminal: Call failed")
+
+    def terminal_info(self):
+        return type("T", (), {"maxbars": self.max_bars})()
+
+    def symbol_info(self, name):
+        return object() if name == "XAUUSD@" else None
+
+    def symbol_select(self, name, on):
+        return True
+
+    def symbols_get(self):
+        return [type("S", (), {"name": "XAUUSD@"})()]
+
+    def copy_rates_from_pos(self, sym, tf, pos, n):
+        self.calls.append((sym, tf, n))
+        if n > self.max_bars:
+            return None
+        t = np.arange(n) * 60 + 1_760_000_000
+        c = 4000 + np.cumsum(np.ones(n) * 0.1)
+        return np.rec.fromarrays([t, c, c + 1, c - 1, c, np.full(n, 20)],
+                                 names="time,open,high,low,close,spread")
+
+
+class Loader(unittest.TestCase):
+    def test_halves_request_until_terminal_accepts_and_finds_at_symbol(self):
+        fake = FakeMT5(max_bars=100000)
+        with mock.patch.dict("sys.modules", {"MetaTrader5": fake}):
+            d = rs.load_mt5(500000, None, "M15")
+        self.assertEqual(len(d), 62500)                       # 500000 → 250000 → 125000 → 62500
+        self.assertEqual(list(d.columns), ["open", "high", "low", "close", "spread"])
+        self.assertEqual({c[0] for c in fake.calls}, {"XAUUSD@"})
+        self.assertEqual(fake.calls[0][1], 15)
+
+    def test_missing_symbol_lists_similar_names(self):
+        fake = FakeMT5()
+        fake.symbol_info = lambda name: None
+        with mock.patch.dict("sys.modules", {"MetaTrader5": fake}):
+            with self.assertRaises(SystemExit) as cm:
+                rs.load_mt5(1000, None, "M1")
+        self.assertIn("XAUUSD@", str(cm.exception))
+
+
 if __name__ == "__main__":
     unittest.main()
