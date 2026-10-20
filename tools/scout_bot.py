@@ -148,6 +148,7 @@ class TG:
         self._offset = 0
         self._stop = threading.Event()
         self.last_mid: Optional[int] = None
+        self.default_reply: Optional[int] = None       # وقتی یک بات دستور داده: جواب‌ها ریپلای به پیام او می‌شوند
 
     def _call(self, method: str, **kw: Any) -> Optional[dict]:
         try:
@@ -168,6 +169,7 @@ class TG:
     def send(self, text: str, buttons: Optional[list] = None,
              keyboard: Optional[dict] = None, reply_to: Optional[int] = None) -> Optional[int]:
         kw: Dict[str, Any] = {"chat_id": self.chat, "text": text, "parse_mode": "HTML"}
+        reply_to = reply_to or self.default_reply
         if reply_to:
             kw["reply_parameters"] = {"message_id": int(reply_to), "allow_sending_without_reply": True}
         if buttons:
@@ -210,6 +212,8 @@ class TG:
         return "not modified" in (getattr(self, "last_error", "") or "")
 
     def ack(self, cb_id: str, text: str = "") -> None:
+        if not cb_id:                                  # دستور متنی یک بات: دکمه‌ای نبوده که جوابش داده شود
+            return
         self._call("answerCallbackQuery", callback_query_id=cb_id, text=text)
 
     def start(self) -> None:
@@ -983,8 +987,10 @@ class Scout:
     # ------------------------------------------------------------- سفارش دستی (/buy /sell)
     MANUAL_EXPIRY = 300                                   # قیمت دستی زود کهنه می‌شود: ۵ دقیقه
 
-    def manual_start(self, side: str, extra: str = "") -> None:
-        """/buy یا /sell: کارت تأیید با حد ضرر = سقف تنظیمات؛ باز کردن فقط با «✅ تأیید» (همان مسیر decide)."""
+    def manual_start(self, side: str, extra: str = "", auto: bool = False) -> None:
+        """/buy یا /sell: کارت تأیید با حد ضرر = سقف تنظیمات؛ باز کردن فقط با «✅ تأیید» (همان مسیر decide).
+        auto=True (دستور از یک بات ادمین، مثل Muse): بات دکمه نمی‌زند، پس بلافاصله از همان مسیر decide باز می‌شود؛
+        اگر سقف/پوزیشن خلاف جهت مانع بود، چیزی باز نمی‌شود و دلیل جواب داده می‌شود."""
         side = "BUY" if str(side).upper() == "BUY" else "SELL"
         if not self.market_open():
             self.tg.send("⛔ بازار بسته است؛ سفارش دستی ساخته نشد.")
@@ -1042,6 +1048,35 @@ class Scout:
                              "lot": self.lot, "exp": exp, "ctx": "", "wctx": {}, "manual": True}
         self.log(event="manual_card", alert=aid, setup="manual", side=side, price=entry, sl=round(sl, 2),
                  atr=round(atr, 3), spread=spread_pts, risk_usd=risk)
+        if auto:
+            self._manual_auto(aid, side, new_risk=self.new_risk_usd(side, entry, sl))
+
+    def _manual_auto(self, aid: str, side: str, new_risk: float) -> None:
+        """دستور بات ادمین: بدون کارت تأیید باز شود (decide)، یا با دلیل رد شود؛ همیشه یک جواب کوتاه."""
+        p = self.pending.get(aid)
+        if p is None:
+            return
+        before = set(self.open)
+        if self.open and not self.dry:
+            block = self.entry_block(side, new_risk)
+            if block:                                    # آدمی نیست که «می‌دانم، باز کن» بزند
+                self.pending.pop(aid, None)
+                if p["mid"]:
+                    self.tg.edit(p["mid"], p["txt"] + f"\n\n⛔ <b>ثبت نشد</b>: {block}")
+                self.log(event="blocked_hedge" if block.startswith("پوزیشن خلاف") else "blocked_limit",
+                         alert=aid, setup="manual", side=side, note=block[:150] + self._by_note())
+                self.tg.send(f"⛔ {side} باز نشد: {block}")
+                return
+        self.decide(aid, True, "")
+        new = [tk for tk in self.open if tk not in before]
+        if new:
+            i = self.open[new[0]]
+            self.tg.send(f"✅ {side} باز شد #{new[0]} @ {float(i['entry']):.2f} · حد ضرر {float(i['sl']):.2f}")
+        elif self.dry:
+            self.tg.send(f"🧪 حالت آزمایشی؛ {side} ثبت نشد.")
+        else:
+            self.pending.pop(aid, None)
+            self.tg.send(f"⚠️ {side} باز نشد؛ دلیل در پیام کارت بالاست.")
 
     @staticmethod
     def alert_buttons(aid: str, analyze: bool = True, reverse_side: Optional[str] = None) -> list:
@@ -2266,6 +2301,18 @@ class Scout:
         return True
 
     def handle_update(self, u: dict) -> None:
+        """بات ادمین (مثل Muse) فقط دستور متنی می‌فرستد؛ جواب‌ها ریپلای به پیام او می‌شوند تا ببیند چه شد."""
+        msg = u.get("message") or {}
+        is_bot = bool((msg.get("from") or {}).get("is_bot")) and not u.get("callback_query")
+        self._bot_sender = is_bot and self.is_admin(u)
+        self.tg.default_reply = msg.get("message_id") if self._bot_sender else None
+        try:
+            self._handle_update(u)
+        finally:
+            self.tg.default_reply = None
+            self._bot_sender = False
+
+    def _handle_update(self, u: dict) -> None:
         if not self.is_admin(u):
             logger.warning("scout: ignored telegram update from non-admin")
             return
@@ -2337,7 +2384,8 @@ class Scout:
         elif cmd == "/settings":
             self.settings_show()
         elif cmd in ("/buy", "/sell"):
-            self.manual_start(cmd[1:].upper(), extra=" ".join(msg.split()[1:]))
+            self.manual_start(cmd[1:].upper(), extra=" ".join(msg.split()[1:]),
+                              auto=getattr(self, "_bot_sender", False))
         elif cmd == "/alert":
             self.price_alert_cmd(msg)
         elif cmd == "/alerts":
