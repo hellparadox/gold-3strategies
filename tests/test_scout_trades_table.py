@@ -129,6 +129,17 @@ class Build(unittest.TestCase):
         junk = [{"event": "gone", "ticket": "7", "ts": "not-a-date", "profit": "1"}, {"event": "opened"}, {}]
         self.assertEqual(dash.build_trades(junk), [])
 
+    def test_opener_is_a_clean_name_for_grouping(self):
+        a = self.one(trade("71", 5, "10:00", "10:30", note_open="lot=0.01;by=Alpha"))
+        self.assertEqual(a["opener"], "Alpha")
+        b = self.one(trade("72", 5, "10:00", "10:30", note_open="lot=0.01"))
+        self.assertEqual(b["opener"], "نام ثبت نشده")
+        c = self.one([ev("adopted", T(5, "10:00"), ticket="73", side="BUY", setup="x", entry=4100, sl=4094),
+                      ev("gone", T(5, "10:40"), ticket="73", side="BUY", setup="x", entry=4100, price=4112, profit=12.0)])
+        self.assertEqual(c["opener"], "بیرون از اسکات")
+        d = self.one(trade("74", 5, "10:00", "10:30", note_open="lot=0.01;by= Ali "))
+        self.assertEqual(d["opener"], "Ali")
+
     def test_stats_carry_trades_and_limit(self):
         events = []
         for i in range(30):
@@ -214,7 +225,7 @@ class Journal(unittest.TestCase):
 
 class Page(unittest.TestCase):
     def test_tab_and_columns_exist(self):
-        for part in ('id="t-trades"', 'id="p-trades"', 'id="trbody"', "renderTrades(st.trades)",
+        for part in ('id="t-trades"', 'id="p-trades"', 'id="trbody"', 'id="ppbody"', 'id="trwho"', 'id="trsort"', "کدام نفر بهتر بوده", "renderTrades(st.trades)",
                      "const PANES=['dash','trades','audit','guide']", "چه کسی باز کرد", "چه کسی بست"):
             self.assertIn(part, dash.PAGE)
 
@@ -244,6 +255,63 @@ TR.res='win';renderTrades(%s);
 if(els.trbody.innerHTML.includes('#9'))throw new Error('filter');
 console.log('OK');
 """ % (json.dumps(rows), json.dumps(rows))
+        res = subprocess.run(["node", "-e", harness], capture_output=True, text=True, timeout=30)
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertIn("OK", res.stdout)
+
+    @unittest.skipUnless(shutil.which("node"), "node not installed")
+    def test_people_leaderboard_sorting_and_person_filter(self):
+        page = dash.PAGE.replace("<!--GUIDE-->", dash.GUIDE)
+        js = page.split("<script>", 1)[1].rsplit("</script>", 1)[0]
+        ev_all = []
+        for i in range(12):                                         # Hamid: ۱۲ معامله، بیشترشان سودده
+            pr = 5.0 if i % 3 else -6.0
+            ev_all += trade(str(200 + i), 5, "10:00", f"10:{10 + i}", profit=pr, note_open="lot=0.01;by=Hamid",
+                            gone_note="how=manual;by=Hamid;cby=Hamid")
+        for i, pr in enumerate((-6.0, -6.0, 30.0)):                 # Alpha: ۳ معامله (کم‌نمونه) ولی یک سود بزرگ
+            ev_all += trade(str(300 + i), 6, "12:00", f"12:{10 + i}", profit=pr, note_open="lot=0.01;by=Alpha",
+                            gone_note="how=manual;by=Alpha;cby=Alpha")
+        rows = dash.build_trades(ev_all)
+        harness = r"""
+const els={};const mk=id=>els[id]||(els[id]={id,innerHTML:'',textContent:'',value:'',hidden:false,
+  setAttribute(){},addEventListener(){},scrollIntoView(){}});
+global.document={getElementById:mk,querySelectorAll:()=>[]};
+global.window={scrollTo(){}};global.location={hash:'',pathname:'/',search:''};global.history={replaceState(){}};
+global.fetch=()=>new Promise(()=>{});global.setInterval=()=>0;
+""" + js + r"""
+const rows=%s; LAST={trades:rows};
+renderTrades(rows);
+const pp=els.ppbody.innerHTML;
+if(!pp.includes('Hamid')||!pp.includes('Alpha'))throw new Error('names missing');
+if(pp.indexOf('Hamid')>pp.indexOf('Alpha'))throw new Error('few-sample person must rank last');
+if(!pp.includes('کم‌نمونه'))throw new Error('few flag');
+if(!pp.includes('🥇'))throw new Error('medal for the only qualified person');
+if((pp.match(/🥇/g)||[]).length!==1||pp.includes('🥈'))throw new Error('medal only for ≥10 trades');
+// مرتب‌سازی: بیشترین سود → اول Alpha (+30) و بدون سربرگ روز
+TR.sort='best';renderTrades(rows);
+let b=els.trbody.innerHTML;
+if(b.includes('dayrow'))throw new Error('flat list expected');
+if(b.indexOf('#302')>b.indexOf('#200')&&b.indexOf('#200')>=0)throw new Error('best first');
+TR.sort='worst';renderTrades(rows);b=els.trbody.innerHTML;
+if(b.indexOf('-')<0)throw new Error('loss format');
+const firstTk=(b.match(/#(\d+)/)||[])[1];
+if(!['200','203','206','209','300','301'].includes(firstTk))throw new Error('worst first '+firstTk);
+// مرتب‌سازی بر اساس نام: Alpha قبل از Hamid
+TR.sort='person';renderTrades(rows);b=els.trbody.innerHTML;
+if(b.indexOf('#300')>b.indexOf('#200'))throw new Error('person sort');
+// فیلتر نفر
+TR.sort='';TR.who='Alpha';renderTrades(rows);b=els.trbody.innerHTML;
+if(b.includes('#200')||!b.includes('#300'))throw new Error('who filter');
+if(!els.trtiles.innerHTML.includes('3'))throw new Error('tiles follow filter');
+// کلیک روی ردیف نفر و روی عنوان ستون
+TR.who='';els.ppbody.onclick({target:{closest:()=>({dataset:{who:'Hamid'}})}});
+if(TR.who!=='Hamid'||els.trbody.innerHTML.includes('#300'))throw new Error('row click');
+els.pphead.onclick({target:{closest:()=>({dataset:{k:'pnl'}})}});
+if(PP.key!=='pnl'||PP.dir!==1)throw new Error('header sort');
+els.pphead.onclick({target:{closest:()=>({dataset:{k:'pnl'}})}});
+if(PP.dir!==-1)throw new Error('toggle');
+console.log('OK');
+""" % json.dumps(rows)
         res = subprocess.run(["node", "-e", harness], capture_output=True, text=True, timeout=30)
         self.assertEqual(res.returncode, 0, res.stderr)
         self.assertIn("OK", res.stdout)

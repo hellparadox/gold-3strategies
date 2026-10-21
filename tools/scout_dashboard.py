@@ -286,6 +286,8 @@ def build_trades(events: List[Dict[str, str]], lot: float = 0.01,
             opened_by = f"شما ({oname})"
         else:
             opened_by = "شما (نام ثبت نشده)"
+        opener = (oname or "").strip() or ("بیرون از اسکات" if (adopted is not None and opened is None)
+                                           else "نام ثبت نشده")
         secs = (t_close - t_open).total_seconds() if t_open else None
         held = any(e.get("event") == "hold" for e in evs) or gk.get("held") == "1"
         rows.append({
@@ -303,7 +305,7 @@ def build_trades(events: List[Dict[str, str]], lot: float = 0.01,
             "exit": None if math.isnan(exit_px) else round(exit_px, 2),
             "sl": None if math.isnan(sl) else round(sl, 2),
             "profit": round(profit, 2), "r": r,
-            "opened_by": opened_by, "closed_by": closed_by, "closed_how": how, "close_code": code,
+            "opened_by": opened_by, "opener": opener, "closed_by": closed_by, "closed_how": how, "close_code": code,
             "held": bool(held), "contra": "contra=1" in str(o.get("note") or ""),
             "locked": gk.get("locked") == "1",
         })
@@ -775,6 +777,7 @@ table.wide th,table.wide td{padding:8px 7px}
 .tag{white-space:nowrap}
 .sub{display:block;color:var(--muted);font-size:.74rem}
 tr.dayrow td{background:color-mix(in srgb,var(--gold-soft) 55%,var(--surface));font-weight:700;font-size:.86rem}
+th.srt{cursor:pointer;user-select:none} th.srt.on{color:var(--gold)} tr.pick{cursor:pointer} tr.pick:hover td{background:var(--gold-soft)}
 .who{font-size:.84rem;line-height:1.5} .who small{display:block;color:var(--muted);font-size:.74rem}
 .hint{margin:-6px 0 0;font-size:.84rem;color:var(--muted);max-width:75ch}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:-14px}
@@ -861,12 +864,18 @@ details p{margin-top:6px;color:var(--muted);font-size:.9rem}
   </div>
 
 <div class="pane" id="p-trades" role="tabpanel" aria-labelledby="t-trades" hidden>
+  <section><h2>کدام نفر بهتر بوده؟ <small id="ppnote"></small></h2>
+    <p class="hint">همهٔ معاملات دفتر به تفکیک کسی که تأیید یا باز کرده است. برای مرتب‌کردن روی عنوان ستون بزنید؛ برای دیدن معاملات یک نفر، روی ردیفش. «میانگین R» منصفانه‌ترین معیار است (به تعداد معاملات بستگی ندارد). نفرات با کمتر از ۱۰ معامله کم‌نمونه‌اند و رتبه نمی‌گیرند؛ چند معاملهٔ خوش‌شانس هنوز مهارت را ثابت نمی‌کند.</p>
+    <div class="tablewrap"><table class="wide"><thead id="pphead"></thead><tbody id="ppbody"></tbody></table></div>
+  </section>
   <section><h2>معاملات تأییدشده <small id="trnote"></small></h2>
     <p class="hint">همهٔ معاملاتی که با تأیید شما باز شدند و بسته شده‌اند، جدیدترین بالا و به تفکیک روز (به وقت تهران). «چه کسی بست» نشان می‌دهد خودتان با دکمهٔ بستن بستید یا حد ضرر، هوش مصنوعی، قیمت خروج شما یا بروکر. نام تأییدکننده از نسخهٔ جدید به بعد ثبت می‌شود. پوزیشن‌های باز در تب داشبورد هستند.</p>
     <div class="tiles" id="trtiles"></div>
     <div class="filters">
       <select id="trday" aria-label="روز"></select>
       <select id="trres" aria-label="نتیجه"><option value="">سود و ضرر</option><option value="win">فقط سودده</option><option value="loss">فقط ضررده</option></select>
+      <select id="trwho" aria-label="نفر"></select>
+      <select id="trsort" aria-label="مرتب‌سازی"><option value="">جدیدترین (به تفکیک روز)</option><option value="best">بیشترین سود</option><option value="worst">بیشترین ضرر</option><option value="r">بهترین R</option><option value="person">بر اساس نام نفر</option></select>
       <select id="trside" aria-label="جهت"><option value="">خرید و فروش</option><option value="BUY">فقط خرید</option><option value="SELL">فقط فروش</option></select>
     </div>
     <div class="tablewrap"><table class="wide"><thead><tr><th>تیکت</th><th>باز شد ← بسته شد</th><th>جهت</th><th>ستاپ</th><th>لات</th><th>ورود ← خروج</th><th>سود / ضرر</th><th>چه کسی باز کرد</th><th>چه کسی بست</th><th>توضیح</th></tr></thead><tbody id="trbody"></tbody></table></div>
@@ -977,15 +986,55 @@ function renderPicks(p){
 const SIDE_FA={BUY:'🟢 خرید',SELL:'🔴 فروش'};
 const setupFa=s=>String(s)==='manual'?'✋ دستی':String(s);
 function dur(sec){if(sec==null)return '—';const m=Math.round(sec/60);if(m<60)return m+' د';const h=Math.floor(m/60),r=m%60;return h+' س'+(r?' '+r+' د':'');}
+const PPCOLS=[['rank','رتبه',0],['name','نفر',1],['n','معاملات',1],['win','برد',1],['pnl','جمع سود و ضرر',1],['avg','میانگین هر معامله',1],['avgR','میانگین R',1],['best','بهترین',1],['worst','بدترین',1]];
+const PP_MIN=10;
+function peopleStats(list){
+  const m={};
+  for(const x of list){const k=x.opener||'نام ثبت نشده';
+    const p=m[k]||(m[k]={name:k,n:0,wins:0,pnl:0,rs:[],best:-1e9,worst:1e9});
+    p.n++;if(x.profit>0)p.wins++;p.pnl+=x.profit;if(x.r!=null)p.rs.push(x.r);
+    p.best=Math.max(p.best,x.profit);p.worst=Math.min(p.worst,x.profit);}
+  return Object.values(m).map(p=>({name:p.name,n:p.n,win:p.n?p.wins/p.n:null,pnl:p.pnl,avg:p.n?p.pnl/p.n:null,
+    avgR:p.rs.length?p.rs.reduce((a,v)=>a+v,0)/p.rs.length:null,best:p.best,worst:p.worst,few:p.n<PP_MIN}));
+}
+function renderPeople(list){
+  const ps=peopleStats(list||[]), key=PP.key, dir=PP.dir;
+  const val=p=>key==='name'?p.name:(p[key]==null?-1e9:p[key]);
+  ps.sort((a,b)=>(a.few-b.few)||(key==='name'?String(a.name).localeCompare(String(b.name),'fa')*dir:(val(b)-val(a))*dir));
+  let rank=0;
+  $('pphead').innerHTML='<tr>'+PPCOLS.map(([k,t,s])=>s?`<th class="srt${k===key?' on':''}" data-k="${k}">${t}${k===key?(dir>0?' ▼':' ▲'):''}</th>`:`<th>${t}</th>`).join('')+'</tr>';
+  $('ppbody').innerHTML=ps.map(p=>{if(!p.few)rank++;
+    const medal=p.few?'':(['🥇','🥈','🥉'][rank-1]||rank);
+    return `<tr class="pick${p.few?' muted':''}" data-who="${esc(p.name)}"><td class="n">${medal}</td><td><b>${esc(p.name)}</b>${p.few?'<span class="sub">کم‌نمونه</span>':''}</td>
+      <td class="n">${p.n}</td><td class="n">${Math.round(100*p.win)}٪</td><td class="n ${cls(p.pnl)}"><b>${money(p.pnl)}</b></td>
+      <td class="n ${cls(p.avg)}">${money(p.avg)}</td><td class="n ${cls(p.avgR)}">${p.avgR!=null?(p.avgR>0?'+':'')+p.avgR.toFixed(2)+'R':'—'}</td>
+      <td class="n ${cls(p.best)}">${money(p.best)}</td><td class="n ${cls(p.worst)}">${money(p.worst)}</td></tr>`}).join('')
+    ||'<tr><td colspan="9" class="muted">هنوز معامله‌ای نیست</td></tr>';
+  $('ppnote').textContent=ps.length?`${ps.length} نفر`:'';
+}
+let PP={key:'avgR',dir:1};
+$('pphead').onclick=e=>{const th=e.target&&e.target.closest?e.target.closest('th[data-k]'):null;if(!th)return;
+  const k=th.dataset.k;if(PP.key===k)PP.dir=-PP.dir;else{PP.key=k;PP.dir=1;} renderPeople(LAST.trades)};
+$('ppbody').onclick=e=>{const tr=e.target&&e.target.closest?e.target.closest('tr[data-who]'):null;if(!tr)return;
+  TR.who=tr.dataset.who;TR.sort='';renderTrades(LAST.trades);$('trbody').scrollIntoView&&$('trbody').scrollIntoView()};
 function renderTrades(list){
   list=list||[];
+  renderPeople(list);
   const days=[...new Set(list.map(x=>x.day))];
   if(TR.day&&!days.includes(TR.day))TR.day='';
+  const names=[...new Set(list.map(x=>x.opener||'نام ثبت نشده'))];
+  if(TR.who&&!names.includes(TR.who))TR.who='';
   $('trday').innerHTML='<option value="">همهٔ روزها</option>'+days.map(d=>{const x=list.find(y=>y.day===d);
     return `<option value="${esc(d)}"${TR.day===d?' selected':''}>${esc(x.day_fa)} · ${esc(d)}</option>`}).join('');
-  $('trres').value=TR.res; $('trside').value=TR.side;
-  const rows=list.filter(x=>(!TR.day||x.day===TR.day)&&(!TR.side||x.side===TR.side)
+  $('trwho').innerHTML='<option value="">همهٔ نفرات</option>'+names.map(nm=>`<option value="${esc(nm)}"${TR.who===nm?' selected':''}>${esc(nm)} (${list.filter(y=>(y.opener||'نام ثبت نشده')===nm).length})</option>`).join('');
+  $('trres').value=TR.res; $('trside').value=TR.side; $('trsort').value=TR.sort;
+  let rows=list.filter(x=>(!TR.day||x.day===TR.day)&&(!TR.side||x.side===TR.side)&&(!TR.who||(x.opener||'نام ثبت نشده')===TR.who)
     &&(!TR.res||(TR.res==='win'?x.profit>0:x.profit<0)));
+  const flat=!!TR.sort;
+  if(TR.sort==='best')rows=[...rows].sort((a,b)=>b.profit-a.profit);
+  else if(TR.sort==='worst')rows=[...rows].sort((a,b)=>a.profit-b.profit);
+  else if(TR.sort==='r')rows=[...rows].sort((a,b)=>(b.r==null?-1e9:b.r)-(a.r==null?-1e9:a.r));
+  else if(TR.sort==='person')rows=[...rows].sort((a,b)=>String(a.opener).localeCompare(String(b.opener),'fa')||(a.t_close<b.t_close?1:-1));
   const n=rows.length, pnl=rows.reduce((a,x)=>a+x.profit,0), wins=rows.filter(x=>x.profit>0).length;
   const rs=rows.filter(x=>x.r!=null), sr=rs.reduce((a,x)=>a+x.r,0);
   $('trtiles').innerHTML=[['معاملات',fa(n),list.length!==n?('از '+list.length+' کل'):'','' ],
@@ -995,9 +1044,9 @@ function renderTrades(list){
   $('trnote').textContent=list.length?`${list.length} معامله در دفتر`:'';
   let html='',cur=null;
   for(const x of rows){
-    if(x.day!==cur){cur=x.day;const dr=rows.filter(y=>y.day===cur);const dp=dr.reduce((a,y)=>a+y.profit,0);
+    if(!flat&&x.day!==cur){cur=x.day;const dr=rows.filter(y=>y.day===cur);const dp=dr.reduce((a,y)=>a+y.profit,0);
       html+=`<tr class="dayrow"><td colspan="10">${esc(x.day_fa)} · <span class="num">${esc(cur)}</span> · ${dr.length} معامله · <span class="num ${cls(dp)}">${money(dp)}</span></td></tr>`;}
-    const od=x.open_day&&x.open_day!==x.day?x.open_day.slice(5).replace('-','/')+' ':'';
+    const od=flat?x.day.slice(5).replace('-','/')+' ':(x.open_day&&x.open_day!==x.day?x.open_day.slice(5).replace('-','/')+' ':'');
     const tags=[x.held?'<span class="tag">⏸ نگه داشته</span>':'',x.contra?'<span class="tag">↔️ خلاف سیگنال</span>':'',x.locked?'<span class="tag">🔒 بی‌ضرر شد</span>':''].join(' ');
     html+=`<tr><td class="mono nw">#${esc(x.ticket)}</td>
       <td class="n nw">${esc(od+x.open_hm)} → ${esc(x.close_hm)}<span class="sub">${dur(x.secs)}</span></td>
@@ -1005,14 +1054,16 @@ function renderTrades(list){
       <td class="n">${x.lot!=null?Number(x.lot).toFixed(2):'—'}</td>
       <td class="n nw">${x.entry!=null?x.entry.toFixed(2):'—'} → ${x.exit!=null?x.exit.toFixed(2):'—'}</td>
       <td class="n nw ${cls(x.profit)}"><b>${money(x.profit)}</b><span class="sub">${x.r!=null?(x.r>0?'+':'')+x.r.toFixed(2)+'R':''}</span></td>
-      <td class="who">${esc(x.opened_by)}</td><td class="who">${esc(x.closed_by)}<small>${esc(x.closed_how)}</small></td><td>${tags}</td></tr>`;
+      <td class="who"><b>${esc(x.opener||'')}</b><small>${esc(x.opened_by)}</small></td><td class="who">${esc(x.closed_by)}<small>${esc(x.closed_how)}</small></td><td>${tags}</td></tr>`;
   }
   $('trbody').innerHTML=html||'<tr><td colspan="10" class="muted">'+(list.length?'با این فیلترها معامله‌ای نیست':'هنوز معامله بسته‌شده‌ای نیست')+'</td></tr>';
 }
-let TR={day:'',res:'',side:''};
+let TR={day:'',res:'',side:'',who:'',sort:''};
 $('trday').onchange=e=>{TR.day=e.target.value;renderTrades(LAST.trades)};
 $('trres').onchange=e=>{TR.res=e.target.value;renderTrades(LAST.trades)};
 $('trside').onchange=e=>{TR.side=e.target.value;renderTrades(LAST.trades)};
+$('trwho').onchange=e=>{TR.who=e.target.value;renderTrades(LAST.trades)};
+$('trsort').onchange=e=>{TR.sort=e.target.value;renderTrades(LAST.trades)};
 const AUH='<tr><th>گروه</th><th>نمونه</th><th>اول ‎+1R</th><th>‎+1R / ‎-1R</th><th>۱۵ دقیقه در جهت</th><th>۶۰ دقیقه در جهت</th><th>میانگین R در ۶۰ دقیقه</th><th>حرکت به نفع / به ضرر (R)</th></tr>';
 const pct=v=>v==null?'—':Math.round(v*100)+'٪';
 function auRow(x,label,inverse){
