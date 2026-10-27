@@ -544,422 +544,663 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 GUIDE = r'''<div class="pane guide" id="p-guide" role="tabpanel" aria-labelledby="t-guide" hidden>
+    <section>
+      <div class="sh"><span class="idx">00</span><h2>راهنمای اسکات</h2></div>
+      <p class="guide-lead" style="color:var(--ink)">اسکات یک <em>دیدبان</em> است، نه ربات خودکار.</p>
+      <p><b>خودش وارد معامله نمی‌شود.</b> فقط ستاپ‌ها را پیدا می‌کند، در تلگرام خبر می‌دهد و تصمیم را به شما می‌سپارد.</p>
+      <p>همهٔ معاملات با حجم ثابت <b data-r="lot">0.01</b> لات روی حساب دمو انجام می‌شوند تا نتیجهٔ ستاپ‌ها منصفانه مقایسه شود. همه‌چیز در دفتر اسکات ثبت می‌شود، حتی هشدارهایی که رد کرده‌اید. همین‌طور می‌شود فهمید کدام ستاپ واقعاً جواب می‌دهد.</p>
+    </section>
 
-  <section><h2>اسکات چیست؟</h2>
-    <p>اسکات یک دیدبان است، نه ربات خودکار: <b>خودش وارد معامله نمی‌شود.</b> فقط ستاپ‌ها را پیدا می‌کند، در تلگرام خبر می‌دهد و تصمیم را به شما می‌سپارد.</p>
-    <p>همهٔ معاملات با حجم ثابت <b data-r="lot">0.01</b> لات روی حساب دمو انجام می‌شوند تا نتیجهٔ ستاپ‌ها منصفانه مقایسه شود. همه‌چیز در دفتر اسکات ثبت می‌شود، حتی هشدارهایی که رد کرده‌اید. همین‌طور می‌شود فهمید کدام ستاپ واقعاً جواب می‌دهد.</p>
-  </section>
+    <section><div class="sh"><span class="idx">01</span><h2>یک معامله از اول تا آخر</h2></div>
+      <ol class="steps">
+        <li><b>پیدا کردن ستاپ.</b> هر بار که یک کندل ۱۵ دقیقه‌ای بسته می‌شود، اسکات ۱۰ نوع ستاپ را روی آن چک می‌کند. اگر چند ستاپ هم‌زمان و هم‌جهت بودند، در یک پیام می‌آیند.</li>
+        <li><b>هشدار در تلگرام.</b> پیام شامل جهت (خرید یا فروش)، قیمت، حد ضرر، هدف پیشنهادی (۲ برابر ریسک) و ریسک به دلار است.</li>
+        <li><b>تصمیم شما.</b> <b data-r="expiry_min">30</b> دقیقه فرصت دارید: ✅ تأیید، ❌ رد، یا اول 🤖 تحلیل بگیرید. اگر جواب ندهید، هشدار منقضی می‌شود.</li>
+        <li><b>باز شدن معامله.</b> با تأیید، معامله با قیمت همان لحظه باز می‌شود و حد ضرر با همان فاصلهٔ هشدار روی بروکر ثبت می‌شود. اگر قیمت در این فاصله از حد ضرر رد شده باشد، معامله باز نمی‌شود.</li>
+        <li><b>مراقبت.</b> هر <b data-r="status_min">5</b> دقیقه یک پیام وضعیت با سود و زیان می‌آید. در <b data-r="approach" data-suf="٪">70٪</b> فاصله تا حد ضرر یک هشدار «نزدیک حد ضرر» می‌آید و رسیدن به ۱ برابر ریسک (1R) هم خبر داده می‌شود.</li>
+        <li><b>بسته شدن.</b> یا خودتان با دکمهٔ 🔻 بستن می‌بندید، یا قیمت به حد ضرر می‌رسد و طبق «حالت» (پایین‌تر توضیح داده شده) رفتار می‌شود. اسکات حد سود خودکار نمی‌گذارد؛ زمان گرفتن سود با شماست.</li>
+      </ol>
+    </section>
 
-  <section><h2>یک معامله از اول تا آخر</h2>
-    <ol class="steps">
-      <li><div><b>پیدا کردن ستاپ.</b> هر بار که یک کندل ۱۵ دقیقه‌ای بسته می‌شود، اسکات ۱۰ نوع ستاپ را روی آن چک می‌کند. اگر چند ستاپ هم‌زمان و هم‌جهت بودند، در یک پیام می‌آیند.</div></li>
-      <li><div><b>هشدار در تلگرام.</b> پیام شامل جهت (خرید یا فروش)، قیمت، حد ضرر، هدف پیشنهادی (۲ برابر ریسک) و ریسک به دلار است.</div></li>
-      <li><div><b>تصمیم شما.</b> <b data-r="expiry_min">30</b> دقیقه فرصت دارید: ✅ تأیید، ❌ رد، یا اول 🤖 تحلیل بگیرید. اگر جواب ندهید، هشدار منقضی می‌شود.</div></li>
-      <li><div><b>باز شدن معامله.</b> با تأیید، معامله با قیمت همان لحظه باز می‌شود و حد ضرر با همان فاصلهٔ هشدار روی بروکر ثبت می‌شود. اگر قیمت در این فاصله از حد ضرر رد شده باشد، معامله باز نمی‌شود.</div></li>
-      <li><div><b>مراقبت.</b> هر <b data-r="status_min">5</b> دقیقه یک پیام وضعیت با سود و زیان می‌آید. در <b data-r="approach" data-suf="٪">70٪</b> فاصله تا حد ضرر یک هشدار «نزدیک حد ضرر» می‌آید و رسیدن به ۱ برابر ریسک (1R) هم خبر داده می‌شود.</div></li>
-      <li><div><b>بسته شدن.</b> یا خودتان با دکمهٔ 🔻 بستن می‌بندید، یا قیمت به حد ضرر می‌رسد و طبق «حالت» (پایین‌تر توضیح داده شده) رفتار می‌شود. اسکات حد سود خودکار نمی‌گذارد؛ زمان گرفتن سود با شماست.</div></li>
-    </ol>
-  </section>
+    <section><div class="sh"><span class="idx">02</span><h2>۱۰ ستاپ اسکات</h2></div>
+      <p>چهار ستاپ اول فقط در جهت روند ظاهر می‌شوند. روند یعنی قیمت بالای ابر ایچیموکو، بالای میانگین ۲۰۰ و هم‌جهت با روند یک‌ساعته (برای فروش برعکس). بقیه به روند وابسته نیستند.</p>
+      <div class="tablewrap"><table class="setgrid"><thead><tr><th>ستاپ</th><th>یعنی چه</th></tr></thead><tbody>
+        <tr><td class="mono">kijun_pullback</td><td>در روند، قیمت تا نزدیک خط کیجون برمی‌گردد و دوباره در جهت روند بسته می‌شود.</td></tr>
+        <tr><td class="mono">tenkan_momentum</td><td>در روند و با نوسان رو به افزایش، قیمت خط تنکان را لمس می‌کند و با یک کندل قوی در جهت روند بسته می‌شود.</td></tr>
+        <tr><td class="mono">range_break</td><td>در روند، یک کندل قوی بالاتر از سقف ۲۰ کندل قبل (یا پایین‌تر از کف آن برای فروش) بسته می‌شود.</td></tr>
+        <tr><td class="mono">pullback_resume</td><td>در روند، بعد از برگشت به تنکان در ۳ کندل اخیر، قیمت از سقف کندل قبل رد می‌شود و روند ادامه پیدا می‌کند.</td></tr>
+        <tr><td class="mono">cloud_break</td><td>قیمت از ابر ایچیموکو عبور می‌کند و بیرون آن بسته می‌شود، همراه با افزایش نوسان.</td></tr>
+        <tr><td class="mono">tk_cross</td><td>خط تنکان خط کیجون را قطع می‌کند.</td></tr>
+        <tr><td class="mono">rejection</td><td>قیمت کف (یا سقف) ۲۰ کندل را می‌شکند ولی با سایهٔ بلند برمی‌گردد و داخل محدوده بسته می‌شود.</td></tr>
+        <tr><td class="mono">engulfing</td><td>کندل پوشا: بدنهٔ کندل فعلی بدنهٔ کندل مخالف قبلی را کامل می‌پوشاند.</td></tr>
+        <tr><td class="mono">ignition</td><td>یک کندل خیلی بزرگ (بیش از ۲ برابر ATR) با بدنهٔ پر و حجم بالا.</td></tr>
+        <tr><td class="mono">exhaustion</td><td>قیمت بیش از ۳ برابر ATR از تنکان دور شده است. این ستاپ خلاف حرکت است و روی برگشت حساب می‌کند.</td></tr>
+      </tbody></table></div>
+      <p class="hint">حد ضرر هر ستاپ پشت کف یا سقف کندل (یا تنکان) گذاشته می‌شود، بین ۱ تا ۲.۵ برابر ATR، ولی هیچ‌وقت بیشتر از <b data-r="sl_cap" data-pre="$">$10</b> ضرر نیست.</p>
+    </section>
 
-  <section><h2>۱۰ ستاپ اسکات</h2>
-    <p>چهار ستاپ اول فقط در جهت روند ظاهر می‌شوند. روند یعنی قیمت بالای ابر ایچیموکو، بالای میانگین ۲۰۰ و هم‌جهت با روند یک‌ساعته (برای فروش برعکس). بقیه به روند وابسته نیستند.</p>
-    <div class="tablewrap"><table class="setgrid"><thead><tr><th>ستاپ</th><th>یعنی چه</th></tr></thead><tbody>
-      <tr><td class="mono">kijun_pullback</td><td>در روند، قیمت تا نزدیک خط کیجون برمی‌گردد و دوباره در جهت روند بسته می‌شود.</td></tr>
-      <tr><td class="mono">tenkan_momentum</td><td>در روند و با نوسان رو به افزایش، قیمت خط تنکان را لمس می‌کند و با یک کندل قوی در جهت روند بسته می‌شود.</td></tr>
-      <tr><td class="mono">range_break</td><td>در روند، یک کندل قوی بالاتر از سقف ۲۰ کندل قبل (یا پایین‌تر از کف آن برای فروش) بسته می‌شود.</td></tr>
-      <tr><td class="mono">pullback_resume</td><td>در روند، بعد از برگشت به تنکان در ۳ کندل اخیر، قیمت از سقف کندل قبل رد می‌شود و روند ادامه پیدا می‌کند.</td></tr>
-      <tr><td class="mono">cloud_break</td><td>قیمت از ابر ایچیموکو عبور می‌کند و بیرون آن بسته می‌شود، همراه با افزایش نوسان.</td></tr>
-      <tr><td class="mono">tk_cross</td><td>خط تنکان خط کیجون را قطع می‌کند.</td></tr>
-      <tr><td class="mono">rejection</td><td>قیمت کف (یا سقف) ۲۰ کندل را می‌شکند ولی با سایهٔ بلند برمی‌گردد و داخل محدوده بسته می‌شود.</td></tr>
-      <tr><td class="mono">engulfing</td><td>کندل پوشا: بدنهٔ کندل فعلی بدنهٔ کندل مخالف قبلی را کامل می‌پوشاند.</td></tr>
-      <tr><td class="mono">ignition</td><td>یک کندل خیلی بزرگ (بیش از ۲ برابر ATR) با بدنهٔ پر و حجم بالا.</td></tr>
-      <tr><td class="mono">exhaustion</td><td>قیمت بیش از ۳ برابر ATR از تنکان دور شده است. این ستاپ خلاف حرکت است و روی برگشت حساب می‌کند.</td></tr>
-    </tbody></table></div>
-    <p class="hint">حد ضرر هر ستاپ پشت کف یا سقف کندل (یا تنکان) گذاشته می‌شود، بین ۱ تا ۲.۵ برابر ATR، ولی هیچ‌وقت بیشتر از <b data-r="sl_cap" data-pre="$">$10</b> ضرر نیست.</p>
-  </section>
+    <section><div class="sh"><span class="idx">03</span><h2>دکمه‌های تلگرام</h2></div>
+      <div class="gl">
+        <div><b>✅ تأیید</b><span>با قیمت همین لحظه وارد می‌شود.</span></div>
+        <div><b>❌ رد</b><span>هشدار کنار گذاشته می‌شود ولی در آمار می‌ماند.</span></div>
+        <div><b>🤖 تحلیل</b><span>نظر کوتاه هوش مصنوعی: ورود یا صبر، درصد اطمینان، دلیل‌ها و یک نکته. فقط راهنماست؛ تصمیم با شماست.</span></div>
+        <div><b>🔻 بستن</b><span>پوزیشن را همان لحظه می‌بندد. زدن چندباره فقط یک بار اجرا می‌شود.</span></div>
+        <div><b>⏸ نگه دار</b><span>در حد ضرر سیگنال بسته نشود. حد ضرر روی بروکر به سطح اضطراری می‌رود.</span></div>
+        <div><b>▶️ لغو نگه داشتن</b><span>دوباره طبق حالت انتخاب‌شده رفتار می‌شود.</span></div>
+        <div><b>📋 پوزیشن‌ها · 💰 قیمت · 📊 وضعیت</b><span>کیبورد پایین چت، برای دیدن سریع.</span></div>
+        <div><b>🎛 منو</b><span>توقف و ادامهٔ هشدارها، سلامت ربات، حالت حد ضرر، ری‌استارت.</span></div>
+        <div><b>❓ راهنما</b><span>همین توضیحات، کوتاه، داخل تلگرام (<span class="mono">/help</span>).</span></div>
+      </div>
+    </section>
 
-  <section><h2>دکمه‌های تلگرام</h2>
-    <div class="gl">
-      <div><b>✅ تأیید</b><span>با قیمت همین لحظه وارد می‌شود.</span></div>
-      <div><b>❌ رد</b><span>هشدار کنار گذاشته می‌شود ولی در آمار می‌ماند.</span></div>
-      <div><b>🤖 تحلیل</b><span>نظر کوتاه هوش مصنوعی: ورود یا صبر، درصد اطمینان، دلیل‌ها و یک نکته. فقط راهنماست؛ تصمیم با شماست.</span></div>
-      <div><b>🔻 بستن</b><span>پوزیشن را همان لحظه می‌بندد. زدن چندباره فقط یک بار اجرا می‌شود.</span></div>
-      <div><b>⏸ نگه دار</b><span>در حد ضرر سیگنال بسته نشود. حد ضرر روی بروکر به سطح اضطراری می‌رود.</span></div>
-      <div><b>▶️ لغو نگه داشتن</b><span>دوباره طبق حالت انتخاب‌شده رفتار می‌شود.</span></div>
-      <div><b>📋 پوزیشن‌ها · 💰 قیمت · 📊 وضعیت</b><span>کیبورد پایین چت، برای دیدن سریع.</span></div>
-      <div><b>🎛 منو</b><span>توقف و ادامهٔ هشدارها، سلامت ربات، حالت حد ضرر، ری‌استارت.</span></div>
-      <div><b>❓ راهنما</b><span>همین توضیحات، کوتاه، داخل تلگرام (<span class="mono">/help</span>).</span></div>
-    </div>
-  </section>
+    <section><div class="sh"><span class="idx">04</span><h2>حد ضرر و «حالت»</h2></div>
+      <p>اسکات از دو سطح حد ضرر استفاده می‌کند:</p>
+      <div class="gl">
+        <div><b>حد ضرر سیگنال</b><span>همان حدی که در هشدار آمده، حداکثر <b data-r="sl_cap" data-pre="$">$10</b> ضرر. در حالت عادی همین روی بروکر ثبت است.</span></div>
+        <div><b>حد ضرر اضطراری</b><span>وقتی «نگه دار» زده‌اید یا حالت «نگه داشتن» است: ۳ برابر فاصلهٔ سیگنال، ولی حداکثر <b data-r="emerg_cap" data-pre="$">$20</b> ضرر. این سقف آخر است تا ضرر هیچ‌وقت از کنترل خارج نشود.</span></div>
+      </div>
+      <p>«حالت» تعیین می‌کند وقتی قیمت به حد ضرر سیگنال رسید و شما در دسترس نبودید چه شود. با دستور <span class="mono">/mode</span> یا از منو عوض می‌شود:</p>
+      <div class="gl">
+        <div><b>بستن</b><span>در حد ضرر سیگنال بسته می‌شود. پیش‌فرض و محتاطانه‌ترین حالت.</span></div>
+        <div><b>نگه داشتن</b><span>بسته نمی‌شود تا خودتان بگویید. فقط هشدار می‌آید و حد ضرر اضطراری از ضرر بزرگ جلوگیری می‌کند.</span></div>
+        <div><b>هوش مصنوعی</b><span>در حد ضرر از هوش مصنوعی می‌پرسد. اگر با اطمینان کافی گفت «نگه دار»، نگه می‌دارد و ۱۵ دقیقه بعد دوباره می‌پرسد. اگر جواب نداد یا مطمئن نبود، می‌بندد.</span></div>
+      </div>
+    </section>
 
-  <section><h2>حد ضرر و «حالت»</h2>
-    <p>اسکات از دو سطح حد ضرر استفاده می‌کند:</p>
-    <div class="gl">
-      <div><b>حد ضرر سیگنال</b><span>همان حدی که در هشدار آمده، حداکثر <b data-r="sl_cap" data-pre="$">$10</b> ضرر. در حالت عادی همین روی بروکر ثبت است.</span></div>
-      <div><b>حد ضرر اضطراری</b><span>وقتی «نگه دار» زده‌اید یا حالت «نگه داشتن» است: ۳ برابر فاصلهٔ سیگنال، ولی حداکثر <b data-r="emerg_cap" data-pre="$">$20</b> ضرر. این سقف آخر است تا ضرر هیچ‌وقت از کنترل خارج نشود.</span></div>
-    </div>
-    <p>«حالت» تعیین می‌کند وقتی قیمت به حد ضرر سیگنال رسید و شما در دسترس نبودید چه شود. با دستور <span class="mono">/mode</span> یا از منو عوض می‌شود:</p>
-    <div class="gl">
-      <div><b>بستن</b><span>در حد ضرر سیگنال بسته می‌شود. پیش‌فرض و محتاطانه‌ترین حالت.</span></div>
-      <div><b>نگه داشتن</b><span>بسته نمی‌شود تا خودتان بگویید. فقط هشدار می‌آید و حد ضرر اضطراری از ضرر بزرگ جلوگیری می‌کند.</span></div>
-      <div><b>هوش مصنوعی</b><span>در حد ضرر از هوش مصنوعی می‌پرسد. اگر با اطمینان کافی گفت «نگه دار»، نگه می‌دارد و ۱۵ دقیقه بعد دوباره می‌پرسد. اگر جواب نداد یا مطمئن نبود، می‌بندد.</span></div>
-    </div>
-  </section>
+    <section><div class="sh"><span class="idx">05</span><h2>سقف‌های هم‌زمانی</h2></div>
+      <p>هشدارها همیشه می‌آیند، حتی وقتی پوزیشن باز دارید. با تأیید جدید:</p>
+      <div class="gl">
+        <div><b>حداکثر <span data-r="max_open">2</span> پوزیشن</b><span>اگر پر باشد، اسکات رد نمی‌کند؛ می‌پرسد «باز هم باز کنم؟» و با «✅ می‌دانم، باز کن» باز می‌کند.</span></div>
+        <div><b>سقف ریسک کل <span data-r="max_risk" data-pre="$">$20</span></b><span>جمع ضرر احتمالی همهٔ پوزیشن‌ها تا حد ضرر فعلی‌شان. اگر با این تأیید بیشتر شود، اسکات عددش را می‌گوید و تصمیم را به شما می‌سپارد.</span></div>
+        <div><b>پوزیشن خلاف جهت</b><span>اگر خرید باز است و سیگنال فروش را تأیید کنید (یا برعکس)، اسکات می‌پرسد: «🔄 خرید را ببند و فروش را باز کن»، «✅ هر دو باز بمانند» یا «❌ رد». قبل از بستن چک می‌کند سیگنال هنوز معتبر باشد، و هشدار تا جواب شما زنده می‌ماند.</span></div>
+      </div>
+      <p class="hint">در حالت «نگه داشتن» هر پوزیشن تا حد ضرر اضطراری (حداکثر <b data-r="emerg_cap" data-pre="$">$20</b>) حساب می‌شود؛ برای همین با یک پوزیشن باز، سقف ۲۰ دلاری معمولاً پر است و اسکات برای دومی از شما می‌پرسد.</p>
+    </section>
 
-  <section><h2>سقف‌های هم‌زمانی</h2>
-    <p>هشدارها همیشه می‌آیند، حتی وقتی پوزیشن باز دارید. با تأیید جدید:</p>
-    <div class="gl">
-      <div><b>حداکثر <span data-r="max_open">2</span> پوزیشن</b><span>اگر پر باشد، اسکات رد نمی‌کند؛ می‌پرسد «باز هم باز کنم؟» و با «✅ می‌دانم، باز کن» باز می‌کند.</span></div>
-      <div><b>سقف ریسک کل <span data-r="max_risk" data-pre="$">$20</span></b><span>جمع ضرر احتمالی همهٔ پوزیشن‌ها تا حد ضرر فعلی‌شان. اگر با این تأیید بیشتر شود، اسکات عددش را می‌گوید و تصمیم را به شما می‌سپارد.</span></div>
-      <div><b>پوزیشن خلاف جهت</b><span>اگر خرید باز است و سیگنال فروش را تأیید کنید (یا برعکس)، اسکات می‌پرسد: «🔄 خرید را ببند و فروش را باز کن»، «✅ هر دو باز بمانند» یا «❌ رد». قبل از بستن چک می‌کند سیگنال هنوز معتبر باشد، و هشدار تا جواب شما زنده می‌ماند.</span></div>
-    </div>
-    <p class="hint">در حالت «نگه داشتن» هر پوزیشن تا حد ضرر اضطراری (حداکثر <b data-r="emerg_cap" data-pre="$">$20</b>) حساب می‌شود؛ برای همین با یک پوزیشن باز، سقف ۲۰ دلاری معمولاً پر است و اسکات برای دومی از شما می‌پرسد.</p>
-  </section>
+    <section><div class="sh"><span class="idx">06</span><h2>R و انتخاب‌های شما</h2></div>
+      <p>هر معامله با <b>R</b> سنجیده می‌شود: سود تقسیم بر ریسک اولیه (فاصلهٔ ورود تا حد ضرر ضرب در حجم). مثلاً اگر ریسک یک معامله ۱۰ دلار بوده و ۲۰ دلار سود داده، نتیجه‌اش ‎+2R است. بخش «انتخاب‌های شما» همهٔ سیگنال‌های اسکات را با یک معیار فرضی مقایسه می‌کند تا معلوم شود انتخاب شما بهتر از گرفتن همهٔ سیگنال‌هاست یا نه.</p>
+    </section>
 
-  <section><h2>R و انتخاب‌های شما</h2>
-    <p>هر معامله با <b>R</b> سنجیده می‌شود: سود تقسیم بر ریسک اولیه (فاصلهٔ ورود تا حد ضرر ضرب در حجم). مثلاً اگر ریسک یک معامله ۱۰ دلار بوده و ۲۰ دلار سود داده، نتیجه‌اش ‎+2R است. بخش «انتخاب‌های شما» همهٔ سیگنال‌های اسکات را با یک معیار فرضی مقایسه می‌کند تا معلوم شود انتخاب شما بهتر از گرفتن همهٔ سیگنال‌هاست یا نه.</p>
-  </section>
+    <section><div class="sh"><span class="idx">07</span><h2>تب «معاملات»</h2></div>
+      <p>فهرست همهٔ معاملاتی که تأیید و بسته شده‌اند، جدیدترین بالا و به تفکیک روز. برای هر معامله: زمان باز و بسته شدن، مدت، جهت، ستاپ، لات، قیمت ورود و خروج، سود و ضرر، و اینکه چه کسی باز کرد و چه کسی یا چه چیزی بست (شما با دکمهٔ بستن، حد ضرر سیگنال، حد ضرر اضطراری، هوش مصنوعی، قیمت خروجی که شما گذاشتید، یا بیرون از اسکات). نام کسی که تأیید یا بسته است از این نسخه به بعد ثبت می‌شود؛ معاملات قدیمی‌تر «نام ثبت نشده» دارند.</p>
+    </section>
 
-  <section><h2>تب «معاملات»</h2>
-    <p>فهرست همهٔ معاملاتی که تأیید و بسته شده‌اند، جدیدترین بالا و به تفکیک روز. برای هر معامله: زمان باز و بسته شدن، مدت، جهت، ستاپ، لات، قیمت ورود و خروج، سود و ضرر، و اینکه چه کسی باز کرد و چه کسی یا چه چیزی بست (شما با دکمهٔ بستن، حد ضرر سیگنال، حد ضرر اضطراری، هوش مصنوعی، قیمت خروجی که شما گذاشتید، یا بیرون از اسکات). نام کسی که تأیید یا بسته است از این نسخه به بعد ثبت می‌شود؛ معاملات قدیمی‌تر «نام ثبت نشده» دارند.</p>
-  </section>
+    <section><div class="sh"><span class="idx">08</span><h2>نمودار، «اگر گرفته بودید» و ابزارها</h2></div>
+      <div class="gl">
+        <div><b>📊 نمودار هشدار</b><span>زیر هر هشدار یک نمودار ۱۵ دقیقه‌ای می‌آید. سبز: از ورود تا هدف 2R (محدودهٔ سود). قرمز: از ورود تا حد ضرر. کهربایی: محدودهٔ خنثی دور ورود، جایی که بستن به‌خاطر اسپرد تقریباً سر به سر است. خط نقطه‌چین سبز: 1R.</span></div>
+        <div><b>🔮 اگر گرفته بودید…</b><span>هشداری که رد کنید، منقضی شود یا به‌خاطر سقف باز نشود، بی‌صدا دنبال می‌شود. وقتی به هدف یا حد ضرر رسید (حداکثر ۲۴ ساعت)، نتیجه و دلیلش زیر همان هشدار می‌آید: هم‌جهت یا خلاف روند یک‌ساعته، جای قیمت نسبت به ابر، خبر، و مسیر قیمت.</span></div>
+        <div><b>🏁 جدول امتیاز شبانه</b><span>هر شب ساعت ۲۳:۵۵ تهران: امروز و ۷ روز اخیر با R، به‌علاوهٔ تعداد ردهای درست. روزهای بی‌فعالیت پیامی نمی‌آید؛ از منو هر وقت خواستید.</span></div>
+        <div><b>🔔 هشدار قیمت</b><span><span class="mono">/alert 4150</span> وقتی طلا به ۴۱۵۰ برسد خبر می‌دهد (با یادداشت هم می‌شود). <span class="mono">/alerts</span> فهرست و حذف.</span></div>
+      </div>
+    </section>
 
-  <section><h2>نمودار، «اگر گرفته بودید» و ابزارها</h2>
-    <div class="gl">
-      <div><b>📊 نمودار هشدار</b><span>زیر هر هشدار یک نمودار ۱۵ دقیقه‌ای می‌آید. سبز: از ورود تا هدف 2R (محدودهٔ سود). قرمز: از ورود تا حد ضرر. کهربایی: محدودهٔ خنثی دور ورود، جایی که بستن به‌خاطر اسپرد تقریباً سر به سر است. خط نقطه‌چین سبز: 1R.</span></div>
-      <div><b>🔮 اگر گرفته بودید…</b><span>هشداری که رد کنید، منقضی شود یا به‌خاطر سقف باز نشود، بی‌صدا دنبال می‌شود. وقتی به هدف یا حد ضرر رسید (حداکثر ۲۴ ساعت)، نتیجه و دلیلش زیر همان هشدار می‌آید: هم‌جهت یا خلاف روند یک‌ساعته، جای قیمت نسبت به ابر، خبر، و مسیر قیمت.</span></div>
-      <div><b>🏁 جدول امتیاز شبانه</b><span>هر شب ساعت ۲۳:۵۵ تهران: امروز و ۷ روز اخیر با R، به‌علاوهٔ تعداد ردهای درست. روزهای بی‌فعالیت پیامی نمی‌آید؛ از منو هر وقت خواستید.</span></div>
-      <div><b>🔔 هشدار قیمت</b><span><span class="mono">/alert 4150</span> وقتی طلا به ۴۱۵۰ برسد خبر می‌دهد (با یادداشت هم می‌شود). <span class="mono">/alerts</span> فهرست و حذف.</span></div>
-    </div>
-  </section>
+    <section><div class="sh"><span class="idx">09</span><h2>اطلاعات اضافه زیر هشدار</h2></div>
+      <div class="gl">
+        <div><b>📈 کارنامهٔ ستاپ</b><span>میانگین نتیجهٔ فرضی ۳۰ نمونهٔ آخر همان ستاپ. اگر از ‎−0.5R بدتر باشد با ⚠️ می‌آید. فقط اطلاع است و هیچ سیگنالی حذف نمی‌شود.</span></div>
+        <div><b>📰 خبر مهم</b><span>اگر خبر پراهمیت دلار در ۱۵ دقیقهٔ قبل یا بعد باشد، یک خط زیر هشدار می‌آید. هشدار مثل همیشه می‌آید.</span></div>
+        <div><b>❓ سفارش نامشخص</b><span>اگر جواب بروکر معلوم نباشد، اسکات «ثبت نشد» نمی‌گوید. چند ثانیه بعد خودش بررسی می‌کند و اگر پوزیشن باز شده بود، تحت نظر می‌گیرد.</span></div>
+        <div><b>🤖 تحلیل به‌روز</b><span>تحلیل با قیمت و نمودار لحظهٔ زدن دکمه ساخته می‌شود، نه لحظهٔ آمدن هشدار.</span></div>
+      </div>
+    </section>
 
-  <section><h2>اطلاعات اضافه زیر هشدار</h2>
-    <div class="gl">
-      <div><b>📈 کارنامهٔ ستاپ</b><span>میانگین نتیجهٔ فرضی ۳۰ نمونهٔ آخر همان ستاپ. اگر از ‎−0.5R بدتر باشد با ⚠️ می‌آید. فقط اطلاع است و هیچ سیگنالی حذف نمی‌شود.</span></div>
-      <div><b>📰 خبر مهم</b><span>اگر خبر پراهمیت دلار در ۱۵ دقیقهٔ قبل یا بعد باشد، یک خط زیر هشدار می‌آید. هشدار مثل همیشه می‌آید.</span></div>
-      <div><b>❓ سفارش نامشخص</b><span>اگر جواب بروکر معلوم نباشد، اسکات «ثبت نشد» نمی‌گوید. چند ثانیه بعد خودش بررسی می‌کند و اگر پوزیشن باز شده بود، تحت نظر می‌گیرد.</span></div>
-      <div><b>🤖 تحلیل به‌روز</b><span>تحلیل با قیمت و نمودار لحظهٔ زدن دکمه ساخته می‌شود، نه لحظهٔ آمدن هشدار.</span></div>
-    </div>
-  </section>
+    <section><div class="sh"><span class="idx">10</span><h2>پیام‌های خودکار</h2></div>
+      <div class="gl">
+        <div><b>📊 وضعیت زنده</b><span>هر <b data-r="status_min">5</b> دقیقه برای هر پوزیشن. وقتی بازار بسته است فقط یک پیام «بازار بسته» می‌آید.</span></div>
+        <div><b>⚠️ نزدیک حد ضرر</b><span>یک بار، با دکمهٔ «نگه دار»، تا قبل از رسیدن تصمیم بگیرید.</span></div>
+        <div><b>🎯 رسیدن به 1R</b><span>سود به اندازهٔ ریسک اولیه رسیده است.</span></div>
+        <div><b>⚠️ شکست ساختار</b><span>کندل خلاف جهت تنکان بسته شده؛ نشانهٔ ضعیف شدن حرکت.</span></div>
+        <div><b>💚 سالمم</b><span>هر روز حدود ساعت ۸:۳۰ تهران. اگر نیامد، یعنی اسکات مشکل دارد.</span></div>
+        <div><b>📡 قطع داده</b><span>اگر ۱۰ دقیقه قیمت از MT5 نرسد. وقتی برگشت هم خبر می‌دهد.</span></div>
+      </div>
+    </section>
 
-  <section><h2>پیام‌های خودکار</h2>
-    <div class="gl">
-      <div><b>📊 وضعیت زنده</b><span>هر <b data-r="status_min">5</b> دقیقه برای هر پوزیشن. وقتی بازار بسته است فقط یک پیام «بازار بسته» می‌آید.</span></div>
-      <div><b>⚠️ نزدیک حد ضرر</b><span>یک بار، با دکمهٔ «نگه دار»، تا قبل از رسیدن تصمیم بگیرید.</span></div>
-      <div><b>🎯 رسیدن به 1R</b><span>سود به اندازهٔ ریسک اولیه رسیده است.</span></div>
-      <div><b>⚠️ شکست ساختار</b><span>کندل خلاف جهت تنکان بسته شده؛ نشانهٔ ضعیف شدن حرکت.</span></div>
-      <div><b>💚 سالمم</b><span>هر روز حدود ساعت ۸:۳۰ تهران. اگر نیامد، یعنی اسکات مشکل دارد.</span></div>
-      <div><b>📡 قطع داده</b><span>اگر ۱۰ دقیقه قیمت از MT5 نرسد. وقتی برگشت هم خبر می‌دهد.</span></div>
-    </div>
-  </section>
+    <section><div class="sh"><span class="idx">11</span><h2>واژه‌نامه</h2></div>
+      <div class="gl">
+        <div><b>R</b><span>واحد ریسک. 1R یعنی به اندازهٔ فاصلهٔ ورود تا حد ضرر. ‎+2R یعنی دو برابر ریسک سود، ‎−1R یعنی خوردن حد ضرر.</span></div>
+        <div><b>نتیجهٔ فرضی</b><span>اگر هشدار با همان قیمت، همان حد ضرر و هدف 2R گرفته می‌شد چه می‌شد. روی کندل‌های ۱ دقیقه‌ای واقعی و با کسر اسپرد حساب می‌شود.</span></div>
+        <div><b>ATR</b><span>میانگین اندازهٔ حرکت هر کندل؛ معیار نوسان بازار.</span></div>
+        <div><b>اسپرد</b><span>فاصلهٔ قیمت خرید و فروش؛ هزینهٔ ورود به معامله.</span></div>
+        <div><b>تنکان و کیجون</b><span>دو خط ایچیموکو: میانهٔ ۹ و ۲۶ کندل اخیر. تنکان سریع‌تر است.</span></div>
+        <div><b>ابر ایچیموکو</b><span>محدوده‌ای که بالای آن معمولاً روند صعودی و پایینش نزولی حساب می‌شود.</span></div>
+        <div><b>اکوییتی</b><span>موجودی به‌علاوهٔ سود و زیان پوزیشن‌های باز.</span></div>
+        <div><b>منقضی</b><span>هشداری که در مهلت جواب نگرفت.</span></div>
+      </div>
+    </section>
 
-  <section><h2>واژه‌نامه</h2>
-    <div class="gl">
-      <div><b>R</b><span>واحد ریسک. 1R یعنی به اندازهٔ فاصلهٔ ورود تا حد ضرر. ‎+2R یعنی دو برابر ریسک سود، ‎−1R یعنی خوردن حد ضرر.</span></div>
-      <div><b>نتیجهٔ فرضی</b><span>اگر هشدار با همان قیمت، همان حد ضرر و هدف 2R گرفته می‌شد چه می‌شد. روی کندل‌های ۱ دقیقه‌ای واقعی و با کسر اسپرد حساب می‌شود.</span></div>
-      <div><b>ATR</b><span>میانگین اندازهٔ حرکت هر کندل؛ معیار نوسان بازار.</span></div>
-      <div><b>اسپرد</b><span>فاصلهٔ قیمت خرید و فروش؛ هزینهٔ ورود به معامله.</span></div>
-      <div><b>تنکان و کیجون</b><span>دو خط ایچیموکو: میانهٔ ۹ و ۲۶ کندل اخیر. تنکان سریع‌تر است.</span></div>
-      <div><b>ابر ایچیموکو</b><span>محدوده‌ای که بالای آن معمولاً روند صعودی و پایینش نزولی حساب می‌شود.</span></div>
-      <div><b>اکوییتی</b><span>موجودی به‌علاوهٔ سود و زیان پوزیشن‌های باز.</span></div>
-      <div><b>منقضی</b><span>هشداری که در مهلت جواب نگرفت.</span></div>
-    </div>
-  </section>
+    <section><div class="sh"><span class="idx">12</span><h2>سؤال‌های رایج</h2></div>
+      <div>
+        <details><summary>تأیید کردم ولی معامله باز نشد. چرا؟</summary>
+          <p>یکی از این دلیل‌ها: سقف تعداد یا ریسک کل پر بود، پوزیشن خلاف جهت باز بود، یا قیمت تا لحظهٔ تأیید از حد ضرر هشدار رد شده بود. دلیل دقیق در جواب تلگرام می‌آید.</p></details>
+        <details><summary>آخر هفته چرا پیامی نمی‌آید؟</summary>
+          <p>بازار طلا از جمعه‌شب تا حدود ساعت ۱:۳۰ بامداد دوشنبه به وقت تهران بسته است. اسکات روشن می‌ماند ولی ستاپ و پیام وضعیت تکراری ندارد.</p></details>
+        <details><summary>«تحلیل در دسترس نیست» یعنی چه؟</summary>
+          <p>سرویس هوش مصنوعی جواب نداده (معمولاً شلوغی موقت). دکمه می‌ماند و می‌توانید دوباره بزنید. تصمیم بدون تحلیل هم کاملاً ممکن است.</p></details>
+        <details><summary>اگر اسکات خاموش یا گیر کند چه می‌شود؟</summary>
+          <p>نگهبان VPS خودش ری‌استارتش می‌کند و بعد از ری‌استارت ویندوز هم خودش بالا می‌آید. پوزیشن‌های باز ذخیره شده‌اند و دوباره دنبال می‌شوند. حد ضرر هم روی بروکر است، پس حتی وقتی اسکات خاموش است پوزیشن محافظت می‌شود. از منوی تلگرام هم می‌شود ری‌استارت زد.</p></details>
+        <details><summary>این صفحه را چه کسی می‌تواند ببیند؟</summary>
+          <p>فقط کسی که آدرس کامل همراه با توکن را دارد. صفحه فقط خواندنی است و هیچ دکمه‌ای در آن معامله نمی‌کند.</p></details>
+      </div>
+    </section>
 
-  <section><h2>سؤال‌های رایج</h2>
-    <div>
-      <details><summary>تأیید کردم ولی معامله باز نشد. چرا؟</summary>
-        <p>یکی از این دلیل‌ها: سقف تعداد یا ریسک کل پر بود، پوزیشن خلاف جهت باز بود، یا قیمت تا لحظهٔ تأیید از حد ضرر هشدار رد شده بود. دلیل دقیق در جواب تلگرام می‌آید.</p></details>
-      <details><summary>آخر هفته چرا پیامی نمی‌آید؟</summary>
-        <p>بازار طلا از جمعه‌شب تا حدود ساعت ۱:۳۰ بامداد دوشنبه به وقت تهران بسته است. اسکات روشن می‌ماند ولی ستاپ و پیام وضعیت تکراری ندارد.</p></details>
-      <details><summary>«تحلیل در دسترس نیست» یعنی چه؟</summary>
-        <p>سرویس هوش مصنوعی جواب نداده (معمولاً شلوغی موقت). دکمه می‌ماند و می‌توانید دوباره بزنید. تصمیم بدون تحلیل هم کاملاً ممکن است.</p></details>
-      <details><summary>اگر اسکات خاموش یا گیر کند چه می‌شود؟</summary>
-        <p>نگهبان VPS خودش ری‌استارتش می‌کند و بعد از ری‌استارت ویندوز هم خودش بالا می‌آید. پوزیشن‌های باز ذخیره شده‌اند و دوباره دنبال می‌شوند. حد ضرر هم روی بروکر است، پس حتی وقتی اسکات خاموش است پوزیشن محافظت می‌شود. از منوی تلگرام هم می‌شود ری‌استارت زد.</p></details>
-      <details><summary>این صفحه را چه کسی می‌تواند ببیند؟</summary>
-        <p>فقط کسی که آدرس کامل همراه با توکن را دارد. صفحه فقط خواندنی است و هیچ دکمه‌ای در آن معامله نمی‌کند.</p></details>
-    </div>
-  </section>
-
-  <p class="callout">اسکات روی حساب دمو کار می‌کند و هدفش پیدا کردن ستاپ‌هایی است که واقعاً جواب می‌دهند. عددهای «فرضی» گذشته را نشان می‌دهند و تضمینی برای آینده نیستند.</p>
-</div>'''
+    <p class="callout">اسکات روی حساب دمو کار می‌کند و هدفش پیدا کردن ستاپ‌هایی است که واقعاً جواب می‌دهند. عددهای «فرضی» گذشته را نشان می‌دهند و تضمینی برای آینده نیستند.</p>
+  </div>'''
 
 
 PAGE = r"""<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0b0b0a">
 <title>داشبورد اسکات</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230b0b0a'/%3E%3Cpath d='M16 6l3.2 6.8L26 16l-6.8 3.2L16 26l-3.2-6.8L6 16l6.8-3.2z' fill='%23D8B25E'/%3E%3C/svg%3E">
 <!-- فونت منتظر نمی‌ماند: اگر Google Fonts باز نشد (مثلاً بدون فیلترشکن)، صفحه فوراً با Tahoma باز می‌شود -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap" media="print" onload="this.media='all'">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
 <style>
-/* layout: header with live status → KPI row → open positions & pending alerts → P/L by day → setups → events → rules */
+html,body{background:#0b0b0a}
 :root{
-  --bg:#f3f4f1;--surface:#fff;--ink:#1b2320;--muted:#5f6a64;--line:#d9ddd6;
-  --gold:#9a6b07;--gold-soft:#f1e4c3;--good:#1f7a4d;--good-soft:#dcefe4;--bad:#b4372b;--bad-soft:#f6dcd8;
-  --warn:#9a5a00;--warn-soft:#f6e6cc;
+  --bg:#0b0b0a;--card:rgba(24,22,19,.62);--card-solid:#141310;
+  --line:rgba(236,226,200,.08);--line2:rgba(236,226,200,.15);
+  --ink:#EDE8DC;--mute:rgba(237,232,220,.62);--faint:rgba(237,232,220,.40);
+  --gold:#D8B25E;--gold-hi:#F3D896;--gold-soft:rgba(216,178,94,.12);
+  --good:#5BCB9C;--good-soft:rgba(91,203,156,.12);--bad:#F07D6E;--bad-soft:rgba(240,125,110,.12);
+  --warn:#E9AB52;--warn-soft:rgba(233,171,82,.13);
   --f-body:"Vazirmatn",Tahoma,system-ui,sans-serif;--f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --ease:cubic-bezier(.22,1,.36,1);--r:22px;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#101614;--surface:#18201d;--ink:#e7ebe6;--muted:#9aa59f;--line:#2b3531;
-  --gold:#e2b64e;--gold-soft:#3a2f14;--good:#58c48b;--good-soft:#173326;--bad:#ef7d70;--bad-soft:#3a1d1a;
-  --warn:#f0b35a;--warn-soft:#3a2a12;color-scheme:dark}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.8}
-.wrap{max-width:1040px;margin:0 auto;padding-inline:16px;padding-block:22px 56px;display:flex;flex-direction:column;gap:28px}
-h1,h2,h3{margin:0}
-h2{font-size:1.15rem;font-weight:800;display:flex;gap:10px;align-items:baseline}
-h2 small{font-size:.78rem;font-weight:500;color:var(--muted)}
-section{display:flex;flex-direction:column;gap:12px}
+html,body{overflow-x:clip}
+body{margin:0;color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.75;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;min-height:100vh;
+  background:
+    radial-gradient(1100px 520px at 78% -8%,rgba(216,178,94,.10),transparent 62%),
+    radial-gradient(900px 600px at 5% 10%,rgba(216,178,94,.035),transparent 60%),
+    var(--bg)}
+::selection{background:rgba(216,178,94,.32);color:#fff}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:100;opacity:.06;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+h1,h2,h3{margin:0;font-weight:700}
+a{color:var(--gold)}
 .num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
-.mono{font-family:var(--f-mono);font-size:.86em;direction:ltr;unicode-bidi:isolate}
-.muted{color:var(--muted)} .pos{color:var(--good)} .neg{color:var(--bad)}
-header{border-bottom:2px solid var(--gold);padding-bottom:16px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between}
-header h1{font-size:1.9rem;font-weight:800}
-header .sub{color:var(--muted);font-size:.86rem}
-.pills{display:flex;flex-wrap:wrap;gap:6px}
-.pill{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:1px 11px;font-size:.82rem}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
-.dot.ok{background:var(--good)} .dot.bad{background:var(--bad)} .dot.warn{background:var(--warn)}
+.mono{font-family:var(--f-mono);font-size:.86em;direction:ltr;unicode-bidi:isolate;letter-spacing:-.01em}
+.muted{color:var(--mute)} .pos{color:var(--good)} .neg{color:var(--bad)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 clamp(16px,3.4vw,44px) 72px}
+
+/* ───────── top bar ───────── */
+.top{position:sticky;top:0;z-index:50;padding:14px 0;margin:0 calc(-1*clamp(16px,3.4vw,44px));padding-inline:clamp(16px,3.4vw,44px);
+  display:flex;align-items:center;gap:14px;transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+.top.scrolled{background:rgba(11,11,10,.78);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);border-color:var(--line)}
+.brand{display:flex;align-items:center;gap:10px;flex:none}
+.brand svg{width:34px;height:34px;flex:none}
+.brand b{font-size:1.32rem;font-weight:800;letter-spacing:-.01em;line-height:1}
+.brand small{display:block;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.22em;color:var(--faint);direction:ltr;text-align:right;margin-top:3px}
+.tabs{display:flex;gap:2px;padding:4px;margin-inline:auto;border-radius:999px;background:rgba(237,232,220,.045);border:1px solid var(--line);
+  overflow-x:auto;scrollbar-width:none;max-width:100%}
+.tabs::-webkit-scrollbar{display:none}
+.tab{font:inherit;font-size:13.5px;font-weight:500;border:0;background:none;color:var(--mute);border-radius:999px;padding:7px 16px;cursor:pointer;
+  display:flex;align-items:center;gap:7px;white-space:nowrap;transition:color .2s,background .25s var(--ease)}
+.tab svg{width:15px;height:15px;opacity:.75}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--ink);color:#12110e}
+.tab[aria-selected="true"] svg{opacity:1}
+.tab:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.tick{flex:none;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);border:1px solid var(--line);border-radius:999px;padding:6px 14px}
+.tick b{color:var(--ink);font-weight:500;font-size:14px}
+
+/* ───────── status line ───────── */
+.pills{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--mute);padding:4px 0 0}
+.pill{display:inline-flex;gap:7px;align-items:center}
+.pill b{color:var(--ink);font-weight:500}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+.dot.ok{background:var(--good);box-shadow:0 0 0 3px var(--good-soft)} .dot.bad{background:var(--bad);box-shadow:0 0 0 3px var(--bad-soft)} .dot.warn{background:var(--warn);box-shadow:0 0 0 3px var(--warn-soft)}
+.live .dot.ok{animation:beat 2.4s ease-in-out infinite}
+@keyframes beat{50%{box-shadow:0 0 0 6px rgba(91,203,156,0)}}
+.err{background:var(--bad-soft);color:var(--bad);border:1px solid rgba(240,125,110,.25);border-radius:14px;padding:10px 16px;margin-top:14px}
+
+/* ───────── hero ───────── */
+.hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(20px,4vw,56px);align-items:end;padding:clamp(28px,6vw,72px) 0 clamp(26px,4vw,40px);position:relative}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.22em;color:var(--faint);text-transform:uppercase;display:flex;align-items:center;gap:12px;direction:ltr;justify-content:flex-end}
+.eyebrow::before{content:"";width:36px;height:1px;background:var(--gold);opacity:.7}
+.hero-copy{position:relative;min-width:0;isolation:isolate}
+.ghost{position:absolute;inset-inline-start:-.04em;top:-.32em;font-family:var(--f-body);font-weight:800;font-size:clamp(120px,22vw,300px);line-height:.8;letter-spacing:-.06em;
+  color:transparent;-webkit-text-stroke:1px rgba(216,178,94,.10);pointer-events:none;user-select:none;direction:ltr;z-index:-1}
+.price{display:flex;align-items:baseline;gap:14px;margin:14px 0 6px;direction:ltr;justify-content:flex-end}
+.price .cur{font-size:clamp(20px,2.2vw,28px);font-weight:300;color:var(--gold)}
+.mega{font-size:clamp(64px,10.4vw,148px);font-weight:300;line-height:.9;letter-spacing:-.045em;font-variant-numeric:tabular-nums;
+  background:linear-gradient(180deg,#fff 0%,var(--ink) 45%,#b9b2a2 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  display:inline-flex;overflow:hidden;padding-bottom:.04em}
+.mega span{display:inline-block}
+.mega .up{animation:rollUp .6s var(--ease)} .mega .dn{animation:rollDn .6s var(--ease)}
+@keyframes rollUp{from{transform:translateY(55%);opacity:0;filter:blur(4px)}to{transform:none;opacity:1}}
+@keyframes rollDn{from{transform:translateY(-55%);opacity:0;filter:blur(4px)}to{transform:none;opacity:1}}
+.flash-up{color:var(--good)!important} .flash-dn{color:var(--bad)!important}
+.quote{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--mute);justify-content:flex-start}
+.quote b{color:var(--ink);font-weight:500}
+.lede{max-width:34rem;color:var(--mute);font-size:15.5px;line-height:1.85;margin:22px 0 22px}
+.lede b{color:var(--ink);font-weight:500}
+.ctas{display:flex;gap:10px;flex-wrap:wrap}
+.btn{font:inherit;font-size:14px;font-weight:500;border-radius:999px;padding:11px 14px 11px 22px;cursor:pointer;display:inline-flex;align-items:center;gap:12px;border:1px solid var(--line2);background:rgba(237,232,220,.04);color:var(--ink);transition:transform .2s var(--ease),background .2s,border-color .2s}
+.btn:hover{background:rgba(237,232,220,.08);border-color:rgba(236,226,200,.28)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--ink);color:#12110e;border-color:var(--ink)}
+.btn.primary:hover{background:#fff}
+.btn i{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#12110e;color:var(--ink);font-style:normal;transition:transform .3s var(--ease)}
+.btn:not(.primary) i{background:rgba(237,232,220,.08)}
+.btn:hover i{transform:translateX(-3px)}
+.btn i svg{width:13px;height:13px}
+
+/* chart card */
+.glass{background:var(--card);border:1px solid var(--line);border-radius:var(--r);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 24px 60px rgba(0,0,0,.28)}
+.chart{padding:20px 22px 16px;min-width:0;overflow:clip}
+.chart-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:14px}
+.chart-head h3{font-size:14px;font-weight:500;color:var(--mute)}
+.chart-head .big{font-size:clamp(26px,3vw,34px);font-weight:300;letter-spacing:-.03em;line-height:1}
+.scale{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;color:var(--faint);margin-bottom:6px}
+.bars{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:5px;height:150px;direction:ltr;position:relative}
+.bars::after{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed var(--line2)}
+.b{position:relative;height:100%;cursor:default}
+.b i{position:absolute;left:14%;right:14%;border-radius:4px;transform-origin:bottom;transition:filter .2s}
+.b i.p{bottom:50%;background:linear-gradient(180deg,var(--good),rgba(91,203,156,.45));border-radius:4px 4px 1px 1px}
+.b i.n{top:50%;background:linear-gradient(0deg,var(--bad),rgba(240,125,110,.45));border-radius:1px 1px 4px 4px;transform-origin:top}
+.b i.z{top:calc(50% - 1px);height:2px!important;background:var(--line2)}
+.b:hover i{filter:brightness(1.25)}
+.b .tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translate(-50%,4px);opacity:0;pointer-events:none;white-space:nowrap;background:#1d1b17;border:1px solid var(--line2);border-radius:10px;padding:4px 9px;font-size:11.5px;line-height:1.5;color:var(--ink);transition:.18s;z-index:5}
+.b:hover .tip{opacity:1;transform:translate(-50%,0)}
+.b:nth-child(-n+3) .tip{left:0;transform:translate(0,4px)}.b:nth-child(-n+3):hover .tip{transform:none}
+.b:nth-last-child(-n+3) .tip{left:auto;right:0;transform:translate(0,4px)}.b:nth-last-child(-n+3):hover .tip{transform:none}
+.bars-in .b i{animation:grow .9s var(--ease) both;animation-delay:calc(var(--i)*35ms + .35s)}
+@keyframes grow{from{transform:scaleY(0)}}
+.blab{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:5px;direction:ltr;font-family:var(--f-mono);font-size:9.5px;color:var(--faint);text-align:center;margin-top:8px}
+@media (max-width:560px){.blab span:nth-child(even){visibility:hidden}}
+
+/* stat strip */
+.strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.strip .tile{padding:20px 20px 18px;border-inline-start:1px solid var(--line);min-width:0}
+.strip .tile:first-child{border-inline-start:0;padding-inline-start:0}
+.k{font-size:12px;color:var(--mute)}
+.v{font-size:clamp(22px,2.3vw,30px);font-weight:300;letter-spacing:-.03em;line-height:1.25;font-variant-numeric:tabular-nums;margin-top:4px}
+.s{font-size:12px;color:var(--faint);margin-top:2px}
+@media (max-width:980px){.strip{grid-template-columns:repeat(3,minmax(0,1fr))}.strip .tile:nth-child(4){border-inline-start:0;padding-inline-start:0}.strip .tile:nth-child(n+4){border-top:1px solid var(--line)}}
+@media (max-width:560px){.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.strip .tile{padding:16px 14px}.strip .tile:nth-child(odd){border-inline-start:0;padding-inline-start:0}.strip .tile:nth-child(4){border-inline-start:1px solid var(--line);padding-inline-start:14px}.strip .tile:nth-child(n+3){border-top:1px solid var(--line)}}
+
+/* ───────── sections ───────── */
+.pane{display:flex;flex-direction:column;gap:clamp(48px,7vw,84px)}
+.pane:not(#p-dash){padding-top:clamp(28px,5vw,56px)}
+section{display:flex;flex-direction:column;gap:14px;min-width:0}
+.sh{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.idx{font-family:var(--f-mono);font-size:11px;color:var(--gold);letter-spacing:.12em;direction:ltr;padding-bottom:6px}
+h2{font-size:clamp(22px,2.4vw,30px);font-weight:500;letter-spacing:-.02em;line-height:1.3;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+h2 small{font-size:13px;font-weight:400;color:var(--faint)}
+.hint{margin:0;font-size:13.5px;color:var(--mute);max-width:78ch;line-height:1.85}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,3vw,40px)}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+
 .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
-@media (max-width:900px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:520px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
-.tile .k{font-size:.76rem;color:var(--muted)} .tile .v{font-size:1.35rem;font-weight:800;font-variant-numeric:tabular-nums}
-.tile .s{font-size:.76rem;color:var(--muted)}
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media (max-width:760px){.cols{grid-template-columns:1fr}}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
-.card.buy{border-inline-start:4px solid var(--good)} .card.sell{border-inline-start:4px solid var(--bad)}
-.card .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
-.card .pnl{font-size:1.3rem;font-weight:800}
-.kv{display:flex;flex-wrap:wrap;gap:2px 16px;font-size:.86rem;color:var(--muted)}
-.kv b{color:var(--ink);font-weight:600}
-.tag{font-size:.72rem;border-radius:6px;padding:0 7px;font-weight:700;background:var(--warn-soft);color:var(--warn)}
-.empty{background:var(--surface);border:1px dashed var(--line);border-radius:10px;padding:14px 16px;color:var(--muted);font-size:.9rem}
-.chart{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
-.bars{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:4px;height:150px;direction:ltr;position:relative}
-.bars::after{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px solid var(--line)}
-.b{position:relative;height:100%}
-.b i{position:absolute;left:12%;right:12%;border-radius:3px}
-.b i.p{bottom:50%;background:var(--good)} .b i.n{top:50%;background:var(--bad)}
-.blab{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:4px;direction:ltr;font-size:.68rem;color:var(--muted);text-align:center;margin-top:4px;font-variant-numeric:tabular-nums}
-@media (max-width:560px){.blab span:nth-child(even){visibility:hidden}.blab{font-size:.62rem}}
-.scale{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);margin-bottom:4px}
-.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
-table{border-collapse:collapse;width:100%;min-width:560px}
-th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);font-size:.88rem}
-th{font-size:.76rem;color:var(--muted);background:color-mix(in srgb,var(--gold-soft) 45%,var(--surface))}
-tr:last-child td{border-bottom:0}
-td.n{font-variant-numeric:tabular-nums;direction:ltr;text-align:left}
-.ev{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;max-height:420px;overflow:auto}
-.ev li{display:grid;grid-template-columns:86px 1fr auto;gap:10px;padding:7px 14px;border-bottom:1px solid var(--line);font-size:.86rem}
-.ev li:last-child{border-bottom:0}
-.ev .t{color:var(--muted);font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
-.rules{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.rule{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:.86rem}
-.rule b{display:block;font-size:1.05rem;font-variant-numeric:tabular-nums}
-footer{font-size:.78rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
-.err{background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:10px 14px}
+.tiles .tile{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;min-width:0}
+.tiles .v{font-size:clamp(20px,2vw,27px);white-space:nowrap}
 .picks{grid-template-columns:repeat(4,minmax(0,1fr))}
-@media (max-width:720px){.picks{grid-template-columns:repeat(2,minmax(0,1fr))}}
-tr.me td{background:color-mix(in srgb,var(--gold-soft) 55%,transparent);font-weight:700}
-.filters{display:flex;gap:8px;flex-wrap:wrap}
-.filters select{font:inherit;font-size:.88rem;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 10px}
-table.wide{min-width:940px}
+#trtiles{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:720px){.picks,#trtiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.picks .tile:first-child{border-color:rgba(216,178,94,.35);background:linear-gradient(180deg,var(--gold-soft),var(--card) 70%)}
+.meter{height:3px;border-radius:3px;background:var(--line);margin-top:12px;overflow:hidden;direction:ltr}
+.meter i{display:block;height:100%;border-radius:3px;background:var(--gold)}
+.say{font-size:14px;color:var(--ink);border-inline-start:2px solid var(--gold);padding:2px 14px;margin:0;max-width:78ch}
+.say:empty{display:none}
+
+/* cards (positions, pending) */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:column;gap:10px;min-width:0;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset-block:18px;inset-inline-start:0;width:3px;border-radius:0 3px 3px 0;background:var(--faint)}
+.card.buy::before{background:var(--good)} .card.sell::before{background:var(--bad)}
+.card+.card{margin-top:10px}
+.card .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;position:static;padding:0;margin:0;border:0;background:none;backdrop-filter:none}
+.card .ttl{font-weight:500;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.side{font-size:12px;font-weight:700;border-radius:999px;padding:1px 10px}
+.side.buy{background:var(--good-soft);color:var(--good)} .side.sell{background:var(--bad-soft);color:var(--bad)}
+.card .pnl{font-size:26px;font-weight:300;letter-spacing:-.03em;line-height:1}
+.kv{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:var(--mute)}
+.kv b{color:var(--ink);font-weight:500}
+.track{position:relative;height:38px;direction:ltr;margin:4px 0 0}
+.track .rail{position:absolute;left:0;right:0;top:15px;height:2px;border-radius:2px;background:var(--line2)}
+.track .seg{position:absolute;top:15px;height:2px;border-radius:2px}
+.track .m{position:absolute;top:9px;width:2px;height:14px;border-radius:2px;background:var(--mute);transform:translateX(-1px)}
+.track .m.sl{background:var(--bad)} .track .m.em{background:transparent;border-left:2px dashed rgba(240,125,110,.6)} .track .m.en{background:var(--ink)}
+.track .now{position:absolute;top:10px;width:12px;height:12px;border-radius:50%;background:var(--gold);transform:translateX(-6px);box-shadow:0 0 0 4px var(--gold-soft)}
+.track .lb{position:absolute;top:24px;font-size:9.5px;font-family:var(--f-mono);color:var(--faint);transform:translateX(-50%);white-space:nowrap}
+.tag{font-size:11.5px;border-radius:999px;padding:1px 9px;font-weight:500;background:var(--warn-soft);color:var(--warn);white-space:nowrap;display:inline-block}
+.empty{border:1px dashed var(--line2);border-radius:var(--r);padding:22px 20px;color:var(--mute);font-size:14px;display:flex;align-items:center;gap:12px}
+.empty::before{content:"";width:8px;height:8px;border-radius:50%;border:1.5px solid var(--faint);flex:none}
+
+/* tables */
+.tablewrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r);scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+/* موبایل: در جدول نفرات فقط ستون‌های مهم (رتبه، نفر، معاملات، سود و ضرر، میانگین R) — بقیه در دسکتاپ */
+@media (max-width:760px){#pptab{min-width:0}#pptab th:nth-child(4),#pptab td:nth-child(4),#pptab th:nth-child(6),#pptab td:nth-child(6),#pptab th:nth-child(8),#pptab td:nth-child(8),#pptab th:nth-child(9),#pptab td:nth-child(9){display:none}}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{padding:11px 14px;text-align:right;border-bottom:1px solid var(--line);font-size:13.5px}
+th{font-size:11.5px;font-weight:500;color:var(--faint);background:rgba(237,232,220,.025);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+tbody tr{transition:background .15s}
+tbody tr:hover td{background:rgba(237,232,220,.025)}
+td.n{font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
+tr.muted td{color:var(--faint)}
+table.wide{min-width:980px}
 table.wide td{vertical-align:top}
-table.wide th,table.wide td{padding:8px 7px}
+table.wide th,table.wide td{padding:11px 9px}
 .nw{white-space:nowrap}
-.setup{min-width:138px}
-.tag{white-space:nowrap}
-.sub{display:block;color:var(--muted);font-size:.74rem}
-tr.dayrow td{background:color-mix(in srgb,var(--gold-soft) 55%,var(--surface));font-weight:700;font-size:.86rem}
-th.srt{cursor:pointer;user-select:none} th.srt.on{color:var(--gold)} tr.pick{cursor:pointer} tr.pick:hover td{background:var(--gold-soft)}
-.who{font-size:.84rem;line-height:1.5} .who small{display:block;color:var(--muted);font-size:.74rem}
-.hint{margin:-6px 0 0;font-size:.84rem;color:var(--muted);max-width:75ch}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:-14px}
-.tab{font:inherit;font-size:.92rem;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:8px;padding:5px 14px;cursor:pointer}
-.tab[aria-selected="true"]{background:var(--gold-soft);color:var(--gold);border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
-.tab:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.intro{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:.9rem}
-.intro p{margin:0;flex:1 1 360px;min-width:0}
-.linkbtn{font:inherit;font-weight:700;color:var(--gold);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
-.pane{display:flex;flex-direction:column;gap:28px}
-.guide{display:flex;flex-direction:column;gap:26px;max-width:860px}
-.guide h2{font-size:1.2rem}
-.guide p{margin:0;max-width:72ch}
-.guide h3{font-size:1rem;font-weight:700}
-.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;counter-reset:st}
-.steps li{counter-increment:st;display:grid;grid-template-columns:32px 1fr;gap:12px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
-.steps li::before{content:counter(st);font-weight:800;color:var(--gold);background:var(--gold-soft);border-radius:50%;width:28px;height:28px;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.setup{min-width:140px}
+.sub{display:block;color:var(--faint);font-size:11.5px}
+tr.dayrow td{background:linear-gradient(90deg,transparent,var(--gold-soft));font-weight:500;font-size:13px;color:var(--ink);border-bottom-color:var(--line2);padding-top:14px}
+tr.dayrow:hover td{background:linear-gradient(90deg,transparent,var(--gold-soft))}
+th.srt{cursor:pointer;user-select:none;transition:color .15s} th.srt:hover{color:var(--ink)} th.srt.on{color:var(--gold)}
+tr.pick{cursor:pointer}
+tr.pick:hover td{background:var(--gold-soft)}
+.who{font-size:13px;line-height:1.55} .who small{display:block;color:var(--faint);font-size:11.5px}
+.rank{font-size:16px}
+.chip{font-size:11.5px;border-radius:999px;padding:1px 9px;font-weight:500}
+.chip.buy{background:var(--good-soft);color:var(--good)} .chip.sell{background:var(--bad-soft);color:var(--bad)}
+
+/* filters */
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.filters select{font:inherit;font-size:13px;background:rgba(237,232,220,.04);color:var(--ink);border:1px solid var(--line2);border-radius:999px;padding:7px 16px 7px 38px;
+  appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .2s,background .2s;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23D8B25E' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 14px center}
+.filters select:hover{border-color:rgba(236,226,200,.3)}
+.filters select option{background:#141310;color:var(--ink)}
+
+/* events, rules */
+.ev{list-style:none;margin:0;padding:6px 0;background:var(--card);border:1px solid var(--line);border-radius:var(--r);max-height:440px;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.ev li{display:grid;grid-template-columns:90px 1fr auto;gap:12px;padding:9px 20px;font-size:13.5px;position:relative}
+.ev li+li{border-top:1px solid var(--line)}
+.ev .t{color:var(--faint);font-family:var(--f-mono);font-size:11.5px;direction:ltr;text-align:right;padding-top:2px}
+.rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.rule{padding:14px 20px;font-size:12.5px;color:var(--mute);border-bottom:1px solid var(--line)}
+.rule:nth-child(odd){border-inline-end:1px solid var(--line)}
+.rule:nth-last-child(-n+2){border-bottom:0}
+.rule b{display:block;font-size:19px;font-weight:300;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:2px}
+
+/* guide */
+.guide{max-width:900px}
+.guide p{margin:0;max-width:72ch;color:var(--mute);line-height:1.95}
+.guide p b{color:var(--ink);font-weight:500}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;counter-reset:st;border-inline-start:1px solid var(--line2);margin-inline-start:15px}
+.steps li{counter-increment:st;position:relative;padding:4px 34px 22px 0;color:var(--mute);line-height:1.9}
+.steps li b{color:var(--ink);font-weight:500}
+.steps li::before{content:counter(st,persian);position:absolute;inset-inline-start:-16px;top:2px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  background:var(--bg);border:1px solid var(--gold);color:var(--gold);font-size:13px;font-weight:500}
 .gl{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
-.gl > div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
-.gl b{font-size:.95rem}
-.gl span{font-size:.86rem;color:var(--muted)}
-.setgrid td:first-child{white-space:nowrap}
-details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 16px}
+.gl > div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 18px;display:flex;flex-direction:column;gap:4px;min-width:0;transition:border-color .2s}
+.gl > div:hover{border-color:var(--line2)}
+.gl b{font-size:14.5px;font-weight:500}
+.gl span{font-size:13px;color:var(--mute);line-height:1.8}
+.setgrid td:first-child{white-space:nowrap;color:var(--gold)}
+details{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 20px;transition:border-color .2s}
+details[open]{border-color:var(--line2)}
 details+details{margin-top:8px}
-summary{cursor:pointer;font-weight:700}
-details p{margin-top:6px;color:var(--muted);font-size:.9rem}
-.callout{background:var(--warn-soft);border-radius:10px;padding:10px 16px;font-size:.9rem}
+summary{cursor:pointer;font-weight:500;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--gold);font-size:20px;line-height:1;transition:transform .3s var(--ease)}
+details[open] summary::after{transform:rotate(45deg)}
+details p{margin-top:8px;color:var(--mute);font-size:14px}
+.callout{background:var(--warn-soft);border:1px solid rgba(233,171,82,.22);color:var(--ink);border-radius:18px;padding:14px 20px;font-size:14px}
+.guide-lead{font-size:clamp(28px,4vw,46px);font-weight:300;letter-spacing:-.03em;line-height:1.25;max-width:20ch}
+.guide-lead em{font-style:normal;color:var(--gold)}
+
+footer{margin-top:clamp(56px,8vw,96px);padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+/* entrance (fail-safe: final state is the default; animation only runs once on load) */
+.rise{animation:rise .9s var(--ease) both;animation-delay:calc(var(--d,0)*110ms + 60ms)}
+@keyframes rise{from{opacity:0;transform:translateY(22px);filter:blur(8px)}}
+.reveal{opacity:1}
+.js .reveal{opacity:0;transform:translateY(26px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.js .reveal.in{opacity:1;transform:none}
+
+@media (max-width:980px){
+  .hero{grid-template-columns:1fr;align-items:stretch}
+  .tick{display:none}
+}
+@media (max-width:760px){
+  .top{flex-wrap:wrap;gap:10px;padding-block:10px}
+  .tabs{order:3;width:100%;margin:0;justify-content:space-between}
+  .tab{padding:7px 12px;font-size:13px;flex:1;justify-content:center}
+  .tab svg{display:none}
+  .brand{margin-inline-end:auto}
+  .tick{display:flex;padding:4px 12px}
+  .price{justify-content:flex-start;direction:rtl}
+  .price .mega{direction:ltr}
+  .eyebrow{justify-content:flex-start;direction:rtl}
+  .ctas .btn{flex:1;justify-content:space-between}
+  .rules{grid-template-columns:1fr}.rule{border-inline-end:0!important}.rule:nth-last-child(2){border-bottom:1px solid var(--line)}
+  .ev li{grid-template-columns:76px 1fr;padding:9px 16px}.ev li > :last-child{grid-column:2}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .js .reveal{opacity:1;transform:none}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div><h1>اسکات</h1><div class="sub">دیدبان ستاپ‌های طلا · تأیید دستی در تلگرام · فقط خواندنی</div></div>
-    <div class="pills" id="pills"><span class="pill"><span class="dot"></span>در حال دریافت…</span></div>
+  <header class="top" id="top">
+    <div class="brand rise" style="--d:0">
+      <svg viewBox="0 0 34 34" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3D896"/><stop offset=".55" stop-color="#D8B25E"/><stop offset="1" stop-color="#8E6A24"/></linearGradient></defs>
+        <rect x=".5" y=".5" width="33" height="33" rx="10" fill="none" stroke="rgba(236,226,200,.15)"/><path d="M17 6.5l3.1 7.4 7.4 3.1-7.4 3.1-3.1 7.4-3.1-7.4-7.4-3.1 7.4-3.1z" fill="url(#g)"/></svg>
+      <div><b>اسکات</b><small>SCOUT · XAU/USD</small></div>
+    </div>
+    <nav class="tabs rise" role="tablist" aria-label="بخش‌ها" style="--d:1">
+      <button class="tab" role="tab" id="t-dash" aria-selected="true" aria-controls="p-dash"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13.5h12M4 11V7M8 11V3M12 11V8.5"/></svg>داشبورد</button>
+      <button class="tab" role="tab" id="t-trades" aria-selected="false" aria-controls="p-trades"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2.5h10v11l-2-1.2-1.6 1.2L8 12.3l-1.4 1.2L5 12.3l-2 1.2z"/><path d="M5.5 6h5M5.5 8.6h3.5"/></svg>معاملات</button>
+      <button class="tab" role="tab" id="t-audit" aria-selected="false" aria-controls="p-audit"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.8"/><path d="M10.4 5.6L9 9 5.6 10.4 7 7z"/></svg>کارنامهٔ سیگنال‌ها</button>
+      <button class="tab" role="tab" id="t-guide" aria-selected="false" aria-controls="p-guide"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 3.2c2-.8 3.8-.6 5.5.6v9.4c-1.7-1.2-3.5-1.4-5.5-.6zM13.5 3.2c-2-.8-3.8-.6-5.5.6v9.4c1.7-1.2 3.5-1.4 5.5-.6z"/></svg>راهنما</button>
+    </nav>
+    <div class="tick rise" style="--d:2"><span class="dot ok" id="tickdot"></span>طلا <b class="num" id="tickp">—</b></div>
   </header>
-  <div class="tabs" role="tablist">
-    <button class="tab" role="tab" id="t-dash" aria-selected="true" aria-controls="p-dash">📊 داشبورد</button>
-    <button class="tab" role="tab" id="t-trades" aria-selected="false" aria-controls="p-trades">🧾 معاملات</button>
-    <button class="tab" role="tab" id="t-audit" aria-selected="false" aria-controls="p-audit">🧭 کارنامهٔ سیگنال‌ها</button>
-    <button class="tab" role="tab" id="t-guide" aria-selected="false" aria-controls="p-guide">📖 راهنمای اسکات</button>
-  </div>
+
+  <div class="pills live rise" id="pills" style="--d:2"><span class="pill"><span class="dot"></span>در حال دریافت…</span></div>
   <div id="err" class="err" hidden></div>
 
+  <!-- ═════════ داشبورد ═════════ -->
   <div class="pane" id="p-dash" role="tabpanel" aria-labelledby="t-dash">
-  <div class="intro"><p><b>اسکات</b> خودش معامله نمی‌کند. هر ۱۵ دقیقه ستاپ‌های طلا را پیدا می‌کند، در تلگرام هشدار می‌دهد و فقط اگر شما تأیید کنید معامله باز می‌کند. این صفحه فقط نمایش است؛ همهٔ تصمیم‌ها از تلگرام گرفته می‌شود.</p>
-    <button class="linkbtn" data-go="guide">راهنمای کامل ←</button></div>
-
-  <section><h2>امروز و کل <small id="asof"></small></h2>
-    <p class="hint">موجودی و اکوییتی از خود حساب می‌آید. «اکوییتی» یعنی موجودی به‌علاوهٔ سود و زیان پوزیشن‌های باز. سود امروز و ۷ روز فقط معاملات بسته‌شدهٔ اسکات را می‌شمارد، به روز تهران.</p>
-    <div class="tiles" id="tiles"></div></section>
-
-  <section><h2>انتخاب‌های شما در برابر همهٔ سیگنال‌ها</h2>
-    <p class="hint">همهٔ سیگنال‌ها با یک معیار سنجیده شده‌اند: اگر هر کدام با حد ضرر خودش و هدف 2R گرفته می‌شد. اگر ستون «تأییدشده‌های شما» از «همهٔ سیگنال‌ها» بهتر باشد، یعنی انتخاب شما به نتیجه اضافه می‌کند.</p>
-    <div class="tiles picks" id="picks"></div>
-    <p class="hint" id="picksay"></p>
-  </section>
-
-  <div class="cols">
-    <section><h2>پوزیشن‌های باز</h2>
-      <p class="hint">«حد ضرر سیگنال» حدی است که اسکات پیشنهاد داده. «روی بروکر» حدی است که الان واقعاً در MT5 ثبت است. اگر «نگه دار» زده باشید، این دو فرق دارند.</p>
-      <div id="open"></div></section>
-    <section><h2>هشدارهای منتظر جواب</h2>
-      <p class="hint">هشدارهایی که هنوز تأیید یا رد نکرده‌اید. جواب فقط از تلگرام داده می‌شود و بعد از مهلت، هشدار منقضی می‌شود.</p>
-      <div id="pending"></div></section>
-  </div>
-
-  <section><h2>سود و زیان روزانه <small>۱۴ روز اخیر، به وقت تهران</small></h2>
-    <p class="hint">هر ستون جمع سود و زیان معاملاتی است که آن روز بسته شده‌اند. سبز سود، قرمز ضرر. نشانگر را روی ستون نگه دارید تا عدد دقیق را ببینید.</p>
-    <div class="chart"><div class="scale"><span id="smax"></span><span>دلار</span></div>
-      <div class="bars" id="bars"></div><div class="blab" id="blab"></div></div></section>
-
-  <section><h2>ستاپ‌ها <small id="vnote"></small></h2>
-    <p class="hint">«سود واقعی» از معاملاتی است که تأیید کرده‌اید. «میانگین فرضی» نشان می‌دهد اگر همهٔ هشدارهای آن ستاپ با حد ضرر خودش و هدف ۲ برابر ریسک گرفته می‌شد، به‌طور میانگین چند R می‌داد. عدد مثبت یعنی آن ستاپ در تاریخچه جواب داده است. ستاپ‌های با کمتر از ۵ نمونه «—» دارند.</p>
-    <div class="tablewrap"><table><thead><tr><th>ستاپ</th><th>هشدار</th><th>تأیید</th><th>معامله</th><th>سود واقعی</th><th>میانگین فرضی</th><th>برد فرضی</th></tr></thead><tbody id="setups"></tbody></table></div>
-    <div class="cols" id="sides"></div></section>
-
-  <section><h2>رویدادهای اخیر</h2>
-    <p class="hint">۳۰ اتفاق آخر از دفتر اسکات: هشدارها، تأیید و ردها، باز و بسته شدن‌ها و تحلیل‌ها. جدیدترین بالاست.</p>
-    <ul class="ev" id="events"></ul></section>
-
-  <section><h2>قواعد فعلی</h2>
-    <p class="hint">حدهایی که اسکات الان با آن‌ها کار می‌کند. توضیح هر کدام در راهنما آمده است.</p>
-    <div class="rules" id="rules"></div></section>
-  </div>
-
-<div class="pane" id="p-trades" role="tabpanel" aria-labelledby="t-trades" hidden>
-  <section><h2>کدام نفر بهتر بوده؟ <small id="ppnote"></small></h2>
-    <p class="hint">همهٔ معاملات دفتر به تفکیک کسی که تأیید یا باز کرده است. برای مرتب‌کردن روی عنوان ستون بزنید؛ برای دیدن معاملات یک نفر، روی ردیفش. «میانگین R» منصفانه‌ترین معیار است (به تعداد معاملات بستگی ندارد). نفرات با کمتر از ۱۰ معامله کم‌نمونه‌اند و رتبه نمی‌گیرند؛ چند معاملهٔ خوش‌شانس هنوز مهارت را ثابت نمی‌کند.</p>
-    <div class="tablewrap"><table class="wide"><thead id="pphead"></thead><tbody id="ppbody"></tbody></table></div>
-  </section>
-  <section><h2>معاملات تأییدشده <small id="trnote"></small></h2>
-    <p class="hint">همهٔ معاملاتی که با تأیید شما باز شدند و بسته شده‌اند، جدیدترین بالا و به تفکیک روز (به وقت تهران). «چه کسی بست» نشان می‌دهد خودتان با دکمهٔ بستن بستید یا حد ضرر، هوش مصنوعی، قیمت خروج شما یا بروکر. نام تأییدکننده از نسخهٔ جدید به بعد ثبت می‌شود. پوزیشن‌های باز در تب داشبورد هستند.</p>
-    <div class="tiles" id="trtiles"></div>
-    <div class="filters">
-      <select id="trday" aria-label="روز"></select>
-      <select id="trres" aria-label="نتیجه"><option value="">سود و ضرر</option><option value="win">فقط سودده</option><option value="loss">فقط ضررده</option></select>
-      <select id="trwho" aria-label="نفر"></select>
-      <select id="trsort" aria-label="مرتب‌سازی"><option value="">جدیدترین (به تفکیک روز)</option><option value="best">بیشترین سود</option><option value="worst">بیشترین ضرر</option><option value="r">بهترین R</option><option value="person">بر اساس نام نفر</option></select>
-      <select id="trside" aria-label="جهت"><option value="">خرید و فروش</option><option value="BUY">فقط خرید</option><option value="SELL">فقط فروش</option></select>
+    <div>
+      <div class="hero">
+        <div class="hero-copy">
+          <div class="ghost" aria-hidden="true">XAU</div>
+          <div class="eyebrow rise" style="--d:2">Gold · live bid</div>
+          <div class="price rise" style="--d:3"><span class="cur">$</span><span class="mega" id="hp" aria-live="off">—</span></div>
+          <div class="quote rise" id="hq" style="--d:4"></div>
+          <p class="lede rise" style="--d:5"><b>اسکات خودش معامله نمی‌کند.</b> هر ۱۵ دقیقه ستاپ‌های طلا را پیدا می‌کند، در تلگرام هشدار می‌دهد و فقط اگر شما تأیید کنید معامله باز می‌کند. این صفحه فقط نمایش است؛ همهٔ تصمیم‌ها از تلگرام گرفته می‌شود.</p>
+          <div class="ctas rise" style="--d:6">
+            <button class="btn primary" data-go="trades">معاملات و رتبه‌ها<i><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 7H3M6.5 3.5L3 7l3.5 3.5"/></svg></i></button>
+            <button class="btn" data-go="guide">راهنمای کامل<i><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 7H3M6.5 3.5L3 7l3.5 3.5"/></svg></i></button>
+          </div>
+        </div>
+        <div class="glass chart rise" style="--d:4">
+          <div class="chart-head"><div><h3>سود و زیان ۱۴ روز اخیر</h3><div class="s">به وقت تهران · روی ستون نگه دارید</div></div><div class="big num" id="sum14">—</div></div>
+          <div class="scale"><span id="smax"></span><span>USD</span></div>
+          <div class="bars" id="bars"></div><div class="blab" id="blab"></div>
+        </div>
+      </div>
+      <div class="strip rise" id="tiles" style="--d:7"></div>
+      <p class="hint" style="margin-top:12px">موجودی و اکوییتی از خود حساب می‌آید. «اکوییتی» یعنی موجودی به‌علاوهٔ سود و زیان پوزیشن‌های باز. سود امروز و ۷ روز فقط معاملات بسته‌شدهٔ اسکات را می‌شمارد، به روز تهران. <span id="asof"></span></p>
     </div>
-    <div class="tablewrap"><table class="wide"><thead><tr><th>تیکت</th><th>باز شد ← بسته شد</th><th>جهت</th><th>ستاپ</th><th>لات</th><th>ورود ← خروج</th><th>سود / ضرر</th><th>چه کسی باز کرد</th><th>چه کسی بست</th><th>توضیح</th></tr></thead><tbody id="trbody"></tbody></table></div>
-  </section>
-</div>
 
-<div class="pane" id="p-audit" role="tabpanel" aria-labelledby="t-audit" hidden>
-  <section><h2>بعد از هر سیگنال، بازار به کدام طرف رفت؟ <small id="aunote"></small></h2>
-    <p class="hint">برای هر هشدار، از بسته شدن کندل هشدار روی کندل‌های ۱ دقیقه‌ای بروکر سنجیده شده است. «اول ‎+1R» یعنی قیمت قبل از اینکه به اندازهٔ حد ضرر هشدار خلاف جهت برود، به همان اندازه در جهت سیگنال رفت (تا ۴ ساعت). «در جهت سیگنال» یعنی چند درصد سیگنال‌ها بعد از آن مدت در جهت درست بودند. این صفحه فقط آمار است و هیچ سیگنالی را حذف نمی‌کند. هر ساعت خودکار به‌روز می‌شود.</p>
-    <div class="tiles" id="autiles"></div></section>
-  <section><h2>برچسب هشدارها <small>همان خط اول هر هشدار</small></h2>
-    <p class="hint">«حد ضرر نزدیک» یعنی فاصلهٔ حد ضرر هشدار <span id="autight">۶</span> یا کمتر بوده. «همراه شکست» یعنی سیگنال range_break یا cloud_break هم داشته. بقیه «بدون شکست»‌اند. علامت هشدار با احتساب شانس گذاشته می‌شود: ✅ خوب فقط وقتی که با تعداد نمونه‌ها، حتی در بدترین حالت هم بالای ۵۰٪ باشد؛ ⚠️ ضعیف فقط وقتی که حتی در بهترین حالت هم زیر ۵۰٪ باشد؛ بقیه ⚪ (شانسی یا هنوز معلوم نیست).</p>
-    <div class="tablewrap"><table><thead class="auh"></thead><tbody id="aulabel"></tbody></table></div></section>
-  <section><h2>ستاپ‌ها <small>سیگنالی که چند ستاپ دارد در هر کدام شمرده می‌شود · زیر ۵ نمونه کم‌رنگ است</small></h2>
-    <div class="tablewrap"><table><thead id="auhead"></thead><tbody id="ausetup"></tbody></table></div></section>
-  <section><h2>ساعت سیگنال (تهران)</h2>
-    <div class="tablewrap"><table><thead class="auh"></thead><tbody id="auhour"></tbody></table></div></section>
-  <section><h2>تصمیم شما</h2>
-    <p class="hint">برای «رد کردید»، درصد پایین یعنی رد درست بوده.</p>
-    <div class="tablewrap"><table><thead class="auh"></thead><tbody id="audec"></tbody></table></div></section>
-  <section><h2>خرید و فروش</h2>
-    <div class="tablewrap"><table><thead class="auh"></thead><tbody id="auside"></tbody></table></div></section>
-  <section><h2>روز هفته (تهران)</h2>
-    <div class="tablewrap"><table><thead class="auh"></thead><tbody id="auweek"></tbody></table></div></section>
-  <section><h2>شرایط لحظهٔ هشدار <small>فقط هشدارهای بعد از این به‌روزرسانی این اطلاعات را دارند</small></h2>
-    <p class="hint">«دیرهنگام» یعنی هشدار مال کندل قبل بوده. «اسپرد» یعنی اسپرد لحظهٔ هشدار چند درصدِ فاصلهٔ حد ضرر بوده. «خبر» یعنی خبر مهم نزدیک بوده. فقط آمار است.</p>
-    <div class="tablewrap"><table><thead class="auh"></thead><tbody id="aucond"></tbody></table></div></section>
-</div>
+    <div class="cols reveal">
+      <section><div class="sh"><span class="idx">01</span><h2>پوزیشن‌های باز</h2></div>
+        <p class="hint">«حد ضرر سیگنال» حدی است که اسکات پیشنهاد داده. «روی بروکر» حدی است که الان واقعاً در MT5 ثبت است. اگر «نگه دار» زده باشید، این دو فرق دارند.</p>
+        <div id="open"></div></section>
+      <section><div class="sh"><span class="idx">02</span><h2>هشدارهای منتظر جواب</h2></div>
+        <p class="hint">هشدارهایی که هنوز تأیید یا رد نکرده‌اید. جواب فقط از تلگرام داده می‌شود و بعد از مهلت، هشدار منقضی می‌شود.</p>
+        <div id="pending"></div></section>
+    </div>
 
-<!--GUIDE-->
+    <section class="reveal"><div class="sh"><span class="idx">03</span><h2>انتخاب‌های شما در برابر همهٔ سیگنال‌ها</h2></div>
+      <p class="hint">همهٔ سیگنال‌ها با یک معیار سنجیده شده‌اند: اگر هر کدام با حد ضرر خودش و هدف 2R گرفته می‌شد. اگر «تأییدشده‌های شما» از «همهٔ سیگنال‌ها» بهتر باشد، یعنی انتخاب شما به نتیجه اضافه می‌کند.</p>
+      <div class="tiles picks" id="picks"></div>
+      <p class="say" id="picksay"></p>
+    </section>
 
-  <footer>هر ۱۰ ثانیه به‌روز می‌شود. «فرضی» یعنی اگر هر ستاپ با حد ضرر خودش و هدف 2R گرفته می‌شد (هر ساعت دوباره حساب می‌شود). <span id="upd"></span></footer>
+    <section class="reveal"><div class="sh"><span class="idx">04</span><h2>ستاپ‌ها <small id="vnote"></small></h2></div>
+      <p class="hint">«سود واقعی» از معاملاتی است که تأیید کرده‌اید. «میانگین فرضی» نشان می‌دهد اگر همهٔ هشدارهای آن ستاپ با حد ضرر خودش و هدف ۲ برابر ریسک گرفته می‌شد، به‌طور میانگین چند R می‌داد. عدد مثبت یعنی آن ستاپ در تاریخچه جواب داده است. ستاپ‌های با کمتر از ۵ نمونه «—» دارند.</p>
+      <div class="tablewrap"><table><thead><tr><th>ستاپ</th><th>هشدار</th><th>تأیید</th><th>معامله</th><th>سود واقعی</th><th>میانگین فرضی</th><th>برد فرضی</th></tr></thead><tbody id="setups"></tbody></table></div>
+      <div class="cols" id="sides" style="gap:10px"></div></section>
+
+    <div class="cols reveal">
+      <section><div class="sh"><span class="idx">05</span><h2>رویدادهای اخیر</h2></div>
+        <p class="hint">۳۰ اتفاق آخر از دفتر اسکات: هشدارها، تأیید و ردها، باز و بسته شدن‌ها و تحلیل‌ها. جدیدترین بالاست.</p>
+        <ul class="ev" id="events"></ul></section>
+      <section><div class="sh"><span class="idx">06</span><h2>قواعد فعلی</h2></div>
+        <p class="hint">حدهایی که اسکات الان با آن‌ها کار می‌کند. توضیح هر کدام در راهنما آمده است.</p>
+        <div class="rules" id="rules"></div></section>
+    </div>
+  </div>
+
+  <!-- ═════════ معاملات ═════════ -->
+  <div class="pane" id="p-trades" role="tabpanel" aria-labelledby="t-trades" hidden>
+    <section><div class="sh"><span class="idx">01</span><h2>کدام نفر بهتر بوده؟ <small id="ppnote"></small></h2></div>
+      <p class="hint">همهٔ معاملات دفتر به تفکیک کسی که تأیید یا باز کرده است. برای مرتب‌کردن روی عنوان ستون بزنید؛ برای دیدن معاملات یک نفر، روی ردیفش. «میانگین R» منصفانه‌ترین معیار است (به تعداد معاملات بستگی ندارد). نفرات با کمتر از ۱۰ معامله کم‌نمونه‌اند و رتبه نمی‌گیرند؛ چند معاملهٔ خوش‌شانس هنوز مهارت را ثابت نمی‌کند.</p>
+      <div class="tablewrap"><table class="wide" id="pptab"><thead id="pphead"></thead><tbody id="ppbody"></tbody></table></div>
+    </section>
+    <section><div class="sh"><span class="idx">02</span><h2>معاملات تأییدشده <small id="trnote"></small></h2></div>
+      <p class="hint">همهٔ معاملاتی که با تأیید شما باز شدند و بسته شده‌اند، جدیدترین بالا و به تفکیک روز (به وقت تهران). «چه کسی بست» نشان می‌دهد خودتان با دکمهٔ بستن بستید یا حد ضرر، هوش مصنوعی، قیمت خروج شما یا بروکر. نام تأییدکننده از نسخهٔ جدید به بعد ثبت می‌شود. پوزیشن‌های باز در تب داشبورد هستند.</p>
+      <div class="tiles" id="trtiles"></div>
+      <div class="filters">
+        <select id="trday" aria-label="روز"></select>
+        <select id="trres" aria-label="نتیجه"><option value="">سود و ضرر</option><option value="win">فقط سودده</option><option value="loss">فقط ضررده</option></select>
+        <select id="trwho" aria-label="نفر"></select>
+        <select id="trsort" aria-label="مرتب‌سازی"><option value="">جدیدترین (به تفکیک روز)</option><option value="best">بیشترین سود</option><option value="worst">بیشترین ضرر</option><option value="r">بهترین R</option><option value="person">بر اساس نام نفر</option></select>
+        <select id="trside" aria-label="جهت"><option value="">خرید و فروش</option><option value="BUY">فقط خرید</option><option value="SELL">فقط فروش</option></select>
+      </div>
+      <div class="tablewrap"><table class="wide"><thead><tr><th>تیکت</th><th>باز شد ← بسته شد</th><th>جهت</th><th>ستاپ</th><th>لات</th><th>ورود ← خروج</th><th>سود / ضرر</th><th>چه کسی باز کرد</th><th>چه کسی بست</th><th>توضیح</th></tr></thead><tbody id="trbody"></tbody></table></div>
+    </section>
+  </div>
+
+  <!-- ═════════ کارنامه ═════════ -->
+  <div class="pane" id="p-audit" role="tabpanel" aria-labelledby="t-audit" hidden>
+    <section><div class="sh"><span class="idx">01</span><h2>بعد از هر سیگنال، بازار به کدام طرف رفت؟ <small id="aunote"></small></h2></div>
+      <p class="hint">برای هر هشدار، از بسته شدن کندل هشدار روی کندل‌های ۱ دقیقه‌ای بروکر سنجیده شده است. «اول ‎+1R» یعنی قیمت قبل از اینکه به اندازهٔ حد ضرر هشدار خلاف جهت برود، به همان اندازه در جهت سیگنال رفت (تا ۴ ساعت). «در جهت سیگنال» یعنی چند درصد سیگنال‌ها بعد از آن مدت در جهت درست بودند. این صفحه فقط آمار است و هیچ سیگنالی را حذف نمی‌کند. هر ساعت خودکار به‌روز می‌شود.</p>
+      <div class="tiles" id="autiles"></div></section>
+    <section><div class="sh"><span class="idx">02</span><h2>برچسب هشدارها <small>همان خط اول هر هشدار</small></h2></div>
+      <p class="hint">«حد ضرر نزدیک» یعنی فاصلهٔ حد ضرر هشدار <span id="autight">۶</span> یا کمتر بوده. «همراه شکست» یعنی سیگنال range_break یا cloud_break هم داشته. بقیه «بدون شکست»‌اند. علامت هشدار با احتساب شانس گذاشته می‌شود: ✅ خوب فقط وقتی که با تعداد نمونه‌ها، حتی در بدترین حالت هم بالای ۵۰٪ باشد؛ ⚠️ ضعیف فقط وقتی که حتی در بهترین حالت هم زیر ۵۰٪ باشد؛ بقیه ⚪ (شانسی یا هنوز معلوم نیست).</p>
+      <div class="tablewrap"><table><thead class="auh"></thead><tbody id="aulabel"></tbody></table></div></section>
+    <section><div class="sh"><span class="idx">03</span><h2>ستاپ‌ها <small>سیگنالی که چند ستاپ دارد در هر کدام شمرده می‌شود · زیر ۵ نمونه کم‌رنگ است</small></h2></div>
+      <div class="tablewrap"><table><thead id="auhead"></thead><tbody id="ausetup"></tbody></table></div></section>
+    <section><div class="sh"><span class="idx">04</span><h2>ساعت سیگنال (تهران)</h2></div>
+      <div class="tablewrap"><table><thead class="auh"></thead><tbody id="auhour"></tbody></table></div></section>
+    <section><div class="sh"><span class="idx">05</span><h2>تصمیم شما</h2></div>
+      <p class="hint">برای «رد کردید»، درصد پایین یعنی رد درست بوده.</p>
+      <div class="tablewrap"><table><thead class="auh"></thead><tbody id="audec"></tbody></table></div></section>
+    <section><div class="sh"><span class="idx">06</span><h2>خرید و فروش</h2></div>
+      <div class="tablewrap"><table><thead class="auh"></thead><tbody id="auside"></tbody></table></div></section>
+    <section><div class="sh"><span class="idx">07</span><h2>روز هفته (تهران)</h2></div>
+      <div class="tablewrap"><table><thead class="auh"></thead><tbody id="auweek"></tbody></table></div></section>
+    <section><div class="sh"><span class="idx">08</span><h2>شرایط لحظهٔ هشدار <small>فقط هشدارهای بعد از این به‌روزرسانی این اطلاعات را دارند</small></h2></div>
+      <p class="hint">«دیرهنگام» یعنی هشدار مال کندل قبل بوده. «اسپرد» یعنی اسپرد لحظهٔ هشدار چند درصدِ فاصلهٔ حد ضرر بوده. «خبر» یعنی خبر مهم نزدیک بوده. فقط آمار است.</p>
+      <div class="tablewrap"><table><thead class="auh"></thead><tbody id="aucond"></tbody></table></div></section>
+  </div>
+
+  <!-- ═════════ راهنما ═════════ -->
+  <!--GUIDE-->
+
+  <footer><span>هر ۱۰ ثانیه به‌روز می‌شود. «فرضی» یعنی اگر هر ستاپ با حد ضرر خودش و هدف 2R گرفته می‌شد (هر ساعت دوباره حساب می‌شود).</span><span id="upd" class="mono"></span></footer>
 </div>
 <script>
+document.documentElement.classList.add('js');
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=v=>v==null||isNaN(v)?'—':(v>0?'+':v<0?'−':'')+'$'+Math.abs(v).toFixed(2);
+const usd=v=>v==null||isNaN(v)?'—':'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const cls=v=>v>0?'pos':v<0?'neg':'';
 const fa=n=>n==null?'—':String(n);
+const SIDE_FA={BUY:'<span class="chip buy">خرید</span>',SELL:'<span class="chip sell">فروش</span>'};
+const sideTag=s=>`<span class="side ${s==='BUY'?'buy':'sell'}">${s==='BUY'?'خرید':'فروش'}</span>`;
 function pill(ok,text){return `<span class="pill"><span class="dot ${ok===true?'ok':ok===false?'bad':'warn'}"></span>${esc(text)}</span>`}
+
+/* signature: rolling digits on the live price */
+let lastPrice=null;
+function setPrice(v){
+  const el=$('hp'), s=v.toFixed(2);
+  $('tickp').textContent=s;
+  if(lastPrice===null){el.textContent=s;lastPrice=v;return;}
+  if(s===lastPrice.toFixed(2))return;
+  const old=lastPrice.toFixed(2).padStart(s.length,' '), dir=v>lastPrice?'up':'dn';
+  el.innerHTML=[...s].map((c,i)=>c!==old[i]?`<span class="${dir}">${c}</span>`:`<span>${c}</span>`).join('');
+  const t=$('tickp');t.classList.remove('flash-up','flash-dn');void t.offsetWidth;t.classList.add(dir==='up'?'flash-up':'flash-dn');
+  setTimeout(()=>t.classList.remove('flash-up','flash-dn'),900);
+  lastPrice=v;
+}
+
+/* position track: SL, emergency SL, entry and live price on one line */
+function track(p){
+  const pts=[p.sl,p.entry,p.price,p.broker_sl].filter(x=>x!=null);
+  let lo=Math.min(...pts),hi=Math.max(...pts);const pad=(hi-lo)*.12||1;lo-=pad;hi+=pad;
+  const x=v=>((v-lo)/(hi-lo)*100).toFixed(2)+'%';
+  const segA=Math.min(p.entry,p.price??p.entry),segB=Math.max(p.entry,p.price??p.entry);
+  const good=p.profit>=0;
+  const em=p.broker_sl&&Math.abs(p.broker_sl-p.sl)>.01;
+  return `<div class="track" aria-hidden="true"><div class="rail"></div>
+    <div class="seg" style="left:${x(segA)};width:calc(${x(segB)} - ${x(segA)});background:${good?'var(--good)':'var(--bad)'}"></div>
+    <div class="m sl" style="left:${x(p.sl)}"></div><span class="lb" style="left:${x(p.sl)}">SL</span>
+    ${em?`<div class="m em" style="left:${x(p.broker_sl)}"></div><span class="lb" style="left:${x(p.broker_sl)}">SL·MT5</span>`:''}
+    <div class="m en" style="left:${x(p.entry)}"></div><span class="lb" style="left:${x(p.entry)}">ENTRY</span>
+    ${p.price!=null?`<div class="now" style="left:${x(p.price)}"></div>`:''}</div>`;
+}
+
+let firstRender=true;
 function render(d){
   $('err').hidden=!d.error; if(d.error)$('err').textContent='خطا: '+d.error;
   const s=d.status||{}, a=d.account||{}, st=d.stats||{};
   $('pills').innerHTML=[pill(s.alive,s.alive?'روشن':'بی‌پاسخ'),pill(s.mt5,s.mt5?'MT5 وصل':'MT5 قطع'),
     pill(s.market?true:null,s.market?'بازار باز':'بازار بسته'),pill(s.paused?false:true,s.paused?'هشدارها متوقف':'هشدارها فعال'),
-    `<span class="pill">حالت: ${esc(s.mode_fa||s.mode||'—')}</span>`,
-    d.price?`<span class="pill">طلا <b class="num">${d.price.bid.toFixed(2)}</b></span>`:''].join('');
-  $('asof').textContent=s.now_tehran?('به‌روز '+s.now_tehran+' تهران'):'';
+    `<span class="pill">حالت: <b>${esc(s.mode_fa||s.mode||'—')}</b></span>`,
+    s.now_tehran?`<span class="pill">به‌روز <b class="num">${esc(s.now_tehran)}</b> تهران</span>`:''].join('');
+  $('tickdot').className='dot '+(s.alive&&s.mt5?'ok':'bad');
+  if(d.price){setPrice(d.price.bid);
+    $('hq').innerHTML=`<span>خرید <b class="num">${d.price.ask.toFixed(2)}</b></span><span>فروش <b class="num">${d.price.bid.toFixed(2)}</b></span><span>اسپرد <b class="num">${(d.price.ask-d.price.bid).toFixed(2)}</b></span>`;}
+  $('asof').textContent='';
   const t=st.today||{},w=st.week||{},al=st.all||{};
   $('tiles').innerHTML=[
-    ['موجودی',a.balance!=null?'$'+a.balance.toFixed(2):'—','',''],
-    ['اکوییتی',a.equity!=null?'$'+a.equity.toFixed(2):'—',a.profit!=null?('شناور '+money(a.profit)):'',''],
+    ['موجودی',usd(a.balance),'حساب دمو',''],
+    ['اکوییتی',usd(a.equity),a.profit!=null?('شناور '+money(a.profit)):'',''],
     ['امروز',money(t.pnl),`${fa(t.n)} معامله · ${fa(st.alerts_today)} هشدار`,cls(t.pnl)],
     ['۷ روز',money(w.pnl),`${fa(w.n)} معامله · برد ${w.win!=null?w.win+'٪':'—'}`,cls(w.pnl)],
     ['کل',money(al.pnl),`${fa(al.n)} معامله · برد ${al.win!=null?al.win+'٪':'—'}`,cls(al.pnl)],
-    ['پوزیشن باز',fa((d.open||[]).length),d.open_risk!=null?('ریسک '+'$'+d.open_risk.toFixed(2)+' از $'+(d.rules?.max_risk??'—')):'',''],
+    ['پوزیشن باز',fa((d.open||[]).length),d.open_risk!=null?('ریسک $'+d.open_risk.toFixed(2)+' از $'+(d.rules?.max_risk??'—')):'',''],
   ].map(([k,v,sub,c])=>`<div class="tile"><div class="k">${k}</div><div class="v num ${c}">${v}</div><div class="s">${sub}</div></div>`).join('');
   const op=d.open||[];
   $('open').innerHTML=op.length?op.map(p=>`<div class="card ${p.side==='BUY'?'buy':'sell'}">
-     <div class="top"><b>${p.side==='BUY'?'🟢 خرید':'🔴 فروش'} <span class="mono">#${p.ticket}</span> · <span class="mono">${esc(setupFa(p.setup))}</span></b>
+     <div class="top"><span class="ttl">${sideTag(p.side)}<span class="mono">#${p.ticket}</span><span class="mono muted">${esc(setupFa(p.setup))}</span></span>
      <span class="pnl num ${cls(p.profit)}">${money(p.profit)}</span></div>
+     ${track(p)}
      <div class="kv"><span>ورود <b class="num">${p.entry.toFixed(2)}</b></span><span>الان <b class="num">${p.price?p.price.toFixed(2):'—'}</b></span>
      <span>حد ضرر سیگنال <b class="num">${p.sl.toFixed(2)}</b></span><span>روی بروکر <b class="num">${p.broker_sl?p.broker_sl.toFixed(2):'—'}</b></span>
      ${p.r!=null?`<span>R <b class="num">${p.r>0?'+':''}${p.r.toFixed(2)}</b></span>`:''}</div>
-     <div>${p.hold?'<span class="tag">⏸ نگه داشته</span>':''} ${p.warned?'<span class="tag">⚠️ ساختار شکسته</span>':''}</div></div>`).join('')
+     ${p.hold||p.warned?`<div>${p.hold?'<span class="tag">⏸ نگه داشته</span>':''} ${p.warned?'<span class="tag">⚠️ ساختار شکسته</span>':''}</div>`:''}</div>`).join('')
     :'<div class="empty">پوزیشن بازی نیست.</div>';
   const pe=d.pending||[];
   $('pending').innerHTML=pe.length?pe.map(p=>`<div class="card ${p.side==='BUY'?'buy':'sell'}">
-     <div class="top"><b>${p.side==='BUY'?'🟢 خرید':'🔴 فروش'} · <span class="mono">${esc(setupFa(p.setup))}</span></b><span class="muted">${p.left_min} دقیقه مانده</span></div>
+     <div class="top"><span class="ttl">${sideTag(p.side)}<span class="mono muted">${esc(setupFa(p.setup))}</span></span><span class="tag">${p.left_min} دقیقه مانده</span></div>
      <div class="kv"><span>قیمت <b class="num">${p.price.toFixed(2)}</b></span><span>حد ضرر <b class="num">${p.sl.toFixed(2)}</b></span><span>ریسک <b class="num">$${p.risk.toFixed(2)}</b></span></div>
-     ${p.analysis?`<div class="muted">🤖 ${esc(p.analysis)}</div>`:''}</div>`).join('')
+     ${p.analysis?`<div class="muted" style="font-size:13px">🤖 ${esc(p.analysis)}</div>`:''}</div>`).join('')
     :'<div class="empty">هشدار بی‌جوابی نیست. جواب دادن فقط از تلگرام است.</div>';
   const days=st.days||[]; const mx=Math.max(1,...days.map(x=>Math.abs(x.pnl)));
-  $('smax').textContent='حداکثر ±$'+mx.toFixed(0);
-  $('bars').innerHTML=days.map(x=>{const h=(Math.abs(x.pnl)/mx*50).toFixed(1);
-     return `<div class="b" title="${x.d}: ${money(x.pnl)} · ${x.n} معامله"><i class="${x.pnl>=0?'p':'n'}" style="height:${x.pnl?h:0}%"></i></div>`}).join('');
+  const sum=days.reduce((a,x)=>a+x.pnl,0);
+  $('sum14').textContent=money(sum); $('sum14').className='big num '+cls(sum);
+  $('smax').textContent='±$'+mx.toFixed(0);
+  $('bars').innerHTML=days.map((x,i)=>{const h=(Math.abs(x.pnl)/mx*50).toFixed(1);
+     return `<div class="b" style="--i:${i}"><i class="${!x.pnl?'z':x.pnl>0?'p':'n'}" style="height:${x.pnl?h:0}%"></i><span class="tip"><span class="num">${x.d.slice(5).replace('-','/')}</span> · <b class="num ${cls(x.pnl)}">${money(x.pnl)}</b> · ${x.n} معامله</span></div>`}).join('');
+  if(firstRender)$('bars').classList.add('bars-in'); else $('bars').classList.remove('bars-in');
   $('blab').innerHTML=days.map(x=>`<span>${x.d.slice(5).replace('-','/')}</span>`).join('');
   $('vnote').textContent=st.has_virtual?'':'(نتیجهٔ فرضی هنوز حساب نشده)';
   $('setups').innerHTML=(st.setups||[]).map(r=>`<tr><td class="mono">${esc(setupFa(r.setup))}</td><td class="n">${r.alerts}</td><td class="n">${r.taken}</td><td class="n">${r.trades}</td>
      <td class="n ${cls(r.pnl)}">${r.trades?money(r.pnl):'—'}</td><td class="n ${cls(r.avg_R)}">${r.avg_R!=null?(r.avg_R>0?'+':'')+r.avg_R.toFixed(2)+'R':'—'}</td>
      <td class="n">${r.win_R!=null?r.win_R+'٪':'—'}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">هنوز داده‌ای نیست</td></tr>';
   const sd=st.sides||{};
-  $('sides').innerHTML=['SELL','BUY'].map(k=>{const v=sd[k]||{};return `<div class="card ${k==='BUY'?'buy':'sell'}"><div class="top"><b>${k==='BUY'?'خرید':'فروش'} (همهٔ ستاپ‌ها، فرضی)</b>
-     <span class="pnl num ${cls(v.sum_R)}">${v.sum_R!=null?(v.sum_R>0?'+':'')+v.sum_R.toFixed(1)+'R':'—'}</span></div><div class="muted">${fa(v.n)} نمونه</div></div>`}).join('');
+  $('sides').innerHTML=['SELL','BUY'].map(k=>{const v=sd[k]||{};return `<div class="card ${k==='BUY'?'buy':'sell'}" style="margin:0"><div class="top"><span class="ttl">${sideTag(k)}<span class="muted" style="font-size:13px">همهٔ ستاپ‌ها، فرضی · ${fa(v.n)} نمونه</span></span>
+     <span class="pnl num ${cls(v.sum_R)}">${v.sum_R!=null?(v.sum_R>0?'+':'')+v.sum_R.toFixed(1)+'R':'—'}</span></div></div>`}).join('');
   $('events').innerHTML=(st.recent||[]).map(e=>`<li><span class="t">${esc(e.t)}</span><span>${esc(e.text)}${e.price!=null?` <span class="muted num">@ ${e.price.toFixed(2)}</span>`:''}</span>
      <span class="num ${cls(e.profit)}">${e.profit!=null?money(e.profit):''}</span></li>`).join('')||'<li><span></span><span class="muted">رویدادی نیست</span><span></span></li>';
   const r=d.rules||{};
@@ -967,23 +1208,23 @@ function render(d){
     ['هشدار نزدیک حد ضرر',r.approach+'٪ ریسک'],['پوزیشن هم‌زمان','حداکثر '+r.max_open],['سقف ریسک کل','$'+r.max_risk],
     ['مهلت جواب',r.expiry_min+' دقیقه'],['گزارش زنده','هر '+r.status_min+' دقیقه']]
     .map(([k,v])=>`<div class="rule">${k}<b>${esc(v)}</b></div>`).join('');
-  $('upd').textContent=s.version?('نسخه '+s.version):'';
+  $('upd').textContent=s.version?('v '+s.version):'';
   LAST=st; renderPicks(st.picks); renderAudit(d.audit); renderTrades(st.trades);
   document.querySelectorAll('[data-r]').forEach(el=>{const v=r[el.dataset.r];if(v!=null)el.textContent=(el.dataset.pre||'')+v+(el.dataset.suf||'');});
+  firstRender=false;
 }
 let LAST={};
 const rfmt=v=>v==null?'—':(v>0?'+':'')+v.toFixed(2)+'R';
 function renderPicks(p){
-  if(!p){$('picks').innerHTML='<div class="empty">نتیجهٔ فرضی هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';$('picksay').textContent='';return;}
-  const card=(k,t)=>{const v=p[k]||{};return `<div class="tile"><div class="k">${t}</div><div class="v num ${cls(v.avg_r)}">${rfmt(v.avg_r)}</div><div class="s">${fa(v.n)} نمونه · برد ${v.win!=null?v.win+'٪':'—'}</div></div>`};
-  $('picks').innerHTML=card('taken','✅ تأییدشده‌های شما')+card('passed','❌ ردشده یا منقضی')+card('silent','🔕 بی‌صدا (پوزیشن باز یا توقف)')+card('all','همهٔ سیگنال‌ها');
+  if(!p){$('picks').innerHTML='<div class="empty" style="grid-column:1/-1">نتیجهٔ فرضی هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';$('picksay').textContent='';return;}
+  const card=(k,t)=>{const v=p[k]||{};return `<div class="tile"><div class="k">${t}</div><div class="v num ${cls(v.avg_r)}">${rfmt(v.avg_r)}</div><div class="s">${fa(v.n)} نمونه · برد ${v.win!=null?v.win+'٪':'—'}</div><div class="meter"><i style="width:${v.win||0}%"></i></div></div>`};
+  $('picks').innerHTML=card('taken','تأییدشده‌های شما')+card('passed','ردشده یا منقضی')+card('silent','بی‌صدا (پوزیشن باز یا توقف)')+card('all','همهٔ سیگنال‌ها');
   const a=p.taken||{}, b=p.all||{};
   $('picksay').textContent=(a.avg_r==null||b.avg_r==null||a.n<5)?'برای مقایسه هنوز تأییدهای کافی نیست.'
     :(a.avg_r>b.avg_r?`انتخاب‌های شما تا الان به‌طور میانگین ${(a.avg_r-b.avg_r).toFixed(2)}R در هر معامله بهتر از کل سیگنال‌ها بوده است.`
     :`انتخاب‌های شما فعلاً ${(b.avg_r-a.avg_r).toFixed(2)}R در هر معامله پایین‌تر از کل سیگنال‌هاست؛ با معاملات بیشتر دقیق‌تر می‌شود.`);
 }
 
-const SIDE_FA={BUY:'🟢 خرید',SELL:'🔴 فروش'};
 const setupFa=s=>String(s)==='manual'?'✋ دستی':String(s);
 function dur(sec){if(sec==null)return '—';const m=Math.round(sec/60);if(m<60)return m+' د';const h=Math.floor(m/60),r=m%60;return h+' س'+(r?' '+r+' د':'');}
 const PPCOLS=[['rank','رتبه',0],['name','نفر',1],['n','معاملات',1],['win','برد',1],['pnl','جمع سود و ضرر',1],['avg','میانگین هر معامله',1],['avgR','میانگین R',1],['best','بهترین',1],['worst','بدترین',1]];
@@ -1005,7 +1246,7 @@ function renderPeople(list){
   $('pphead').innerHTML='<tr>'+PPCOLS.map(([k,t,s])=>s?`<th class="srt${k===key?' on':''}" data-k="${k}">${t}${k===key?(dir>0?' ▼':' ▲'):''}</th>`:`<th>${t}</th>`).join('')+'</tr>';
   $('ppbody').innerHTML=ps.map(p=>{if(!p.few)rank++;
     const medal=p.few?'':(['🥇','🥈','🥉'][rank-1]||rank);
-    return `<tr class="pick${p.few?' muted':''}" data-who="${esc(p.name)}"><td class="n">${medal}</td><td><b>${esc(p.name)}</b>${p.few?'<span class="sub">کم‌نمونه</span>':''}</td>
+    return `<tr class="pick${p.few?' muted':''}" data-who="${esc(p.name)}"><td class="n rank">${medal}</td><td><b>${esc(p.name)}</b>${p.few?'<span class="sub">کم‌نمونه</span>':''}</td>
       <td class="n">${p.n}</td><td class="n">${Math.round(100*p.win)}٪</td><td class="n ${cls(p.pnl)}"><b>${money(p.pnl)}</b></td>
       <td class="n ${cls(p.avg)}">${money(p.avg)}</td><td class="n ${cls(p.avgR)}">${p.avgR!=null?(p.avgR>0?'+':'')+p.avgR.toFixed(2)+'R':'—'}</td>
       <td class="n ${cls(p.best)}">${money(p.best)}</td><td class="n ${cls(p.worst)}">${money(p.worst)}</td></tr>`}).join('')
@@ -1016,7 +1257,7 @@ let PP={key:'avgR',dir:1};
 $('pphead').onclick=e=>{const th=e.target&&e.target.closest?e.target.closest('th[data-k]'):null;if(!th)return;
   const k=th.dataset.k;if(PP.key===k)PP.dir=-PP.dir;else{PP.key=k;PP.dir=1;} renderPeople(LAST.trades)};
 $('ppbody').onclick=e=>{const tr=e.target&&e.target.closest?e.target.closest('tr[data-who]'):null;if(!tr)return;
-  TR.who=tr.dataset.who;TR.sort='';renderTrades(LAST.trades);$('trbody').scrollIntoView&&$('trbody').scrollIntoView()};
+  TR.who=tr.dataset.who;TR.sort='';renderTrades(LAST.trades);$('trbody').scrollIntoView&&$('trbody').scrollIntoView({behavior:'smooth',block:'start'})};
 function renderTrades(list){
   list=list||[];
   renderPeople(list);
@@ -1037,7 +1278,7 @@ function renderTrades(list){
   else if(TR.sort==='person')rows=[...rows].sort((a,b)=>String(a.opener).localeCompare(String(b.opener),'fa')||(a.t_close<b.t_close?1:-1));
   const n=rows.length, pnl=rows.reduce((a,x)=>a+x.profit,0), wins=rows.filter(x=>x.profit>0).length;
   const rs=rows.filter(x=>x.r!=null), sr=rs.reduce((a,x)=>a+x.r,0);
-  $('trtiles').innerHTML=[['معاملات',fa(n),list.length!==n?('از '+list.length+' کل'):'','' ],
+  $('trtiles').innerHTML=[['معاملات',fa(n),list.length!==n?('از '+list.length+' کل'):'همهٔ دفتر','' ],
     ['جمع سود و ضرر',money(pnl),'',cls(pnl)],['برد',n?Math.round(100*wins/n)+'٪':'—',`${wins} سودده · ${n-wins} غیر سودده`,''],
     ['جمع R',rs.length?(sr>0?'+':'')+sr.toFixed(1)+'R':'—','',cls(sr)]]
     .map(([k,v,sub,c])=>`<div class="tile"><div class="k">${k}</div><div class="v num ${c}">${v}</div><div class="s">${sub}</div></div>`).join('');
@@ -1048,7 +1289,7 @@ function renderTrades(list){
       html+=`<tr class="dayrow"><td colspan="10">${esc(x.day_fa)} · <span class="num">${esc(cur)}</span> · ${dr.length} معامله · <span class="num ${cls(dp)}">${money(dp)}</span></td></tr>`;}
     const od=flat?x.day.slice(5).replace('-','/')+' ':(x.open_day&&x.open_day!==x.day?x.open_day.slice(5).replace('-','/')+' ':'');
     const tags=[x.held?'<span class="tag">⏸ نگه داشته</span>':'',x.contra?'<span class="tag">↔️ خلاف سیگنال</span>':'',x.locked?'<span class="tag">🔒 بی‌ضرر شد</span>':''].join(' ');
-    html+=`<tr><td class="mono nw">#${esc(x.ticket)}</td>
+    html+=`<tr><td class="mono nw muted">#${esc(x.ticket)}</td>
       <td class="n nw">${esc(od+x.open_hm)} → ${esc(x.close_hm)}<span class="sub">${dur(x.secs)}</span></td>
       <td class="nw">${SIDE_FA[x.side]||esc(x.side)}</td><td class="mono setup">${esc(setupFa(x.setup)).replace(/\+/g,' + ').replace(/_/g,'_<wbr>')}</td>
       <td class="n">${x.lot!=null?Number(x.lot).toFixed(2):'—'}</td>
@@ -1076,7 +1317,7 @@ function auRow(x,label,inverse){
 }
 function renderAudit(a){
   document.querySelectorAll('.auh').forEach(h=>h.innerHTML=AUH); $('auhead').innerHTML=AUH;
-  if(!a||!a.all){$('autiles').innerHTML='<div class="empty">کارنامه هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';
+  if(!a||!a.all){$('autiles').innerHTML='<div class="empty" style="grid-column:1/-1">کارنامه هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';
     ['aulabel','ausetup','auhour','audec','auside','auweek','aucond'].forEach(id=>$(id).innerHTML='');$('aunote').textContent='';return;}
   const x=a.all;
   $('aunote').textContent=`${a.days} روز اخیر · به‌روز ${a.updated||''}`;
@@ -1104,9 +1345,22 @@ function show(tab){
   PANES.forEach(k=>{$('p-'+k).hidden=k!==tab;$('t-'+k).setAttribute('aria-selected',String(k===tab));});
   try{history.replaceState(null,'',location.pathname+location.search+(tab==='dash'?'':'#'+tab));}catch(e){}
   if(tab!=='dash')window.scrollTo(0,0);
+  observeReveals();
 }
 PANES.forEach(k=>$('t-'+k).onclick=()=>show(k));
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
+
+/* scroll reveal (once) — fail-safe: everything becomes visible after 2.5s even without IntersectionObserver */
+let io=null;
+function observeReveals(){
+  const els=[...document.querySelectorAll('.reveal:not(.in)')];
+  if(!('IntersectionObserver' in window)){els.forEach(e=>e.classList.add('in'));return;}
+  io=io||new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}}),{threshold:.12,rootMargin:'0px 0px -5% 0px'});
+  els.forEach(e=>io.observe(e));
+}
+setTimeout(()=>document.querySelectorAll('.reveal').forEach(e=>e.classList.add('in')),2500);
+const topEl=$('top');addEventListener('scroll',()=>topEl.classList.toggle('scrolled',scrollY>8),{passive:true});
+
 show((location.hash||'#dash').slice(1));
 async function tick(){
   try{const res=await fetch('/api/data'+location.search,{cache:'no-store'});

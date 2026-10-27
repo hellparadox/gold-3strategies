@@ -259,7 +259,8 @@ class Page(unittest.TestCase):
         harness = r"""
 const els={};const mk=id=>els[id]||(els[id]={id,innerHTML:'',textContent:'',value:'',hidden:false,
   setAttribute(){},addEventListener(){},scrollIntoView(){}});
-global.document={getElementById:mk,querySelectorAll:()=>[]};
+global.document={getElementById:mk,querySelectorAll:()=>[],documentElement:{classList:{add(){},toggle(){}}}};
+global.addEventListener=()=>{};global.scrollY=0;global.setTimeout=()=>0;
 global.window={scrollTo(){}};global.location={hash:'',pathname:'/',search:''};global.history={replaceState(){}};
 global.fetch=()=>new Promise(()=>{});global.setInterval=()=>0;
 """ + js + r"""
