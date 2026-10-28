@@ -981,6 +981,60 @@ footer{margin-top:clamp(56px,8vw,96px);padding-top:18px;border-top:1px solid var
   *,*::before,*::after{animation:none!important;transition:none!important}
   .js .reveal{opacity:1;transform:none}
 }
+
+/* ───────── منحنی سود، سکوی نفرات، افکت‌ها ───────── */
+@property --ang{syntax:'<angle>';inherits:false;initial-value:0deg}
+.card,.glass,.pod{position:relative}
+.card::after,.glass::after,.pod::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .35s;
+  background:radial-gradient(380px circle at var(--mx,50%) var(--my,50%),rgba(216,178,94,.12),transparent 62%)}
+.card:hover::after,.glass:hover::after,.pod:hover::after{opacity:1}
+.card.ring{border:1px solid transparent;
+  background:linear-gradient(var(--card-solid),var(--card-solid)) padding-box,conic-gradient(from var(--ang),transparent 0 58%,var(--rc,var(--gold)) 84%,transparent 100%) border-box;
+  animation:eqspin 6s linear infinite}
+.card.ring.rp{--rc:var(--good)} .card.ring.rn{--rc:var(--bad)}
+@keyframes eqspin{to{--ang:360deg}}
+.eq{margin-top:34px}
+.rng{display:flex;gap:4px;margin-inline-start:auto;padding:3px;border-radius:999px;background:rgba(237,232,220,.045);border:1px solid var(--line)}
+.rng button{font:inherit;font-size:12.5px;border:0;background:none;color:var(--mute);padding:5px 14px;border-radius:999px;cursor:pointer;transition:background .2s,color .2s}
+.rng button:hover{color:var(--ink)} .rng button.on{background:var(--ink);color:#12110e}
+.eqbox{padding:18px 18px 12px;margin-top:14px}
+.eqstats{display:flex;flex-wrap:wrap;gap:10px 30px;padding:2px 4px 16px}
+.eqstats small{display:block;font-size:11.5px;color:var(--faint)}
+.eqstats b{font-size:21px;font-weight:300;letter-spacing:-.02em}
+.eqplot{position:relative;direction:ltr;cursor:crosshair;touch-action:pan-y;min-height:120px}
+.eqplot svg{display:block;width:100%;height:auto;overflow:visible}
+.eqplot .ax{font:10px var(--f-mono);fill:var(--faint)}
+.eqline{fill:none;stroke:var(--gold-hi);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 6px rgba(216,178,94,.55))}
+.eqarea{animation:eqfade 1.4s .4s both}
+@keyframes eqfade{from{opacity:0}to{opacity:1}}
+.eqzero{stroke:var(--line2);stroke-dasharray:3 5}
+.eqgrid{stroke:var(--line)}
+.eqend{fill:var(--gold-hi)} .eqping{fill:none;stroke:var(--gold-hi);stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:eqping 2.2s ease-out infinite}
+@keyframes eqping{from{transform:scale(.5);opacity:.9}to{transform:scale(2.8);opacity:0}}
+.eqx{stroke:var(--line2);stroke-dasharray:3 4}
+.eqhov{fill:var(--bg);stroke:var(--gold-hi);stroke-width:2}
+.eqtip{position:absolute;top:6px;transform:translateX(-50%);pointer-events:none;background:rgba(20,19,16,.96);border:1px solid var(--line2);border-radius:14px;
+  padding:9px 12px;font-size:12.5px;white-space:nowrap;z-index:5;direction:rtl;text-align:right;line-height:1.55;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.eqtip b{font-size:16px;font-weight:500}
+.eqtip small{display:block;color:var(--faint);font-size:11.5px}
+.eqempty{padding:34px 10px;text-align:center;color:var(--faint);font-size:13.5px}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.podium:empty{display:none}
+.pod{border:1px solid var(--line);background:var(--card);border-radius:var(--r);padding:18px 20px;display:flex;align-items:center;gap:16px;cursor:pointer;overflow:hidden;
+  transition:transform .3s var(--ease),border-color .3s}
+.pod:hover{transform:translateY(-3px);border-color:var(--line2)}
+.pod.r1{border-color:rgba(216,178,94,.45);background:linear-gradient(160deg,rgba(216,178,94,.15),var(--card) 62%)}
+.pod .bd{min-width:0;flex:1}
+.pod .rk{font-size:11.5px;letter-spacing:.06em;font-weight:500}
+.pod.r1 .rk{color:var(--gold-hi)} .pod.r2 .rk{color:#cfd3da} .pod.r3 .rk{color:#d49a6a}
+.pod .nm{font-size:1.12rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .pv{font-size:30px;font-weight:300;letter-spacing:-.03em;line-height:1.15}
+.pod .ms{font-size:12px;color:var(--faint)}
+.wr{width:58px;height:58px;flex:none}
+.wr .trk{fill:none;stroke:var(--line2);stroke-width:5}
+.wr .arc{fill:none;stroke:var(--gold);stroke-width:5;stroke-linecap:round;transform:rotate(-90deg);transform-origin:center}
+.wr text{fill:var(--ink);font:500 11px var(--f-mono)}
+@media (max-width:760px){.podium{grid-template-columns:1fr}.eqstats{gap:10px 22px}.rng button{padding:5px 11px}}
 </style>
 </head>
 <body>
@@ -1028,6 +1082,14 @@ footer{margin-top:clamp(56px,8vw,96px);padding-top:18px;border-top:1px solid var
       <p class="hint" style="margin-top:12px">موجودی و اکوییتی از خود حساب می‌آید. «اکوییتی» یعنی موجودی به‌علاوهٔ سود و زیان پوزیشن‌های باز. سود امروز و ۷ روز فقط معاملات بسته‌شدهٔ اسکات را می‌شمارد، به روز تهران. <span id="asof"></span></p>
     </div>
 
+    <section class="reveal eq" id="eqsec">
+      <div class="sh"><span class="idx">00</span><h2>منحنی سود <small id="eqnote"></small></h2>
+        <div class="rng" id="eqchips" role="group" aria-label="بازهٔ زمانی"><button data-d="7">۷ روز</button><button data-d="30" class="on">۳۰ روز</button><button data-d="0">همه</button></div></div>
+      <div class="glass eqbox"><div class="eqstats" id="eqstats"></div>
+        <div class="eqplot" id="eqplot"><svg id="eqsvg" viewBox="0 0 600 280" role="img" aria-label="منحنی جمع سود و زیان معاملات تأییدشده"></svg><div class="eqtip" id="eqtip" hidden></div></div></div>
+      <p class="hint" style="margin-top:10px">جمع سود و زیان خالص معاملات تأییدشده و بسته‌شده، به ترتیب زمان بسته شدن. روی نمودار بروید تا هر معامله را ببینید.</p>
+    </section>
+
     <div class="cols reveal">
       <section><div class="sh"><span class="idx">01</span><h2>پوزیشن‌های باز</h2></div>
         <p class="hint">«حد ضرر سیگنال» حدی است که اسکات پیشنهاد داده. «روی بروکر» حدی است که الان واقعاً در MT5 ثبت است. اگر «نگه دار» زده باشید، این دو فرق دارند.</p>
@@ -1062,6 +1124,7 @@ footer{margin-top:clamp(56px,8vw,96px);padding-top:18px;border-top:1px solid var
   <div class="pane" id="p-trades" role="tabpanel" aria-labelledby="t-trades" hidden>
     <section><div class="sh"><span class="idx">01</span><h2>کدام نفر بهتر بوده؟ <small id="ppnote"></small></h2></div>
       <p class="hint">همهٔ معاملات دفتر به تفکیک کسی که تأیید یا باز کرده است. برای مرتب‌کردن روی عنوان ستون بزنید؛ برای دیدن معاملات یک نفر، روی ردیفش. «میانگین R» منصفانه‌ترین معیار است (به تعداد معاملات بستگی ندارد). نفرات با کمتر از ۱۰ معامله کم‌نمونه‌اند و رتبه نمی‌گیرند؛ چند معاملهٔ خوش‌شانس هنوز مهارت را ثابت نمی‌کند.</p>
+      <div class="podium" id="podium"></div>
       <div class="tablewrap"><table class="wide" id="pptab"><thead id="pphead"></thead><tbody id="ppbody"></tbody></table></div>
     </section>
     <section><div class="sh"><span class="idx">02</span><h2>معاملات تأییدشده <small id="trnote"></small></h2></div>
@@ -1171,7 +1234,7 @@ function render(d){
     ['پوزیشن باز',fa((d.open||[]).length),d.open_risk!=null?('ریسک $'+d.open_risk.toFixed(2)+' از $'+(d.rules?.max_risk??'—')):'',''],
   ].map(([k,v,sub,c])=>`<div class="tile"><div class="k">${k}</div><div class="v num ${c}">${v}</div><div class="s">${sub}</div></div>`).join('');
   const op=d.open||[];
-  $('open').innerHTML=op.length?op.map(p=>`<div class="card ${p.side==='BUY'?'buy':'sell'}">
+  $('open').innerHTML=op.length?op.map(p=>`<div class="card ${p.side==='BUY'?'buy':'sell'} ring ${p.profit>=0?'rp':'rn'}">
      <div class="top"><span class="ttl">${sideTag(p.side)}<span class="mono">#${p.ticket}</span><span class="mono muted">${esc(setupFa(p.setup))}</span></span>
      <span class="pnl num ${cls(p.profit)}">${money(p.profit)}</span></div>
      ${track(p)}
@@ -1209,7 +1272,8 @@ function render(d){
     ['مهلت جواب',r.expiry_min+' دقیقه'],['گزارش زنده','هر '+r.status_min+' دقیقه']]
     .map(([k,v])=>`<div class="rule">${k}<b>${esc(v)}</b></div>`).join('');
   $('upd').textContent=s.version?('v '+s.version):'';
-  LAST=st; renderPicks(st.picks); renderAudit(d.audit); renderTrades(st.trades);
+  LAST=st; renderPicks(st.picks); renderAudit(d.audit); renderTrades(st.trades); renderEquity(st.trades);
+  if(firstRender)document.querySelectorAll('#tiles .v').forEach(countUp);
   document.querySelectorAll('[data-r]').forEach(el=>{const v=r[el.dataset.r];if(v!=null)el.textContent=(el.dataset.pre||'')+v+(el.dataset.suf||'');});
   firstRender=false;
 }
@@ -1243,6 +1307,11 @@ function renderPeople(list){
   const val=p=>key==='name'?p.name:(p[key]==null?-1e9:p[key]);
   ps.sort((a,b)=>(a.few-b.few)||(key==='name'?String(a.name).localeCompare(String(b.name),'fa')*dir:(val(b)-val(a))*dir));
   let rank=0;
+  const qual=peopleStats(list||[]).filter(q=>!q.few).sort((x,y)=>y.pnl-x.pnl).slice(0,3), ringSvg=q=>{const C=2*Math.PI*21;
+    return `<svg class="wr" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="21" class="trk"/><circle cx="26" cy="26" r="21" class="arc" style="stroke-dasharray:${(C*q.win).toFixed(1)} ${C.toFixed(1)}"/><text x="26" y="30" text-anchor="middle">${Math.round(100*q.win)}٪</text></svg>`};
+  $('podium').innerHTML=qual.map((q,i)=>`<div class="pod r${i+1}" data-who="${esc(q.name)}" role="button" tabindex="0" title="فقط معاملات ${esc(q.name)} را نشان بده">
+    ${ringSvg(q)}<div class="bd"><div class="rk">رتبهٔ ${['۱','۲','۳'][i]}</div><div class="nm">${esc(q.name)}</div>
+    <div class="pv num ${cls(q.pnl)}">${money(q.pnl)}</div><div class="ms">${q.n} معامله · میانگین ${q.avgR!=null?(q.avgR>0?'+':'')+q.avgR.toFixed(2)+'R':'—'}</div></div></div>`).join('');
   $('pphead').innerHTML='<tr>'+PPCOLS.map(([k,t,s])=>s?`<th class="srt${k===key?' on':''}" data-k="${k}">${t}${k===key?(dir>0?' ▼':' ▲'):''}</th>`:`<th>${t}</th>`).join('')+'</tr>';
   $('ppbody').innerHTML=ps.map(p=>{if(!p.few)rank++;
     const medal=p.few?'':(['🥇','🥈','🥉'][rank-1]||rank);
@@ -1253,9 +1322,104 @@ function renderPeople(list){
     ||'<tr><td colspan="9" class="muted">هنوز معامله‌ای نیست</td></tr>';
   $('ppnote').textContent=ps.length?`${ps.length} نفر`:'';
 }
+
+/* ───────── منحنی سود ───────── */
+let EQ={d:30,drawn:null};
+function eqSeries(list,days){
+  const rows=[...(list||[])].filter(x=>x.t_close).sort((a,b)=>a.t_close<b.t_close?-1:1);
+  const cut=days?Date.now()-days*864e5:0;
+  let c=0;
+  return rows.filter(x=>!cut||Date.parse(x.t_close)>=cut).map(x=>({c:(c+=x.profit),p:x.profit,x}));
+}
+function renderEquity(list){
+  const plot=$('eqplot'), svg=$('eqsvg'); if(!plot||!svg)return;
+  const pts=eqSeries(list,EQ.d);
+  if(pts.length<2){svg.innerHTML='';$('eqstats').innerHTML='';$('eqnote').textContent='';
+    plot.querySelector&&0; $('eqtip').hidden=true;
+    svg.setAttribute('viewBox','0 0 600 120');
+    svg.innerHTML='<text x="300" y="60" text-anchor="middle" class="ax" style="font-size:13px;font-family:inherit">برای این بازه هنوز معامله‌ای بسته نشده</text>';
+    EQ.key='';return;}
+  const w=Math.round(Math.max(280,plot.clientWidth||600)), h=(typeof innerWidth==='number'&&innerWidth<560)?210:290, pad=22;
+  const key=EQ.d+'|'+pts.length+'|'+pts[pts.length-1].c.toFixed(2)+'|'+w;
+  if(EQ.key===key)return; EQ.key=key;
+  const animate=EQ.drawn!==EQ.d; EQ.drawn=EQ.d;
+  const S=[{c:0,p:0,x:null},...pts], n=S.length;
+  const vals=S.map(v=>v.c), mx=Math.max(...vals,0), mn=Math.min(...vals,0), span=(mx-mn)||1;
+  const X=i=>i/(n-1)*w, Y=v=>pad+(mx-v)/span*(h-2*pad), zy=Y(0);
+  const d='M'+S.map((v,i)=>X(i).toFixed(1)+' '+Y(v.c).toFixed(1)).join(' L');
+  const area=d+` L${w} ${zy.toFixed(1)} L0 ${zy.toFixed(1)} Z`;
+  const last=S[n-1], ex=X(n-1), ey=Y(last.c);
+  svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  svg.innerHTML=`<defs>
+    <linearGradient id="eqg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5BCB9C" stop-opacity=".34"/><stop offset="1" stop-color="#5BCB9C" stop-opacity="0"/></linearGradient>
+    <linearGradient id="eqg2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#F07D6E" stop-opacity=".34"/><stop offset="1" stop-color="#F07D6E" stop-opacity="0"/></linearGradient>
+    <clipPath id="eqcu"><rect x="0" y="0" width="${w}" height="${zy.toFixed(1)}"/></clipPath><clipPath id="eqcd"><rect x="0" y="${zy.toFixed(1)}" width="${w}" height="${(h-zy).toFixed(1)}"/></clipPath></defs>
+    ${[0.25,0.5,0.75].map(f=>`<line class="eqgrid" x1="0" x2="${w}" y1="${(pad+f*(h-2*pad)).toFixed(1)}" y2="${(pad+f*(h-2*pad)).toFixed(1)}"/>`).join('')}
+    <path class="eqarea" d="${area}" fill="url(#eqg1)" clip-path="url(#eqcu)"/><path class="eqarea" d="${area}" fill="url(#eqg2)" clip-path="url(#eqcd)"/>
+    <line class="eqzero" x1="0" x2="${w}" y1="${zy.toFixed(1)}" y2="${zy.toFixed(1)}"/>
+    <text class="ax" x="4" y="${Math.max(11,zy-5).toFixed(1)}">$0</text>
+    <text class="ax" x="4" y="${(Y(mx)+12).toFixed(1)}">${mx>0&&(zy-Y(mx))>26?'$'+mx.toFixed(0):''}</text>
+    <text class="ax" x="4" y="${(Y(mn)-5).toFixed(1)}">${mn<0&&(Y(mn)-zy)>26?'−$'+Math.abs(mn).toFixed(0):''}</text>
+    <path class="eqline" id="eqline" d="${d}"/>
+    <line class="eqx" id="eqx" y1="0" y2="${h}" x1="0" x2="0" style="display:none"/><circle class="eqhov" id="eqhov" r="5" style="display:none"/>
+    <circle class="eqping" cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="5"/><circle class="eqend" cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="4.5"/>`;
+  const line=$('eqline');
+  if(animate&&line&&line.getTotalLength&&typeof requestAnimationFrame==='function'){
+    const L=line.getTotalLength(); line.style.strokeDasharray=L; line.style.strokeDashoffset=L;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{line.style.transition='stroke-dashoffset 1.7s cubic-bezier(.22,1,.36,1)';line.style.strokeDashoffset=0;}));
+  }
+  // آمار
+  let peak=0,dd=0,run=0,best=null; S.forEach(v=>{peak=Math.max(peak,v.c);dd=Math.max(dd,peak-v.c);if(v.x&&(best===null||v.p>best))best=v.p;});
+  let streak=0,sg=0; for(let i=pts.length-1;i>=0;i--){const g=pts[i].p>0?1:pts[i].p<0?-1:0; if(!g)break; if(!sg)sg=g; if(g!==sg)break; streak++;}
+  const tot=last.c, wins=pts.filter(v=>v.p>0).length;
+  $('eqstats').innerHTML=[
+    ['جمع این بازه',`<b class="num ${cls(tot)}">${money(tot)}</b>`],
+    ['برد',`<b class="num">${Math.round(100*wins/pts.length)}٪</b>`],
+    ['اوج',`<b class="num pos">${money(peak)}</b>`],
+    ['بیشترین افت',`<b class="num ${dd>0?'neg':''}">${dd>0?'−$'+dd.toFixed(2):'$0.00'}</b>`],
+    ['بهترین معامله',`<b class="num pos">${money(best)}</b>`],
+    ['سری فعلی',`<b class="num ${sg>0?'pos':sg<0?'neg':''}">${streak?streak+' '+(sg>0?'برد':'باخت')+' پیاپی':'—'}</b>`],
+  ].map(([k,v])=>`<div><small>${k}</small>${v}</div>`).join('');
+  $('eqnote').textContent=pts.length+' معامله';
+  EQ.S=S;EQ.w=w;EQ.h=h;EQ.X=X;EQ.Y=Y;
+}
+function eqHover(e){
+  const S=EQ.S; if(!S||!$('eqplot').getBoundingClientRect)return;
+  const r=$('eqplot').getBoundingClientRect(); if(!r.width)return;
+  const f=Math.min(1,Math.max(0,((e.clientX-r.left)/r.width)));
+  const i=Math.round(f*(S.length-1)), v=S[i], px=EQ.X(i), py=EQ.Y(v.c);
+  const xl=$('eqx'), hv=$('eqhov'), tip=$('eqtip'); if(!xl||!hv)return;
+  xl.setAttribute('x1',px);xl.setAttribute('x2',px);xl.style.display='';
+  hv.setAttribute('cx',px);hv.setAttribute('cy',py);hv.style.display='';
+  const x=v.x; const sub=x?`<small>#${esc(x.ticket)} · ${x.side==='BUY'?'خرید':'فروش'} · <span class="num ${cls(v.p)}">${money(v.p)}</span></small><small>${esc(x.day_fa)} · ${esc(x.close_hm)} · ${esc(x.opener||'')}</small>`:'<small>شروع بازه</small>';
+  tip.innerHTML=`<b class="num ${cls(v.c)}">${money(v.c)}</b>${sub}`; tip.hidden=false;
+  const pct=Math.min(86,Math.max(14,px/EQ.w*100)); tip.style.left=pct+'%';
+}
+function eqLeave(){const xl=$('eqx'),hv=$('eqhov');if(xl)xl.style.display='none';if(hv)hv.style.display='none';$('eqtip').hidden=true;}
+$('eqplot').onpointermove=eqHover; $('eqplot').onpointerleave=eqLeave;
+$('eqchips').onclick=e=>{const b=e.target&&e.target.closest?e.target.closest('[data-d]'):null;if(!b)return;
+  EQ.d=+b.dataset.d;[...$('eqchips').children].forEach(c=>c.classList.toggle('on',c===b));renderEquity(LAST.trades)};
+let eqT=null; addEventListener('resize',()=>{clearTimeout(eqT);eqT=setTimeout(()=>{EQ.key='';renderEquity(LAST.trades)},180)});
+
+/* اعداد کارت‌های بالا با شمارنده می‌آیند (فقط بار اول) */
+function countUp(el){
+  if(typeof requestAnimationFrame!=='function'||(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion:reduce)').matches))return;
+  const t=el.textContent, m=t.match(/\d[\d,]*(\.\d+)?/); if(!m)return;
+  const end=parseFloat(m[0].replace(/,/g,'')); if(!isFinite(end)||end===0)return;
+  const dec=m[1]?m[1].length-1:0, grp=m[0].includes(','), t0=performance.now(), D=1100;
+  const fmt=v=>grp?v.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}):v.toFixed(dec);
+  const step=now=>{const k=Math.min(1,(now-t0)/D), e=k===1?1:1-Math.pow(2,-10*k); el.textContent=t.replace(m[0],fmt(end*e)); if(k<1)requestAnimationFrame(step);};
+  requestAnimationFrame(step);
+}
+/* نور دنبال‌کنندهٔ ماوس روی کارت‌ها */
+addEventListener('pointermove',e=>{const c=e.target&&e.target.closest?e.target.closest('.card,.glass,.pod'):null;
+  if(c){const r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px');}},{passive:true});
+
 let PP={key:'avgR',dir:1};
 $('pphead').onclick=e=>{const th=e.target&&e.target.closest?e.target.closest('th[data-k]'):null;if(!th)return;
   const k=th.dataset.k;if(PP.key===k)PP.dir=-PP.dir;else{PP.key=k;PP.dir=1;} renderPeople(LAST.trades)};
+$('podium').onclick=e=>{const c=e.target&&e.target.closest?e.target.closest('[data-who]'):null;if(!c)return;
+  TR.who=c.dataset.who;TR.sort='';renderTrades(LAST.trades);$('trbody').scrollIntoView&&$('trbody').scrollIntoView({behavior:'smooth',block:'start'})};
 $('ppbody').onclick=e=>{const tr=e.target&&e.target.closest?e.target.closest('tr[data-who]'):null;if(!tr)return;
   TR.who=tr.dataset.who;TR.sort='';renderTrades(LAST.trades);$('trbody').scrollIntoView&&$('trbody').scrollIntoView({behavior:'smooth',block:'start'})};
 function renderTrades(list){

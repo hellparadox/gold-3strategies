@@ -319,5 +319,49 @@ console.log('OK');
         self.assertIn("OK", res.stdout)
 
 
+    @unittest.skipUnless(shutil.which("node"), "node not installed")
+    def test_equity_curve_and_podium_render(self):
+        page = dash.PAGE.replace("<!--GUIDE-->", dash.GUIDE)
+        js = page.split("<script>", 1)[1].rsplit("</script>", 1)[0]
+        ev_all = []
+        for i in range(12):                                         # Hamid: ۱۲ معامله (واجد رتبه)
+            pr = 5.0 if i % 3 else -6.0
+            ev_all += trade(str(200 + i), 5, "10:00", f"10:{10 + i}", profit=pr, note_open="lot=0.01;by=Hamid",
+                            gone_note="how=manual;by=Hamid;cby=Hamid")
+        rows = dash.build_trades(ev_all)
+        harness = r"""
+const els={};const mk=id=>els[id]||(els[id]={id,innerHTML:'',textContent:'',value:'',hidden:false,style:{},clientWidth:640,children:[],
+  setAttribute(){},addEventListener(){},scrollIntoView(){},querySelector(){return null}});
+global.document={getElementById:mk,querySelectorAll:()=>[],documentElement:{classList:{add(){},toggle(){}}}};
+global.addEventListener=()=>{};global.scrollY=0;global.setTimeout=()=>0;
+global.window={scrollTo(){}};global.location={hash:'',pathname:'/',search:''};global.history={replaceState(){}};
+global.fetch=()=>new Promise(()=>{});global.setInterval=()=>0;
+""" + js + r"""
+const rows=%s; LAST={trades:rows};
+EQ.d=0; renderEquity(rows);
+const svg=els.eqsvg.innerHTML;
+if(!svg.includes('id="eqline"')||!svg.includes('eqarea'))throw new Error('curve missing');
+if(!els.eqstats.innerHTML.includes('بیشترین افت'))throw new Error('stats missing');
+if(!els.eqnote.textContent.includes('12'))throw new Error('note '+els.eqnote.textContent);
+const S=EQ.S; if(S.length!==13||S[0].c!==0)throw new Error('series');
+const tot=rows.reduce((a,x)=>a+x.profit,0); if(Math.abs(S[S.length-1].c-tot)>1e-6)throw new Error('cum != total');
+// کمتر از دو معامله: پیام خالی، بدون خطا
+renderEquity([rows[0]]); if(!els.eqsvg.innerHTML.includes('هنوز معامله'))throw new Error('empty state');
+renderTrades(rows);
+if(!els.podium.innerHTML.includes('Hamid')||!els.podium.innerHTML.includes('pod r1'))throw new Error('podium');
+els.podium.onclick({target:{closest:()=>({dataset:{who:'Hamid'}})}});
+if(TR.who!=='Hamid')throw new Error('podium click');
+console.log('OK');
+""" % json.dumps(rows)
+        res = subprocess.run(["node", "-e", harness], capture_output=True, text=True, timeout=30)
+        self.assertEqual(res.returncode, 0, res.stderr)
+        self.assertIn("OK", res.stdout)
+
+    def test_open_card_ring_and_spotlight_css(self):
+        self.assertIn("ring ${p.profit>=0?'rp':'rn'}", dash.PAGE)
+        self.assertIn("@property --ang", dash.PAGE)
+        self.assertIn('id="eqchips"', dash.PAGE)
+
+
 if __name__ == "__main__":
     unittest.main()
