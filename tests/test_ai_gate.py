@@ -539,8 +539,20 @@ class GateTests(unittest.TestCase):
         self.assertEqual(wait(g2.submit(ctx(), "b", META)).status, "budget")
 
     def test_queue_full(self):
-        g = self.gate(FakeProvider(TAKE, delay=0.3))
-        futures = [g.submit(ctx(), f"q{i}", META) for i in range(MAX_INFLIGHT + 2)]
+        # کارگرها تا وقتی همهٔ درخواست‌ها ثبت نشده‌اند آزاد نمی‌شوند؛ وگرنه روی ماشین کند یکی زودتر
+        # تمام می‌شود، جا باز می‌شود و شمارش «queue_full» تصادفی می‌شود (تست فلیکی).
+        release = threading.Event()
+
+        class Blocking(FakeProvider):
+            def complete(self, system, user, deadline):
+                release.wait(10)
+                return super().complete(system, user, deadline)
+
+        g = self.gate(Blocking(TAKE))
+        try:
+            futures = [g.submit(ctx(), f"q{i}", META) for i in range(MAX_INFLIGHT + 2)]
+        finally:
+            release.set()
         statuses = [wait(f).status for f in futures]
         self.assertEqual(statuses.count("queue_full"), 2)
         self.assertEqual(statuses.count("ok"), MAX_INFLIGHT)
