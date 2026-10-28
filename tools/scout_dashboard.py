@@ -1035,6 +1035,32 @@ footer{margin-top:clamp(56px,8vw,96px);padding-top:18px;border-top:1px solid var
 .wr .arc{fill:none;stroke:var(--gold);stroke-width:5;stroke-linecap:round;transform:rotate(-90deg);transform-origin:center}
 .wr text{fill:var(--ink);font:500 11px var(--f-mono)}
 @media (max-width:760px){.podium{grid-template-columns:1fr}.eqstats{gap:10px 22px}.rng button{padding:5px 11px}}
+
+/* ───────── صحنهٔ طلای مذاب (WebGL)، قیمت فلزی، نوار معاملات، کج‌شدن سه‌بعدی ───────── */
+.hero{isolation:isolate}
+.goldfx{position:absolute;top:-150px;height:calc(100% + 190px);left:50%;width:100vw;transform:translateX(-50%);z-index:-2;pointer-events:none;display:block;
+  opacity:0;transition:opacity 1.6s var(--ease);
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 16%,#000 64%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 16%,#000 64%,transparent 100%)}
+.goldfx.on{opacity:.82}
+.pills,.eyebrow{text-shadow:0 1px 10px rgba(0,0,0,.9)}
+.hero .lede,.hero .quote{text-shadow:0 1px 14px rgba(0,0,0,.85)}
+.mega{background:linear-gradient(100deg,transparent 42%,rgba(255,250,235,.9) 50%,transparent 58%) no-repeat,
+  linear-gradient(180deg,#FFF7E0 0%,#F3D896 34%,#D3A24A 70%,#8C6727 100%);
+  background-size:260% 100%,100% 100%;background-position:180% 0,0 0;-webkit-background-clip:text;background-clip:text;
+  animation:shine 8s var(--ease) 1.6s infinite;filter:drop-shadow(0 6px 30px rgba(216,178,94,.22));padding-inline:.06em}
+@keyframes shine{0%{background-position:180% 0,0 0}28%,100%{background-position:-80% 0,0 0}}
+.price .cur{color:var(--gold-hi)}
+.tape{position:relative;overflow:hidden;border-block:1px solid var(--line);padding:11px 0;margin-bottom:-1px;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.tape-in{display:flex;width:max-content;direction:ltr;animation:tape 70s linear infinite}
+.tape:hover .tape-in{animation-play-state:paused}
+.tape .ti{direction:rtl;display:inline-flex;align-items:center;gap:8px;padding:0 26px;font-size:13px;color:var(--mute);white-space:nowrap;border-inline-start:1px solid var(--line)}
+.tape .ti b{color:var(--ink);font-weight:500}
+.tape .ti .num{font-size:13.5px}
+@keyframes tape{to{transform:translateX(-50%)}}
+.tl{transition:transform .35s var(--ease);will-change:transform}
+.eqcomet{fill:#fff;filter:drop-shadow(0 0 6px #F3D896) drop-shadow(0 0 14px rgba(216,178,94,.8))}
+@media (max-width:760px){.goldfx{top:-120px;height:calc(100% + 160px)}.goldfx.on{opacity:.5}.tape .ti{padding:0 18px;font-size:12.5px}}
 </style>
 </head>
 <body>
@@ -1061,6 +1087,7 @@ footer{margin-top:clamp(56px,8vw,96px);padding-top:18px;border-top:1px solid var
   <div class="pane" id="p-dash" role="tabpanel" aria-labelledby="t-dash">
     <div>
       <div class="hero">
+        <canvas class="goldfx" id="gold" aria-hidden="true"></canvas>
         <div class="hero-copy">
           <div class="ghost" aria-hidden="true">XAU</div>
           <div class="eyebrow rise" style="--d:2">Gold · live bid</div>
@@ -1078,6 +1105,7 @@ footer{margin-top:clamp(56px,8vw,96px);padding-top:18px;border-top:1px solid var
           <div class="bars" id="bars"></div><div class="blab" id="blab"></div>
         </div>
       </div>
+      <div class="tape rise" id="tape" style="--d:7" hidden><div class="tape-in" id="tapein"></div></div>
       <div class="strip rise" id="tiles" style="--d:7"></div>
       <p class="hint" style="margin-top:12px">موجودی و اکوییتی از خود حساب می‌آید. «اکوییتی» یعنی موجودی به‌علاوهٔ سود و زیان پوزیشن‌های باز. سود امروز و ۷ روز فقط معاملات بسته‌شدهٔ اسکات را می‌شمارد، به روز تهران. <span id="asof"></span></p>
     </div>
@@ -1182,15 +1210,78 @@ const SIDE_FA={BUY:'<span class="chip buy">خرید</span>',SELL:'<span class="c
 const sideTag=s=>`<span class="side ${s==='BUY'?'buy':'sell'}">${s==='BUY'?'خرید':'فروش'}</span>`;
 function pill(ok,text){return `<span class="pill"><span class="dot ${ok===true?'ok':ok===false?'bad':'warn'}"></span>${esc(text)}</span>`}
 
+const reduceMotion=()=>typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+/* ورود قیمت: رقم‌ها مثل ترمینال رمزگشایی می‌شوند */
+function decodePrice(el,s){
+  if(typeof requestAnimationFrame!=='function'||reduceMotion()){el.textContent=s;return;}
+  const t0=performance.now(),D=1200;
+  const step=now=>{const k=Math.min(1,(now-t0)/D),n=Math.floor(k*k*(s.length+1));
+    el.textContent=[...s].map((c,i)=>c==='.'?'.':i<n?c:String((Math.random()*10)|0)).join('');
+    if(k<1)requestAnimationFrame(step);else el.textContent=s;};
+  requestAnimationFrame(step);
+}
+/* صحنهٔ طلای مذاب: یک fragment shader تمام‌صفحه، بدون هیچ کتابخانه یا فایل بیرونی */
+let goldPulse=null;
+function goldFx(){
+  const cv=$('gold'); if(!cv||!cv.getContext)return;
+  let gl=null; try{gl=cv.getContext('webgl',{antialias:false,alpha:false,powerPreference:'low-power'})}catch(e){}
+  if(!gl)return;
+  const VS='attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
+  const FS=`precision mediump float;
+uniform vec2 uR;uniform float uT,uP;uniform vec2 uM;uniform vec3 uC;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1,0)),u.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),u.x),u.y);}
+float fb(vec2 p){float v=0.,a=.5;mat2 m=mat2(1.6,1.2,-1.2,1.6);for(int i=0;i<4;i++){v+=a*n(p);p=m*p;a*=.5;}return v;}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uR;float as=uR.x/uR.y;vec2 p=vec2(uv.x*as,uv.y)*1.7;float t=uT*.05;
+  vec2 q=vec2(fb(p+vec2(0.,t)),fb(p+vec2(5.2,1.3)-t));
+  vec2 r=vec2(fb(p+3.2*q+vec2(1.7,9.2)+.7*t),fb(p+3.2*q+vec2(8.3,2.8)-.6*t));
+  float f=fb(p+3.*r);
+  float rg=pow(1.-abs(2.*f-1.),7.);
+  vec3 c=mix(vec3(.016,.014,.011),vec3(.15,.095,.035),smoothstep(.25,.85,f));
+  c+=vec3(1.,.74,.33)*rg*.5*smoothstep(.35,1.,length(r));
+  vec2 m=vec2(uM.x*as,uM.y)*1.7;float d=length(p-m);
+  c+=vec3(1.,.8,.45)*.2*exp(-d*d*1.6)*(.5+rg*1.5);
+  c+=uC*uP*(.10+.55*rg);
+  c*=.45+.55*smoothstep(1.25,.15,length((uv-vec2(.72,.55))*vec2(as*.8,1.)));
+  c+=(h(gl_FragCoord.xy+fract(uT)*61.)-.5)*.02;
+  gl_FragColor=vec4(c,1.);}`;
+  const mk=(type,src)=>{const sh=gl.createShader(type);gl.shaderSource(sh,src);gl.compileShader(sh);return gl.getShaderParameter(sh,gl.COMPILE_STATUS)?sh:null};
+  const vs=mk(gl.VERTEX_SHADER,VS),fs=mk(gl.FRAGMENT_SHADER,FS); if(!vs||!fs)return;
+  const pr=gl.createProgram();gl.attachShader(pr,vs);gl.attachShader(pr,fs);gl.linkProgram(pr);
+  if(!gl.getProgramParameter(pr,gl.LINK_STATUS))return; gl.useProgram(pr);
+  gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const a=gl.getAttribLocation(pr,'a');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);
+  const U=k=>gl.getUniformLocation(pr,k), uR=U('uR'),uT=U('uT'),uP=U('uP'),uM=U('uM'),uC=U('uC');
+  let mx=.75,my=.55,tx=mx,ty=my,pulse=0,col=[.36,.86,.62],T=8,last=0,raf=0,vis=true;
+  const size=()=>{const dpr=Math.min(devicePixelRatio||1,innerWidth<760?1:1.25);
+    cv.width=Math.max(2,Math.round(cv.clientWidth*dpr));cv.height=Math.max(2,Math.round(cv.clientHeight*dpr));
+    gl.viewport(0,0,cv.width,cv.height);gl.uniform2f(uR,cv.width,cv.height)};
+  const draw=()=>{mx+=(tx-mx)*.035;my+=(ty-my)*.035;gl.uniform1f(uT,T);gl.uniform1f(uP,pulse);gl.uniform2f(uM,mx,my);gl.uniform3fv(uC,col);gl.drawArrays(gl.TRIANGLES,0,3)};
+  const loop=now=>{const dt=last?Math.min(.05,(now-last)/1000):0;last=now;T+=dt*(1+pulse*3);pulse*=.975;
+    if(!innerWidth||innerWidth>=1024){}else{tx=.7+.12*Math.sin(T*.25);ty=.55+.1*Math.cos(T*.2);}
+    draw();raf=vis&&!document.hidden?requestAnimationFrame(loop):0;if(!raf)last=0};
+  const start=()=>{if(!raf&&!reduceMotion())raf=requestAnimationFrame(loop)};
+  size();draw();requestAnimationFrame(()=>cv.classList.add('on'));
+  addEventListener('resize',()=>{size();draw()});
+  if(typeof ResizeObserver==='function')new ResizeObserver(()=>{size();draw()}).observe(cv);
+  addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();if(!r.width)return;tx=(e.clientX-r.left)/r.width;ty=1-(e.clientY-r.top)/r.height},{passive:true});
+  if('IntersectionObserver' in window)new IntersectionObserver(([e])=>{vis=e.isIntersecting;if(vis)start()}).observe(cv);
+  document.addEventListener&&document.addEventListener('visibilitychange',()=>{if(!document.hidden)start()});
+  goldPulse=up=>{col=up?[.36,.86,.62]:[.98,.45,.38];pulse=1;start()};
+  start();
+}
 /* signature: rolling digits on the live price */
 let lastPrice=null;
 function setPrice(v){
   const el=$('hp'), s=v.toFixed(2);
   $('tickp').textContent=s;
-  if(lastPrice===null){el.textContent=s;lastPrice=v;return;}
+  if(lastPrice===null){decodePrice(el,s);lastPrice=v;return;}
   if(s===lastPrice.toFixed(2))return;
   const old=lastPrice.toFixed(2).padStart(s.length,' '), dir=v>lastPrice?'up':'dn';
   el.innerHTML=[...s].map((c,i)=>c!==old[i]?`<span class="${dir}">${c}</span>`:`<span>${c}</span>`).join('');
+  if(goldPulse)goldPulse(dir==='up');
   const t=$('tickp');t.classList.remove('flash-up','flash-dn');void t.offsetWidth;t.classList.add(dir==='up'?'flash-up':'flash-dn');
   setTimeout(()=>t.classList.remove('flash-up','flash-dn'),900);
   lastPrice=v;
@@ -1272,7 +1363,7 @@ function render(d){
     ['مهلت جواب',r.expiry_min+' دقیقه'],['گزارش زنده','هر '+r.status_min+' دقیقه']]
     .map(([k,v])=>`<div class="rule">${k}<b>${esc(v)}</b></div>`).join('');
   $('upd').textContent=s.version?('v '+s.version):'';
-  LAST=st; renderPicks(st.picks); renderAudit(d.audit); renderTrades(st.trades); renderEquity(st.trades);
+  LAST=st; renderPicks(st.picks); renderAudit(d.audit); renderTrades(st.trades); renderEquity(st.trades); renderTape(st.trades);
   if(firstRender)document.querySelectorAll('#tiles .v').forEach(countUp);
   document.querySelectorAll('[data-r]').forEach(el=>{const v=r[el.dataset.r];if(v!=null)el.textContent=(el.dataset.pre||'')+v+(el.dataset.suf||'');});
   firstRender=false;
@@ -1362,11 +1453,19 @@ function renderEquity(list){
     <text class="ax" x="4" y="${(Y(mn)-5).toFixed(1)}">${mn<0&&(Y(mn)-zy)>26?'−$'+Math.abs(mn).toFixed(0):''}</text>
     <path class="eqline" id="eqline" d="${d}"/>
     <line class="eqx" id="eqx" y1="0" y2="${h}" x1="0" x2="0" style="display:none"/><circle class="eqhov" id="eqhov" r="5" style="display:none"/>
-    <circle class="eqping" cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="5"/><circle class="eqend" cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="4.5"/>`;
+    <circle class="eqcomet" id="eqcomet" r="3.6" style="display:none"/><circle class="eqping" cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="5"/><circle class="eqend" cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="4.5"/>`;
   const line=$('eqline');
-  if(animate&&line&&line.getTotalLength&&typeof requestAnimationFrame==='function'){
-    const L=line.getTotalLength(); line.style.strokeDasharray=L; line.style.strokeDashoffset=L;
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{line.style.transition='stroke-dashoffset 1.7s cubic-bezier(.22,1,.36,1)';line.style.strokeDashoffset=0;}));
+  if(animate&&line&&line.getTotalLength&&typeof requestAnimationFrame==='function'&&!reduceMotion()){
+    const L=line.getTotalLength(), cm=$('eqcomet'), D=2200;
+    line.style.strokeDasharray=L; line.style.strokeDashoffset=L;
+    let t0=0;
+    const step=now=>{if(!t0)t0=now;const k=Math.min(1,(now-t0)/D), e=1-Math.pow(1-k,3.2);
+      line.style.strokeDashoffset=L*(1-e);
+      if(cm&&line.getPointAtLength){const pt=line.getPointAtLength(L*e);cm.setAttribute('cx',pt.x);cm.setAttribute('cy',pt.y);}
+      if(k<1)requestAnimationFrame(step);else{line.style.strokeDasharray='';line.style.strokeDashoffset='';if(cm)cm.style.display='none';}};
+    const go=()=>{if(cm)cm.style.display='';requestAnimationFrame(step)};
+    if(!EQ.seen&&'IntersectionObserver' in window){const io=new IntersectionObserver(([en])=>{if(en.isIntersecting){io.disconnect();EQ.seen=true;go()}},{threshold:.35});io.observe(plot);}
+    else go();
   }
   // آمار
   let peak=0,dd=0,run=0,best=null; S.forEach(v=>{peak=Math.max(peak,v.c);dd=Math.max(dd,peak-v.c);if(v.x&&(best===null||v.p>best))best=v.p;});
@@ -1414,6 +1513,27 @@ function countUp(el){
 /* نور دنبال‌کنندهٔ ماوس روی کارت‌ها */
 addEventListener('pointermove',e=>{const c=e.target&&e.target.closest?e.target.closest('.card,.glass,.pod'):null;
   if(c){const r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px');}},{passive:true});
+
+/* نوار متحرک معاملات اخیر */
+let tapeKey='';
+function renderTape(list){
+  const rows=(list||[]).slice(0,18), tape=$('tape'); if(!tape)return;
+  if(!rows.length){tape.hidden=true;return;} tape.hidden=false;
+  const key=rows.length+'|'+rows[0].ticket+'|'+rows[0].profit; if(key===tapeKey)return; tapeKey=key;
+  const one=rows.map(x=>`<span class="ti"><span class="dot ${x.profit>0?'ok':x.profit<0?'bad':''}"></span><b>${esc(x.opener||'')}</b>${x.side==='BUY'?'خرید':'فروش'}<b class="num ${cls(x.profit)}">${money(x.profit)}</b><span class="num">${esc(x.close_hm)}</span></span>`).join('');
+  $('tapein').innerHTML=one+one;
+}
+/* کج‌شدن سه‌بعدی کارت‌ها با ماوس (فقط دستگاه‌های دارای ماوس) */
+let tiltEl=null;
+const canTilt=typeof matchMedia==='function'&&matchMedia('(hover:hover) and (pointer:fine)').matches&&!reduceMotion();
+function untilt(){if(tiltEl){tiltEl.style.transform='';tiltEl=null}}
+if(canTilt)addEventListener('pointermove',e=>{
+  const c=e.target&&e.target.closest?e.target.closest('.pod,.picks .tile,#open .card,#pending .card'):null;
+  if(c!==tiltEl)untilt(); if(!c)return; tiltEl=c; c.classList.add('tl');
+  const r=c.getBoundingClientRect(), x=(e.clientX-r.left)/r.width-.5, y=(e.clientY-r.top)/r.height-.5;
+  c.style.transform=`perspective(900px) rotateX(${(-y*7).toFixed(2)}deg) rotateY(${(x*9).toFixed(2)}deg) translateZ(0)`;
+},{passive:true});
+goldFx();
 
 let PP={key:'avgR',dir:1};
 $('pphead').onclick=e=>{const th=e.target&&e.target.closest?e.target.closest('th[data-k]'):null;if(!th)return;

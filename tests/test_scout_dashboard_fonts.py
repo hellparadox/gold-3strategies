@@ -33,5 +33,16 @@ class Layout(unittest.TestCase):
         self.assertNotIn("<!--GUIDE-->", page)
 
 
+    def test_effects_are_self_contained(self):
+        """افکت‌ها (WebGL طلای مذاب، نوار معاملات) هیچ اسکریپت یا فایل بیرونی ندارند؛ در ایران CDN ممکن است باز نشود."""
+        page = dash.PAGE
+        self.assertNotIn("<script src", page)
+        self.assertEqual(re.findall(r'src="https?://', page), [])
+        self.assertIn("getContext('webgl'", page)
+        self.assertIn('id="gold"', page)
+        self.assertIn('id="tapein"', page)
+        self.assertIn("prefers-reduced-motion", page)
+
+
 if __name__ == "__main__":
     unittest.main()
