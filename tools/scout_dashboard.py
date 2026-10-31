@@ -1164,6 +1164,7 @@ footer{margin-top:clamp(56px,8vw,96px);padding-top:18px;border-top:1px solid var
         <select id="trwho" aria-label="نفر"></select>
         <select id="trsort" aria-label="مرتب‌سازی"><option value="">جدیدترین (به تفکیک روز)</option><option value="best">بیشترین سود</option><option value="worst">بیشترین ضرر</option><option value="r">بهترین R</option><option value="person">بر اساس نام نفر</option></select>
         <select id="trside" aria-label="جهت"><option value="">خرید و فروش</option><option value="BUY">فقط خرید</option><option value="SELL">فقط فروش</option></select>
+        <select id="trdir" aria-label="نسبت به سیگنال"><option value="">همهٔ ورودها</option><option value="with">در جهت سیگنال</option><option value="contra">خلاف جهت سیگنال</option><option value="manual">دستی (بدون هشدار)</option></select>
       </div>
       <div class="tablewrap"><table class="wide"><thead><tr><th>تیکت</th><th>باز شد ← بسته شد</th><th>جهت</th><th>ستاپ</th><th>لات</th><th>ورود ← خروج</th><th>سود / ضرر</th><th>چه کسی باز کرد</th><th>چه کسی بست</th><th>توضیح</th></tr></thead><tbody id="trbody"></tbody></table></div>
     </section>
@@ -1552,8 +1553,8 @@ function renderTrades(list){
   $('trday').innerHTML='<option value="">همهٔ روزها</option>'+days.map(d=>{const x=list.find(y=>y.day===d);
     return `<option value="${esc(d)}"${TR.day===d?' selected':''}>${esc(x.day_fa)} · ${esc(d)}</option>`}).join('');
   $('trwho').innerHTML='<option value="">همهٔ نفرات</option>'+names.map(nm=>`<option value="${esc(nm)}"${TR.who===nm?' selected':''}>${esc(nm)} (${list.filter(y=>(y.opener||'نام ثبت نشده')===nm).length})</option>`).join('');
-  $('trres').value=TR.res; $('trside').value=TR.side; $('trsort').value=TR.sort;
-  let rows=list.filter(x=>(!TR.day||x.day===TR.day)&&(!TR.side||x.side===TR.side)&&(!TR.who||(x.opener||'نام ثبت نشده')===TR.who)
+  $('trres').value=TR.res; $('trside').value=TR.side; $('trdir').value=TR.dir; $('trsort').value=TR.sort;
+  let rows=list.filter(x=>(!TR.day||x.day===TR.day)&&(!TR.side||x.side===TR.side)&&(!TR.dir||trDir(x)===TR.dir)&&(!TR.who||(x.opener||'نام ثبت نشده')===TR.who)
     &&(!TR.res||(TR.res==='win'?x.profit>0:x.profit<0)));
   const flat=!!TR.sort;
   if(TR.sort==='best')rows=[...rows].sort((a,b)=>b.profit-a.profit);
@@ -1583,10 +1584,12 @@ function renderTrades(list){
   }
   $('trbody').innerHTML=html||'<tr><td colspan="10" class="muted">'+(list.length?'با این فیلترها معامله‌ای نیست':'هنوز معامله بسته‌شده‌ای نیست')+'</td></tr>';
 }
-let TR={day:'',res:'',side:'',who:'',sort:''};
+let TR={day:'',res:'',side:'',who:'',sort:'',dir:''};
 $('trday').onchange=e=>{TR.day=e.target.value;renderTrades(LAST.trades)};
 $('trres').onchange=e=>{TR.res=e.target.value;renderTrades(LAST.trades)};
 $('trside').onchange=e=>{TR.side=e.target.value;renderTrades(LAST.trades)};
+$('trdir').onchange=e=>{TR.dir=e.target.value;renderTrades(LAST.trades)};
+const trDir=x=>String(x.setup)==='manual'?'manual':(x.contra?'contra':'with');
 $('trwho').onchange=e=>{TR.who=e.target.value;renderTrades(LAST.trades)};
 $('trsort').onchange=e=>{TR.sort=e.target.value;renderTrades(LAST.trades)};
 const AUH='<tr><th>گروه</th><th>نمونه</th><th>اول ‎+1R</th><th>‎+1R / ‎-1R</th><th>۱۵ دقیقه در جهت</th><th>۶۰ دقیقه در جهت</th><th>میانگین R در ۶۰ دقیقه</th><th>حرکت به نفع / به ضرر (R)</th></tr>';

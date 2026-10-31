@@ -69,7 +69,9 @@ import html
 import json
 import os
 import queue
+import io
 import re
+import zipfile
 import subprocess
 import sys
 import threading
@@ -201,6 +203,25 @@ class TG:
             return (d.get("result") or {}).get("message_id")
         except Exception as exc:
             logger.warning("telegram sendPhoto failed: {}", self._clean(exc))
+            return None
+
+    def send_document(self, data: bytes, filename: str, caption: str = "",
+                      reply_to: Optional[int] = None) -> Optional[int]:
+        """فایل (مثلاً دفتر فشرده) در همین گروه؛ تلگرام برای بات تا ۵۰ مگابایت قبول می‌کند."""
+        payload: Dict[str, Any] = {"chat_id": self.chat, "caption": caption, "parse_mode": "HTML"}
+        reply_to = reply_to or getattr(self, "default_reply", None)
+        if reply_to:
+            payload["reply_parameters"] = json.dumps({"message_id": int(reply_to), "allow_sending_without_reply": True})
+        try:
+            r = requests.post(API.format(self.token, "sendDocument"), data=payload,
+                              files={"document": (filename, data, "application/zip")}, timeout=60)
+            d = r.json()
+            if not d.get("ok"):
+                logger.warning("telegram sendDocument failed: {}", d.get("description"))
+                return None
+            return (d.get("result") or {}).get("message_id")
+        except Exception as exc:
+            logger.warning("telegram sendDocument failed: {}", self._clean(exc))
             return None
 
     def delete(self, message_id: int) -> None:
@@ -2547,9 +2568,42 @@ class Scout:
             self.panel("score")
         elif cmd in ("/cmds", "/commands"):
             self.tg.send(ctl.HELP_CMDS)
+        elif cmd == "/export":
+            self.export_journal()
         else:
             return False
         return True
+
+    EXPORT_MAX = 45 * 1024 * 1024
+
+    def export_journal(self) -> None:
+        """/export — دفتر کامل (CSV) فشرده در یک zip، همین‌جا در گروه. فقط خواندن؛ دفتر دست نمی‌خورد.
+        برای بات‌ها نه (فایل بزرگ است و به کار آن‌ها نمی‌آید)."""
+        if getattr(self, "_bot_sender", False):
+            self.tg.send("📦 خروجی دفتر فقط برای آدم‌هاست.")
+            return
+        if not self.journal.exists():
+            self.tg.send("📦 دفتر هنوز ساخته نشده است.")
+            return
+        try:
+            raw = self.journal.read_bytes()             # کپی یک‌جا؛ اگر همزمان سطری اضافه شود، فقط آن سطر نمی‌آید
+            rows = max(0, raw.count(b"\n") - 1)
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+                z.writestr(self.journal.name, raw)
+            data = buf.getvalue()
+        except OSError as exc:
+            self.tg.send(f"📦 خواندن دفتر نشد: {html.escape(str(exc))[:150]}")
+            return
+        if len(data) > self.EXPORT_MAX:
+            self.tg.send(f"📦 فایل فشرده {len(data) / 1e6:.0f} مگابایت است و تلگرام قبول نمی‌کند.")
+            return
+        name = f"scout_journal_{datetime.now():%Y%m%d_%H%M}.zip"
+        cap = (f"📦 <b>دفتر اسکات</b> · {rows:,} سطر · {len(raw) / 1024:.0f}KB "
+               f"(فشرده {len(data) / 1024:.0f}KB)\nبرای بررسی: همین فایل را دانلود کنید و بفرستید.")
+        if self.tg.send_document(data, name, cap) is None:
+            self.tg.send("📦 فرستادن فایل به تلگرام نشد؛ لاگ را ببینید.")
+        self.log(event="export", note=f"rows={rows};bytes={len(raw)}")
 
     def set_text(self, args: list) -> None:
         """/set کلید مقدار — همان اعتبارسنجی دکمه‌های ➕➖: بازه، سازگاری و تأیید برای لات/تغییر بزرگ."""

@@ -363,5 +363,13 @@ console.log('OK');
         self.assertIn('id="eqchips"', dash.PAGE)
 
 
+    def test_direction_filter_markup(self):
+        page = dash.PAGE
+        self.assertIn('id="trdir"', page)
+        for v in ('value="with"', 'value="contra"', 'value="manual"'):
+            self.assertIn(v, page)
+        self.assertIn("trDir(x)===TR.dir", page)
+
+
 if __name__ == "__main__":
     unittest.main()

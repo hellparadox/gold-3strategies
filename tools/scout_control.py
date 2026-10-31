@@ -182,6 +182,7 @@ MENU_COMMANDS: List[Dict[str, str]] = [
     {"command": "exit", "description": "قیمت خروج (/exit تیکت 4120 4095)"},
     {"command": "set", "description": "تنظیمات با متن (/set lot 0.02)"},
     {"command": "cmds", "description": "فهرست دستورهای متنی (برای ربات‌ها)"},
+    {"command": "export", "description": "فایل دفتر معاملات (zip) برای بررسی"},
     {"command": "alert", "description": "هشدار قیمت (مثلاً /alert 4150)"},
     {"command": "alerts", "description": "فهرست و حذف هشدارهای قیمت"},
     {"command": "help", "description": "راهنمای دکمه‌ها"},
