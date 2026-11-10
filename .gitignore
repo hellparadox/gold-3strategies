@@ -59,3 +59,6 @@ config/_sp2l_lab.yaml
 .idea/
 .DS_Store
 Thumbs.db
+
+# --- research output (Kronos test) ---
+_kronos_out/
