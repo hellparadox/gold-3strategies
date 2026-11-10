@@ -20,7 +20,7 @@ jobs:
       - name: Install test dependencies
         run: >-
           python -m pip install pandas numpy ta loguru pyyaml
-          python-telegram-bot python-dotenv requests matplotlib mplfinance
+          python-telegram-bot python-dotenv requests matplotlib mplfinance six
       - name: Compile
         run: python -m compileall -q .
       - name: Regression tests
