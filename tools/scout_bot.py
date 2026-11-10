@@ -312,6 +312,10 @@ class Scout:
         # (حالت «نگه دار/هوش مصنوعی» فقط برای معاملات آدم‌ها) و ضرر روزانه‌شان سقف دارد.
         self.bot_force_sl = bool(s.get("scout.bot_force_sl", True))
         self.bot_daily_loss = float(s.get("scout.bot_daily_loss_usd", 15.0) or 0.0)
+        # حد ضرر معاملهٔ ربات هیچ‌وقت دورتر از این نیست (مستقل از سقف تنظیمات آدم‌ها)
+        self.bot_sl_usd = float(s.get("scout.bot_sl_usd", 10.0) or 0.0)
+        # پیامی که وقتی اسکات خاموش بود فرستاده شده، بعد از روشن شدن اجرا نشود (ثانیه؛ 0 = خاموش)
+        self.max_cmd_age = float(s.get("scout.max_command_age_s", 120) or 0.0)
         self.mode_path = Path(str(s.get("scout.mode_file", "data/scout_mode.json")))
         self.mode = trk.load_mode(self.mode_path, str(s.get("scout.away_default", "close")))
         self.ai_recheck = float(s.get("scout.ai_recheck_minutes", 15)) * 60.0
@@ -1381,6 +1385,11 @@ class Scout:
             self.log(event="invalid", alert=aid, setup=r.setup, side=r.side, price=px, sl=round(p["sl"], 2))
             return
         sl_now = px - dist if r.side == "BUY" else px + dist
+        if self._bot_open():                              # ربات: ریسک هر معامله حداکثر bot_sl_usd
+            bcap = self._cap_dist(getattr(self, "bot_sl_usd", 10.0), p.get("lot") or self.lot)
+            if bcap and dist > bcap:
+                dist = bcap
+                sl_now = px - dist if r.side == "BUY" else px + dist
         moved = (px - ref) if r.side == "BUY" else (ref - px)
         info_line = f"ورود {px:.2f} (نسبت به هشدار {moved:+.2f}) · حد ضرر {sl_now:.2f}"
         self.tg.ack(cb, "در حال ثبت سفارش...")
@@ -2404,9 +2413,35 @@ class Scout:
             self.tg.default_reply = None
             self._bot_sender = False
 
+    # فقط خواندنی؛ اگر کهنه هم باشند ضرری ندارند
+    SAFE_STALE = ("/status", "/price", "/positions", "/help", "/guide", "/cmds", "/commands", "/menu", "/start",
+                  "/alerts", "/score", "/export")
+
+    def _stale_message(self, u: dict) -> bool:
+        """پیامی که وقتی اسکات خاموش بود فرستاده شده (تلگرام نگهش می‌دارد و بعد از روشن شدن یک‌جا می‌دهد):
+        دستورهای معامله/تنظیم اجرا نمی‌شوند؛ True یعنی کنار گذاشته شد."""
+        msg = u.get("message") or {}
+        limit = float(getattr(self, "max_cmd_age", 120) or 0.0)
+        if u.get("callback_query") or not msg.get("date") or limit <= 0:
+            return False
+        age = time.time() - float(msg["date"])
+        text = str(msg.get("text") or "").strip()
+        cmd = text.split()[0].split("@")[0].lower() if text else ""
+        if age <= limit or cmd in self.SAFE_STALE:
+            return False
+        self.log(event="stale_cmd", note=f"age_s={int(age)};cmd={cmd[:20] or 'text'}" + self._by_note())
+        now = time.time()
+        if now - getattr(self, "_stale_note_t", 0.0) > 30:   # برای انبوه پیام‌های عقب‌مانده فقط یک خبر
+            self._stale_note_t = now
+            self.tg.send(f"⏳ دستورهایی که {int(age // 60)} دقیقه پیش فرستاده شده بود (وقتی اسکات در دسترس نبود) "
+                         "اجرا نشد تا با قیمت کهنه معامله‌ای باز نشود. اگر هنوز لازم است، دوباره بفرستید.")
+        return True
+
     def _handle_update(self, u: dict) -> None:
         if not self.is_admin(u):
             logger.warning("scout: ignored telegram update from non-admin")
+            return
+        if self._stale_message(u):
             return
         cq = u.get("callback_query")
         who = (cq or u.get("message") or {}).get("from") or {}

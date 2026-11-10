@@ -130,5 +130,39 @@ class Guard(unittest.TestCase):
         self.sc.client.send_market_order.assert_called_once()
 
 
+    # ── سقف حد ضرر ربات مستقل از تنظیمات آدم‌ها ──
+    def test_bot_stop_never_wider_than_bot_cap(self):
+        self.sc.sl_cap = 20.0                                   # آدم‌ها سقف را ۲۰ دلار کرده‌اند
+        self.bot("/sell")
+        info = self.sc.open[77]
+        self.assertAlmostEqual(info["sl"] - 4099.8, 10.0, places=2)   # ربات: باز هم ۱۰ دلار (فروش با bid)
+        self.assertAlmostEqual(self.sc.client.send_market_order.call_args.kwargs["sl"], info["sl"], places=2)
+
+    def test_human_keeps_own_cap(self):
+        self.sc.sl_cap = 20.0
+        self.human("/sell")
+        self.human(f"/yes {next(iter(self.sc.pending))}")
+        self.assertAlmostEqual(self.sc.open[77]["sl"] - 4099.8, 20.0, places=2)
+
+    # ── دستورهای کهنه (وقتی اسکات خاموش بود فرستاده شده‌اند) ──
+    def send_old(self, text, age, uid=BOT_ID, is_bot=True):
+        import time as _t
+        self.sc.handle_update({"message": {"message_id": 901, "text": text, "date": int(_t.time() - age),
+                                           "from": {"id": uid, "is_bot": is_bot, "first_name": "Alpha"}}})
+
+    def test_stale_trade_commands_are_dropped(self):
+        self.send_old("/sell", age=4 * 3600)
+        self.send_old("/buy", age=4 * 3600 - 5)
+        self.sc.client.send_market_order.assert_not_called()
+        self.assertEqual(sum("اجرا نشد" in m[0] for m in self.sc.tg.sent), 1)    # فقط یک خبر برای انبوه
+        self.assertEqual([e["event"] for e in self.events()].count("stale_cmd"), 2)
+
+    def test_fresh_and_read_only_commands_still_work(self):
+        self.send_old("/sell", age=10)
+        self.sc.client.send_market_order.assert_called_once()
+        self.send_old("/cmds", age=4 * 3600)
+        self.assertNotIn("stale_cmd", [e["event"] for e in self.events()])
+
+
 if __name__ == "__main__":
     unittest.main()
