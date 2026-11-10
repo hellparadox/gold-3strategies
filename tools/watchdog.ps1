@@ -42,9 +42,15 @@ function Write-Log([string]$msg) {
 }
 
 function Test-Task([string]$name) {
-    # اگر Task ویندوزی وجود نداشته باشد، آن ربات را کلاً نادیده می‌گیریم
-    & schtasks.exe /Query /TN $name 2>&1 | Out-Null
-    return ($LASTEXITCODE -eq 0)
+    # اگر Task ویندوزی وجود نداشته باشد، آن ربات را کلاً نادیده می‌گیریم.
+    # (schtasks /Query برای Task نبودن روی stderr می‌نویسد و با ErrorActionPreference=Stop کل اسکریپت را می‌کشت)
+    return [bool](Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue)
+}
+
+function Invoke-Schtasks([string[]]$argv) {
+    # خطای schtasks (مثلاً /End روی Task که در حال اجرا نیست) نباید اسکریپت را متوقف کند؛ فقط در لاگ بیاید
+    $ErrorActionPreference = "Continue"
+    & schtasks.exe @argv 2>&1 | ForEach-Object { "$_" }
 }
 
 function Get-LastActivity($bot) {
@@ -104,7 +110,7 @@ foreach ($bot in $bots) {
     Write-Log "$($bot.Name): STALE ${idle}m (limit ${limit}m) -> restarting task $($bot.Task)"
     if ($WhatIfOnly) { Write-Log "$($bot.Name): WhatIfOnly, nothing done"; continue }
 
-    & schtasks.exe /End /TN $bot.Task  2>&1 | ForEach-Object { Write-Log "  end : $_" }
+    Invoke-Schtasks @('/End', '/TN', $bot.Task) | ForEach-Object { Write-Log "  end : $_" }
     Start-Sleep -Seconds 3
 
     # پروسهٔ پایتونِ باقی‌مانده را هم ببند (schtasks فقط cmd.exe را می‌بندد)
@@ -125,7 +131,7 @@ foreach ($bot in $bots) {
         continue
     }
 
-    & schtasks.exe /Run /TN $bot.Task  2>&1 | ForEach-Object { Write-Log "  run : $_" }
+    Invoke-Schtasks @('/Run', '/TN', $bot.Task) | ForEach-Object { Write-Log "  run : $_" }
     Start-Sleep -Seconds 10
     $now = Get-CimInstance Win32_Process -Filter "Name like '%python%'" -ErrorAction SilentlyContinue |
            Where-Object { $_.CommandLine -and (& $bot.Match $_.CommandLine) }

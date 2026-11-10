@@ -22,5 +22,18 @@ class Ps1Encoding(unittest.TestCase):
                 raw[3:].decode("utf-8")                     # همچنان UTF-8 معتبر
 
 
+class WatchdogRobust(unittest.TestCase):
+    def test_missing_task_does_not_kill_the_script(self):
+        """schtasks روی stderr + ErrorActionPreference=Stop در PowerShell 5.1 = توقف کل اسکریپت (Task حذف‌شده)."""
+        src = (ROOT / "tools" / "watchdog.ps1").read_text(encoding="utf-8-sig")
+        code = "\n".join(l.split("#", 1)[0] for l in src.splitlines())
+        self.assertNotIn("/Query", code)
+        self.assertEqual(code.count("& schtasks.exe"), 1)              # فقط داخل Invoke-Schtasks
+        self.assertIn('$ErrorActionPreference = "Continue"', code)
+        self.assertIn("Invoke-Schtasks @('/End'", code)
+        self.assertIn("Invoke-Schtasks @('/Run'", code)
+        self.assertIn("Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue", code)
+
+
 if __name__ == "__main__":
     unittest.main()
