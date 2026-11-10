@@ -19,7 +19,8 @@
   B) فیلتر هشدارهای اسکات: برای هر هشدار data/scout_signal_audit.csv (همان کارنامه)، Kronos موافق جهت هشدار بود
      یا مخالف؟ درصد «اول ‎+1R» برای موافق‌ها و مخالف‌ها جدا، با بازهٔ اطمینان، آزمون اختلاف و پایداری در دو نیمه.
 
-مراقبت از سرور: پایتونِ run با اولویت «کمتر از عادی» و --threads رشته (پیش‌فرض ۲) اجرا می‌شود؛ نتیجه‌ها
+مراقبت از سرور: پایتونِ run با کمترین اولویت (IDLE) و --threads رشته (پیش‌فرض ۱) اجرا می‌شود و روی سرور
+کمتر از ۴ هسته فقط وقتی بازار طلا بسته است (آخر هفته) شروع می‌کند (--force برای استثنا)؛ نتیجه‌ها
 تکه‌تکه ذخیره می‌شوند، پس با Ctrl+C قطع و بعد با همان دستور ادامه داده می‌شود.
 """
 from __future__ import annotations
@@ -31,6 +32,7 @@ import math
 import os
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
@@ -281,16 +283,33 @@ def make_predictor(kronos_dir: str, model_id: str, tok_id: str, threads: int, sa
 
 
 def lower_priority() -> None:
-    """پایتون تحقیق نباید با ربات‌ها سر پردازنده رقابت کند."""
+    """پایتون تحقیق نباید با ربات‌ها سر پردازنده رقابت کند: کمترین اولویت ممکن (فقط وقت آزاد پردازنده)."""
     try:
         if os.name == "nt":
             import ctypes
             k = ctypes.windll.kernel32                            # type: ignore[attr-defined]
-            k.SetPriorityClass(k.GetCurrentProcess(), 0x00004000)  # BELOW_NORMAL_PRIORITY_CLASS
+            k.SetPriorityClass(k.GetCurrentProcess(), 0x00000040)  # IDLE_PRIORITY_CLASS
         else:
-            os.nice(10)
+            os.nice(19)
     except Exception:
         pass
+
+
+def gold_market_closed(now_utc: Optional[datetime] = None) -> bool:
+    """طلا تقریباً از جمعه ۲۱:۰۰ تا یکشنبه ۲۲:۰۰ UTC بسته است (ربات‌ها بیکارند)."""
+    t = now_utc or datetime.now(timezone.utc)
+    wd, h = t.weekday(), t.hour                                    # دوشنبه=0 … یکشنبه=6
+    return wd == 5 or (wd == 4 and h >= 21) or (wd == 6 and h < 22)
+
+
+def busy_guard(cpus: Optional[int], closed: bool, force: bool) -> Optional[str]:
+    """روی سرور کم‌هسته وقتی بازار باز است اجرا نشود: یک بار روی VPS تک‌هسته‌ای اسکات را از کار انداخت.
+    None یعنی آزاد؛ وگرنه دلیلِ نه."""
+    if force or closed or (cpus or 1) >= 4:
+        return None
+    return (f"این سرور {cpus or 1} هسته دارد و بازار باز است؛ Kronos پردازنده را از ربات‌ها می‌گیرد "
+            "(اسکات یک بار از کار افتاد). آخر هفته که بازار بسته است اجرا کنید، یا روی کامپیوتر دیگری. "
+            "اگر مطمئنید ربات‌ها خاموش‌اند: --force")
 
 
 # ───────────────────────────── گزارش ─────────────────────────────
@@ -347,7 +366,8 @@ def main(argv: Optional[List[str]] = None) -> None:
     r.add_argument("--samples", type=int, default=5)
     r.add_argument("--points", type=int, default=600, help="تعداد نقاط آزمون جهت خام")
     r.add_argument("--since", default="2026-01-01", help="فقط داده‌ای که مدل در آموزش ندیده")
-    r.add_argument("--threads", type=int, default=2)
+    r.add_argument("--threads", type=int, default=1)
+    r.add_argument("--force", action="store_true", help="اجرا روی سرور کم‌هسته حتی وقتی بازار باز است")
     r.add_argument("--batch", type=int, default=8)
     r.add_argument("--point", type=float, default=0.01, help="ارزش یک پوینت اسپرد به دلار در 0.01 لات")
     r.add_argument("--seed", type=int, default=7)
@@ -363,6 +383,9 @@ def main(argv: Optional[List[str]] = None) -> None:
         print(f"saved {a.out}")
         return
 
+    why = busy_guard(os.cpu_count(), gold_market_closed(), a.force)
+    if why:
+        raise SystemExit("⛔ " + why)
     lower_priority()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)

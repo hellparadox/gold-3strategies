@@ -125,6 +125,7 @@ class EndToEnd(unittest.TestCase):
             args = ["run", "--kronos-dir", str(d), "--bars-csv", str(d / "bars.csv"), "--audit-csv",
                     str(d / "audit.csv"), "--points", "40", "--since", "2026-01-01", "--out", str(d / "out")]
             with mock.patch.object(rk, "make_predictor", return_value=fake_predict), \
+                    mock.patch.object(rk, "busy_guard", return_value=None), \
                     mock.patch.object(rk, "lower_priority"), mock.patch("builtins.print"):
                 rk.main(args)
                 first = sum(calls)
@@ -174,6 +175,33 @@ class Export(unittest.TestCase):
         self.assertTrue(FakeMT5.shut)
         self.assertEqual(list(d.columns), ["time"] + rk.COLS + ["spread"])
         self.assertEqual(len(d), 3)
+
+
+class Guard(unittest.TestCase):
+    def test_market_hours(self):
+        from datetime import datetime, timezone
+        u = lambda *a: datetime(*a, tzinfo=timezone.utc)  # noqa: E731
+        self.assertFalse(rk.gold_market_closed(u(2026, 11, 10, 12)))     # سه‌شنبه
+        self.assertFalse(rk.gold_market_closed(u(2026, 11, 13, 20)))     # جمعه ۲۰
+        self.assertTrue(rk.gold_market_closed(u(2026, 11, 13, 21)))      # جمعه ۲۱
+        self.assertTrue(rk.gold_market_closed(u(2026, 11, 14, 12)))      # شنبه
+        self.assertTrue(rk.gold_market_closed(u(2026, 11, 15, 21)))      # یکشنبه ۲۱
+        self.assertFalse(rk.gold_market_closed(u(2026, 11, 15, 22)))     # یکشنبه ۲۲
+
+    def test_busy_guard(self):
+        self.assertIsNotNone(rk.busy_guard(1, closed=False, force=False))   # همان VPS: نه
+        self.assertIsNone(rk.busy_guard(1, closed=True, force=False))       # آخر هفته: بله
+        self.assertIsNone(rk.busy_guard(1, closed=False, force=True))
+        self.assertIsNone(rk.busy_guard(8, closed=False, force=False))      # کامپیوتر قوی
+
+    def test_run_refuses_on_busy_single_core(self):
+        with mock.patch.object(rk.os, "cpu_count", return_value=1), \
+                mock.patch.object(rk, "gold_market_closed", return_value=False), \
+                mock.patch.object(rk, "make_predictor") as mp:
+            with self.assertRaises(SystemExit) as cm:
+                rk.main(["run", "--kronos-dir", "x"])
+        self.assertIn("هسته", str(cm.exception))
+        mp.assert_not_called()
 
 
 if __name__ == "__main__":
