@@ -308,6 +308,10 @@ class Scout:
         self.emerg_cap = ecap / usd_per_point if ecap > 0 else None
         self.sl_cap_usd, self.emerg_cap_usd = cap, ecap
         self.approach_frac = float(s.get("scout.approach_frac", 0.7))
+        # ربات‌های ادمین (مثل Muse/آلفا): کسی شب بالای سرشان نیست، پس حد ضرر سیگنال همیشه اجرا می‌شود
+        # (حالت «نگه دار/هوش مصنوعی» فقط برای معاملات آدم‌ها) و ضرر روزانه‌شان سقف دارد.
+        self.bot_force_sl = bool(s.get("scout.bot_force_sl", True))
+        self.bot_daily_loss = float(s.get("scout.bot_daily_loss_usd", 15.0) or 0.0)
         self.mode_path = Path(str(s.get("scout.mode_file", "data/scout_mode.json")))
         self.mode = trk.load_mode(self.mode_path, str(s.get("scout.away_default", "close")))
         self.ai_recheck = float(s.get("scout.ai_recheck_minutes", 15)) * 60.0
@@ -423,6 +427,36 @@ class Scout:
     def _by_note(self) -> str:
         w = self._who_plain()
         return f";by={w}" if w else ""
+
+    def _bot_open(self) -> bool:
+        """معامله‌ای که الان باز می‌شود از طرف یک ربات ادمین است و حد ضرر سیگنالش باید حتماً اجرا شود."""
+        return bool(getattr(self, "_bot_sender", False)) and bool(getattr(self, "bot_force_sl", True))
+
+    def bot_loss_today(self, name: str) -> float:
+        """سود/زیان بسته‌شدهٔ امروز (روز تهران) معاملاتی که این نام باز کرده است."""
+        today = datetime.now(dash.TEHRAN).date()
+        total = 0.0
+        for e in dash.read_journal(self.journal):
+            if e.get("event") != "gone" or dash._kv(e.get("note")).get("by", "").strip() != name:
+                continue
+            t = dash._tehran(e.get("ts", ""))
+            v = dash._f(e.get("profit"))
+            if t is not None and t.date() == today and v == v:
+                total += v
+        return total
+
+    def _bot_loss_block(self) -> Optional[str]:
+        """اگر ربات فرستنده به سقف ضرر امروزش رسیده، دلیلِ رد؛ وگرنه None. آدم‌ها هیچ‌وقت محدود نمی‌شوند."""
+        limit = float(getattr(self, "bot_daily_loss", 15.0) or 0.0)
+        if not getattr(self, "_bot_sender", False) or limit <= 0:
+            return None
+        name = self._who_plain()
+        loss = self.bot_loss_today(name) if name else 0.0
+        if loss <= -limit:
+            return (f"⛔ {html.escape(name)} امروز ${loss:+.2f} ضرر کرده و به سقف روزانهٔ ربات "
+                    f"(${limit:.0f}) رسیده است؛ تا فردا (به وقت تهران) معاملهٔ تازه باز نمی‌کند. "
+                    "آدم‌ها همچنان می‌توانند هشدار را تأیید کنند.")
+        return None
 
     # ----------------------------------------------------------------- alerts
     @staticmethod
@@ -1029,6 +1063,11 @@ class Scout:
         if not self.market_open():
             self.tg.send("⛔ بازار بسته است؛ سفارش دستی ساخته نشد.")
             return
+        block = self._bot_loss_block()
+        if block:
+            self.tg.send(block)
+            self.log(event="blocked_bot_loss", setup="manual", side=side, note=self._by_note().lstrip(";"))
+            return
         if not self.sl_cap:
             self.tg.send("⛔ سقف حد ضرر در تنظیمات صفر/خالی است؛ بدون آن سفارش دستی نمی‌سازم. "
                          "از 🛠 تنظیمات «حد ضرر» را تعیین کنید.")
@@ -1274,6 +1313,15 @@ class Scout:
     def decide(self, aid: str, yes: bool, cb: str, override: bool = False,
                hedge: Optional[str] = None) -> None:
         """hedge: None | "reverse" (پوزیشن خلاف جهت را ببند و این را باز کن) | "both" (هر دو بمانند)."""
+        if yes and aid in self.pending:
+            block = self._bot_loss_block()
+            if block:                                     # هشدار برای آدم‌ها باز می‌ماند
+                self.tg.ack(cb, "سقف ضرر روزانهٔ ربات")
+                self.tg.send(block)
+                q = self.pending[aid]
+                self.log(event="blocked_bot_loss", alert=aid, setup=q["row"].setup, side=q["row"].side,
+                         note=self._by_note().lstrip(";"))
+                return
         p = self.pending.pop(aid, None)
         if p is None:
             self.tg.ack(cb, "این هشدار دیگر معتبر نیست")
@@ -1343,7 +1391,8 @@ class Scout:
             return
         lot = float(p.get("lot") or self.lot)             # همان لاتی که هشدار با آن نشان داده شد
         emerg = trk.emergency_sl(r.side, px, sl_now, self.emerg_mult, self._emerg_dist(lot))
-        draft = {"sl": round(sl_now, 2), "emerg": emerg, "hold": False}
+        bot = self._bot_open()
+        draft = {"sl": round(sl_now, 2), "emerg": emerg, "hold": False, "bot": bot}
         broker_sl = (round(trk.desired_broker_sl(draft, self.mode), 2)
                      if self.soft_stop else round(sl_now, 2))
         res = self.client.send_market_order(r.side, lot, sl=broker_sl,
@@ -1368,7 +1417,7 @@ class Scout:
                          "emerg": emerg if self.soft_stop else None,
                          "status_mid": None, "below": False, "hold": False, "warned": False,
                          "approach": False, "ai_next": 0.0, "ai_note": "", "by": self._who or None,
-                         "contra": bool(p.get("contra")),
+                         "contra": bool(p.get("contra")), "bot": bot,
                          "lot": self._filled_lot(res, lot)}
         self._save_state()
         self.tg.edit(p["mid"], p["txt"] + (f"\n\n🔄 <b>خلاف سیگنال: {r.side} باز شد</b>" if p.get("contra")
@@ -1376,6 +1425,9 @@ class Scout:
         soft_note = (f"\nحد ضرر {sl_now:.2f} · اگر برسد: <b>{trk.POLICY_FA[self.mode]}</b>"
                      f" (حالت /mode). با «نگه دار» حد ضرر به سطح اضطراری {emerg:.2f} می‌رود."
                      if self.soft_stop else "")
+        if bot and self.soft_stop:
+            soft_note = (f"\n🤖 معاملهٔ ربات: حد ضرر {sl_now:.2f} همیشه اجرا می‌شود (روی بروکر هم همین ثبت شد)؛ "
+                         "حالت «نگه دار» فقط برای معاملات آدم‌هاست.")
         more = ("هشدارهای جدید همچنان می‌آیند." if self.alert_while_open
                 else "تا بسته نشود هشدار جدیدی نمی‌آید.")
         self.tg.send(f"پوزیشن #{tk} باز است. {more}{soft_note}\n"
@@ -1386,7 +1438,8 @@ class Scout:
                  note=((f"broker_sl={broker_sl};emergency_sl={emerg};mode={self.mode}"
                         + (";over_cap=owner" if override else "")
                         + (f";hedge={hedge}" if hedge else "")
-                        + (";contra=1" if p.get("contra") else "") + f";lot={lot}") if self.soft_stop else
+                        + (";contra=1" if p.get("contra") else "") + (";bot=1" if bot else "")
+                        + f";lot={lot}") if self.soft_stop else
                        ((";contra=1" if p.get("contra") else "") + f";lot={lot}")) + self._by_note()
                  + self._open_extra(p, moved))
         if not self.alert_while_open:
@@ -1924,6 +1977,10 @@ class Scout:
         if info is None:
             if cb:
                 self.tg.ack(cb, "این پوزیشن دیگر باز نیست")
+            return
+        if on and info.get("bot") and getattr(self, "_bot_sender", False):
+            self.tg.send(f"⛔ #{tk} معاملهٔ ربات است؛ «نگه دار» را فقط آدم‌ها می‌توانند بزنند "
+                         "(حد ضرر سیگنال برای ربات همیشه اجرا می‌شود).")
             return
         info["hold"] = bool(on)
         info["status_t"] = 0.0                            # پیام وضعیت همین الان به‌روز شود

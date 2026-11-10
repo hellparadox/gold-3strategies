@@ -22,7 +22,7 @@ STATE_KEYS = ("setup", "side", "entry", "sl", "emerg", "risk", "r1", "warned", "
               "alert", "status_mid", "below", "hold", "adopted", "approach", "ai_next", "ai_note",
               # قیمت خروج پوزیشن نگه‌داشته (TP/SL روی بروکر)، پیام سؤالش، و برای کارت پایان معامله
               "xtp", "xsl", "xprompt", "tp_owned", "by", "why", "locked", "contra",
-              "xdirty", "lot", "cby")                         # قیمت خروج عوض شده و هنوز روی بروکر نرفته (soft_stop خاموش)
+              "xdirty", "lot", "cby", "bot")                         # قیمت خروج عوض شده و هنوز روی بروکر نرفته (soft_stop خاموش)
 POLICIES = ("close", "hold", "ai")
 POLICY_FA = {"close": "در حد ضرر بسته شود", "hold": "نگه داشته شود", "ai": "هوش مصنوعی تصمیم بگیرد"}
 
@@ -47,8 +47,13 @@ def capped_sl(side: str, entry: float, soft_sl: float, cap_dist: Optional[float]
 
 
 def effective_policy(info: Dict[str, Any], mode: str) -> str:
-    """Per-position «hold» always wins; otherwise the global away mode."""
-    return "hold" if info.get("hold") else (mode if mode in POLICIES else "close")
+    """Per-position «hold» always wins (only a human can set it on a bot trade); a trade opened by an admin
+    bot always closes at the signal stop; otherwise the global away mode."""
+    if info.get("hold"):
+        return "hold"
+    if info.get("bot"):
+        return "close"
+    return mode if mode in POLICIES else "close"
 
 
 def desired_broker_sl(info: Dict[str, Any], mode: str) -> float:
