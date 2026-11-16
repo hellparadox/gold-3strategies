@@ -3177,7 +3177,8 @@ class Scout:
         except Exception:
             self.version = ""
         self.dashboard = dash.ScoutDashboard(lambda: self._dash_snap, self.dash_stats, self.dash_token,
-                                             self.dash_host, self.dash_port)
+                                             self.dash_host, self.dash_port,
+                                             market=lambda: getattr(self, "_market", None))
         if not self.dashboard.start():
             self.dashboard = None
 
@@ -3324,6 +3325,53 @@ class Scout:
         what = (f"حد ضرر نزدیک ({float(stop_dist):.2f})" if key == "tight" else sig_audit.LABEL_FA[key])
         days = getattr(self, "audit_days", 14)
         return f"{icon} <b>{word}</b> — {what} ({int(round(f * 100))}٪ اول ‎+1R در {days} روز، {st['n']} سیگنال)"
+
+    # قیمت و کندل‌های بروکر برای ربات‌ها (/api/price و /api/candles): هر چند ثانیه یک بار تازه می‌شود
+    MARKET_EVERY = {"M1": 10.0, "M5": 30.0, "H1": 60.0}
+    MARKET_BARS = 500
+
+    def market_tick(self, now: Optional[float] = None) -> None:
+        """فقط وقتی کسی در ۵ دقیقهٔ اخیر قیمت/کندل خواسته: تیک هر ۲ ثانیه، M1 هر ۱۰، M5 هر ۳۰، H1 هر ۶۰ ثانیه."""
+        d = getattr(self, "dashboard", None)
+        if d is None:
+            return
+        now = time.time() if now is None else now
+        if now - float(getattr(d, "market_wanted_t", 0.0) or 0.0) > 300:
+            return
+        snap = dict(getattr(self, "_market", None) or {})
+        stamps = self.__dict__.setdefault("_market_t", {})
+        try:
+            if now - stamps.get("tick", 0.0) >= 2.0:
+                stamps["tick"] = now
+                tick = self.client.get_tick()
+                if tick is not None and getattr(tick, "bid", 0) and getattr(tick, "ask", 0):
+                    bt = float(getattr(tick, "time", 0) or 0)
+                    snap["price"] = {"bid": float(tick.bid), "ask": float(tick.ask),
+                                     "spread": round(float(tick.ask) - float(tick.bid), 2),
+                                     "time": (datetime.fromtimestamp(int(bt), timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+                                              if bt else None)}
+                    if bt:                                 # ساعت سرور بروکر نسبت به UTC (گرد به ۳۰ دقیقه)
+                        snap["server_offset_min"] = int(round((bt - now) / 1800.0)) * 30
+            candles = dict(snap.get("candles") or {})
+            for tf, every in self.MARKET_EVERY.items():
+                if now - stamps.get(tf, 0.0) < every:
+                    continue
+                stamps[tf] = now
+                df = self.client.get_rates(tf, self.MARKET_BARS)
+                if df is not None and len(df):
+                    vol = df["volume"] if "volume" in df.columns else pd.Series(0.0, index=df.index)
+                    candles[tf] = [[t.strftime("%Y-%m-%d %H:%M"), round(float(o), 2), round(float(h), 2),
+                                    round(float(lo), 2), round(float(c), 2), int(v)]
+                                   for t, o, h, lo, c, v in zip(df.index, df["open"], df["high"], df["low"],
+                                                                df["close"], vol)]
+            utc = datetime.fromtimestamp(now, timezone.utc)
+            snap.update(symbol=getattr(self.client, "symbol", None), candles=candles,
+                        market_open=ctl.market_open_utc(utc), updated_utc=utc.strftime("%Y-%m-%dT%H:%M:%SZ"))
+            self._market = snap
+        except Exception as exc:                          # خواندن قیمت برای ربات‌ها نباید اسکات را بخواباند
+            if now - stamps.get("warn", 0.0) > 600:
+                stamps["warn"] = now
+                logger.warning("scout market feed failed: {}", exc)
 
     def dash_tick(self, now: Optional[float] = None) -> None:
         if self.dashboard is None:
@@ -3487,6 +3535,7 @@ class Scout:
                 self.reconcile()
                 self.poll_analyses()
                 self.dash_tick()
+                self.market_tick()
                 self.stats_tick()
                 self.audit_tick()
                 self.whatif_tick()

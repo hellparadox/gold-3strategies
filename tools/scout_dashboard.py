@@ -2,6 +2,11 @@
 
 http://SERVER_IP:8082/?token=...   (پورت در scout.dashboard.port)
 
+برای ربات‌های ادمین (فقط خواندنی، همان توکن؛ قیمت و کندل‌های خود بروکر از MT5):
+  /api/price?token=...                       → {symbol, price:{bid,ask,spread,time}, market_open, updated_utc, server_offset_min}
+  /api/candles?token=...&tf=H1,M5,M1&n=100   → {candles:{H1:[[time,open,high,low,close,volume],...]}, forming_last:true}
+  زمان کندل‌ها = ساعت سرور بروکر (UTC + server_offset_min دقیقه). اولین درخواست چند ثانیه 503 warming_up می‌دهد.
+
 - بدون وابستگی تازه: ThreadingHTTPServer روی یک نخ daemon.
 - توکن از env (DASHBOARD_TOKEN_SCOUT یا DASHBOARD_TOKEN) یا از scout.dashboard.token. بدون توکن داشبورد اصلاً روشن نمی‌شود (هیچ‌وقت عمومی نیست).
 - نخ وب هیچ‌وقت MT5 را صدا نمی‌زند: فقط عکس‌لحظه‌ای را می‌خواند که حلقهٔ اصلی می‌سازد، به‌علاوهٔ
@@ -20,7 +25,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
 from loguru import logger
@@ -446,8 +451,13 @@ def build_stats(events: List[Dict[str, str]], now: Optional[datetime] = None,
 
 class ScoutDashboard:
     def __init__(self, snapshot: Callable[[], Dict[str, Any]], stats: Callable[[], Dict[str, Any]],
-                 token: str, host: str = "0.0.0.0", port: int = 8082) -> None:
+                 token: str, host: str = "0.0.0.0", port: int = 8082,
+                 market: Optional[Callable[[], Optional[Dict[str, Any]]]] = None) -> None:
         self._snapshot, self._stats = snapshot, stats
+        # /api/price و /api/candles: قیمت و کندل‌های خود بروکر برای ربات‌ها (فقط خواندنی).
+        # حلقهٔ اصلی فقط وقتی کسی در ۵ دقیقهٔ اخیر خواسته از MT5 می‌خواند؛ نخ وب هیچ‌وقت MT5 را صدا نمی‌زند.
+        self._market = market
+        self.market_wanted_t = 0.0
         self._token = str(token or "").strip()
         self._host, self._port = host, int(port)
         self._httpd: Optional[ThreadingHTTPServer] = None
@@ -508,6 +518,39 @@ class ScoutDashboard:
         snap["stats"] = st
         return snap
 
+    MARKET_TFS = ("M1", "M5", "H1")
+    MARKET_MAX_BARS = 500
+
+    def price(self) -> Tuple[int, Dict[str, Any]]:
+        self.market_wanted_t = time.time()
+        m = self._market() if self._market else None
+        if not m or not m.get("price"):
+            return 503, {"error": "warming_up", "retry_after_s": 3}
+        return 200, {k: m.get(k) for k in ("symbol", "price", "market_open", "updated_utc", "server_offset_min")}
+
+    def candles(self, query: str) -> Tuple[int, Dict[str, Any]]:
+        """?tf=H1,M5,M1 (پیش‌فرض همه) &n=100 (۱ تا ۵۰۰). هر کندل: [زمان سرور بروکر, open, high, low, close, حجم تیکی].
+        کندل آخر هنوز بسته نشده است (forming_last)."""
+        self.market_wanted_t = time.time()
+        q = parse_qs(query)
+        want = [t.strip().upper() for t in (q.get("tf") or [",".join(self.MARKET_TFS)])[0].split(",") if t.strip()]
+        bad = [t for t in want if t not in self.MARKET_TFS]
+        if bad:
+            return 400, {"error": f"tf must be among {','.join(self.MARKET_TFS)}"}
+        try:
+            n = int((q.get("n") or ["100"])[0])
+        except ValueError:
+            return 400, {"error": "n must be an integer"}
+        n = max(1, min(self.MARKET_MAX_BARS, n))
+        m = self._market() if self._market else None
+        have = (m or {}).get("candles") or {}
+        if not m or any(t not in have for t in want):
+            return 503, {"error": "warming_up", "retry_after_s": 3}
+        return 200, {"symbol": m.get("symbol"), "updated_utc": m.get("updated_utc"),
+                     "server_offset_min": m.get("server_offset_min"), "forming_last": True,
+                     "columns": ["time", "open", "high", "low", "close", "volume"],
+                     "candles": {t: have[t][-n:] for t in want}}
+
     def authorized(self, query: str) -> bool:
         supplied = (parse_qs(query).get("token") or [""])[0]
         return bool(self._token) and hmac.compare_digest(supplied.encode(), self._token.encode())
@@ -534,7 +577,11 @@ class _Handler(BaseHTTPRequestHandler):
         if not self.dash.authorized(u.query):
             self._send(403, "text/plain; charset=utf-8", "دسترسی ندارید (token)".encode("utf-8"))
             return
-        if u.path.startswith("/api/data"):
+        if u.path.startswith("/api/price") or u.path.startswith("/api/candles"):
+            code, obj = (self.dash.price() if u.path.startswith("/api/price") else self.dash.candles(u.query))
+            self._send(code, "application/json; charset=utf-8",
+                       json.dumps(obj, ensure_ascii=False, default=str, separators=(",", ":")).encode("utf-8"))
+        elif u.path.startswith("/api/data"):
             body = json.dumps(self.dash.data(), ensure_ascii=False, default=str).encode("utf-8")
             self._send(200, "application/json; charset=utf-8", body)
         elif u.path in ("/", "/index.html"):
