@@ -164,5 +164,32 @@ class Guard(unittest.TestCase):
         self.assertNotIn("stale_cmd", [e["event"] for e in self.events()])
 
 
+    # ── سقف ضرر روزانه از تلگرام (/set bot_loss) ──
+    def test_bot_loss_set_from_telegram_and_kept(self):
+        from tests.test_scout_settings import setup_settings
+        from tools import scout_settings as sset
+        setup_settings(self.sc, Path(self._d.name))
+        self.sc.admins = {HUMAN_ID, BOT_ID}
+        self.assertEqual(self.sc.current_settings()["bot_loss"], 15.0)
+        self.human("/set bot_loss 50")                           # بیش از دو برابر ← اول تأیید
+        self.assertEqual(getattr(self.sc, "bot_daily_loss", 15.0), 15.0)
+        self.human("/setok")
+        self.assertEqual(self.sc.bot_daily_loss, 50.0)
+        saved, warn = sset.load(self.sc.settings_path, self.sc._settings_defaults)
+        self.assertIsNone(warn)
+        self.assertEqual(saved.get("bot_loss"), 50.0)            # بعد از ری‌استارت هم می‌ماند
+        self.loss_today(-30.0)                                   # زیر سقف تازه ← ربات هنوز معامله می‌کند
+        self.bot("/buy")
+        self.sc.client.send_market_order.assert_called_once()
+
+    def test_bot_loss_out_of_range_rejected(self):
+        from tests.test_scout_settings import setup_settings
+        setup_settings(self.sc, Path(self._d.name))
+        self.sc.admins = {HUMAN_ID, BOT_ID}
+        self.human("/set bot_loss 500")
+        self.assertEqual(getattr(self.sc, "bot_daily_loss", 15.0), 15.0)
+        self.assertIn("بین", self.sc.tg.sent[-1][0])
+
+
 if __name__ == "__main__":
     unittest.main()

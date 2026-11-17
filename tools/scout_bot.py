@@ -2792,7 +2792,8 @@ class Scout:
     def current_settings(self) -> Dict[str, Any]:
         return {"lot": round(float(self.lot), 2), "sl_cap": self._cap_usd("sl"), "emerg_cap": self._cap_usd("emerg"),
                 "max_open": int(self.max_open), "max_risk": float(self.max_total_risk),
-                "expiry_min": int(self.expiry // 60)}
+                "expiry_min": int(self.expiry // 60),
+                "bot_loss": float(getattr(self, "bot_daily_loss", 15.0) or 15.0)}
 
     def _set_values(self, values: Dict[str, Any]) -> None:
         """مقدارها را روی خود ربات بگذار؛ سقف‌های قیمتی از روی دلار و لات جدید دوباره حساب می‌شود."""
@@ -2808,6 +2809,8 @@ class Scout:
             self.max_total_risk = float(values["max_risk"])
         if "expiry_min" in values:
             self.expiry = int(values["expiry_min"]) * 60
+        if "bot_loss" in values:
+            self.bot_daily_loss = float(values["bot_loss"])
         self.sl_cap = self._cap_dist(self._cap_usd("sl"), self.lot)
         self.emerg_cap = self._cap_dist(self._cap_usd("emerg"), self.lot)
 

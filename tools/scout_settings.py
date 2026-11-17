@@ -20,6 +20,8 @@ SPECS: Dict[str, Dict[str, Any]] = {
     "max_open":   {"short": "پوزیشن", "fa": "پوزیشن هم‌زمان", "step": 1.0, "lo": 1.0, "hi": 5.0, "nd": 0, "unit": ""},
     "max_risk":   {"short": "ریسک کل", "fa": "سقف ریسک کل", "step": 5.0, "lo": 5.0, "hi": 100.0, "nd": 0, "unit": "$"},
     "expiry_min": {"short": "مهلت", "fa": "مهلت جواب هشدار", "step": 5.0, "lo": 5.0, "hi": 120.0, "nd": 0, "unit": " دقیقه"},
+    # فقط برای ربات‌های ادمین (Alpha، Groktraid): بعد از این ضرر در روز تهران تا فردا معاملهٔ تازه باز نمی‌کنند
+    "bot_loss":   {"short": "ضرر ربات", "fa": "سقف ضرر روزانهٔ هر ربات", "step": 5.0, "lo": 5.0, "hi": 200.0, "nd": 0, "unit": "$"},
 }
 INT_KEYS = {"max_open", "expiry_min"}
 
