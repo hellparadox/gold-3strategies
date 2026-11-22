@@ -804,7 +804,7 @@ a{color:var(--gold)}
 .pill b{color:var(--ink);font-weight:500}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
 .dot.ok{background:var(--good);box-shadow:0 0 0 3px var(--good-soft)} .dot.bad{background:var(--bad);box-shadow:0 0 0 3px var(--bad-soft)} .dot.warn{background:var(--warn);box-shadow:0 0 0 3px var(--warn-soft)}
-.live .dot.ok{animation:beat 2.4s ease-in-out infinite}
+.live .dot.ok{animation:beat 2.4s ease-in-out 3}
 @keyframes beat{50%{box-shadow:0 0 0 6px rgba(91,203,156,0)}}
 .err{background:var(--bad-soft);color:var(--bad);border:1px solid rgba(240,125,110,.25);border-radius:14px;padding:10px 16px;margin-top:14px}
 
@@ -1037,7 +1037,8 @@ footer{margin-top:clamp(56px,8vw,96px);padding-top:18px;border-top:1px solid var
 .card:hover::after,.glass:hover::after,.pod:hover::after{opacity:1}
 .card.ring{border:1px solid transparent;
   background:linear-gradient(var(--card-solid),var(--card-solid)) padding-box,conic-gradient(from var(--ang),transparent 0 58%,var(--rc,var(--gold)) 84%,transparent 100%) border-box;
-  animation:eqspin 6s linear infinite}
+  --ang:200deg}
+.card.ring:hover{animation:eqspin 6s linear infinite}  /* چرخش فقط زیر ماوس؛ همیشه‌چرخان CPU را می‌سوزاند */
 .card.ring.rp{--rc:var(--good)} .card.ring.rn{--rc:var(--bad)}
 @keyframes eqspin{to{--ang:360deg}}
 .eq{margin-top:34px}
@@ -1056,7 +1057,7 @@ footer{margin-top:clamp(56px,8vw,96px);padding-top:18px;border-top:1px solid var
 @keyframes eqfade{from{opacity:0}to{opacity:1}}
 .eqzero{stroke:var(--line2);stroke-dasharray:3 5}
 .eqgrid{stroke:var(--line)}
-.eqend{fill:var(--gold-hi)} .eqping{fill:none;stroke:var(--gold-hi);stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:eqping 2.2s ease-out infinite}
+.eqend{fill:var(--gold-hi)} .eqping{fill:none;stroke:var(--gold-hi);stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:eqping 2.2s ease-out 3}
 @keyframes eqping{from{transform:scale(.5);opacity:.9}to{transform:scale(2.8);opacity:0}}
 .eqx{stroke:var(--line2);stroke-dasharray:3 4}
 .eqhov{fill:var(--bg);stroke:var(--gold-hi);stroke-width:2}
@@ -1094,7 +1095,7 @@ footer{margin-top:clamp(56px,8vw,96px);padding-top:18px;border-top:1px solid var
 .mega{background:linear-gradient(100deg,transparent 42%,rgba(255,250,235,.9) 50%,transparent 58%) no-repeat,
   linear-gradient(180deg,#FFF7E0 0%,#F3D896 34%,#D3A24A 70%,#8C6727 100%);
   background-size:260% 100%,100% 100%;background-position:180% 0,0 0;-webkit-background-clip:text;background-clip:text;
-  animation:shine 8s var(--ease) 1.6s infinite;filter:drop-shadow(0 6px 30px rgba(216,178,94,.22));padding-inline:.06em}
+  animation:shine 8s var(--ease) 1.6s 2;filter:drop-shadow(0 6px 30px rgba(216,178,94,.22));padding-inline:.06em}
 @keyframes shine{0%{background-position:180% 0,0 0}28%,100%{background-position:-80% 0,0 0}}
 .price .cur{color:var(--gold-hi)}
 .tape{position:relative;overflow:hidden;border-block:1px solid var(--line);padding:11px 0;margin-bottom:-1px;
@@ -1302,23 +1303,27 @@ void main(){
   gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
   const a=gl.getAttribLocation(pr,'a');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);
   const U=k=>gl.getUniformLocation(pr,k), uR=U('uR'),uT=U('uT'),uP=U('uP'),uM=U('uM'),uC=U('uC');
-  let mx=.75,my=.55,tx=mx,ty=my,pulse=0,col=[.36,.86,.62],T=8,last=0,raf=0,vis=true;
-  const size=()=>{const dpr=Math.min(devicePixelRatio||1,innerWidth<760?1:1.25);
+  let mx=.75,my=.55,tx=mx,ty=my,pulse=0,col=[.36,.86,.62],T=8,last=0,lastDraw=0,raf=0,vis=true,until=0,pulseT=-1e9;
+  /* کم‌مصرف: نیم‌وضوح، حداکثر ۳۰ فریم، و فقط چند ثانیه بعد از تغییر قیمت یا حرکت ماوس روی بالای صفحه؛ بقیهٔ وقت یک تصویر ثابت */
+  const SCALE=.5, FRAME=1000/30;
+  const size=()=>{const dpr=Math.min(devicePixelRatio||1,1)*SCALE;
     cv.width=Math.max(2,Math.round(cv.clientWidth*dpr));cv.height=Math.max(2,Math.round(cv.clientHeight*dpr));
     gl.viewport(0,0,cv.width,cv.height);gl.uniform2f(uR,cv.width,cv.height)};
-  const draw=()=>{mx+=(tx-mx)*.035;my+=(ty-my)*.035;gl.uniform1f(uT,T);gl.uniform1f(uP,pulse);gl.uniform2f(uM,mx,my);gl.uniform3fv(uC,col);gl.drawArrays(gl.TRIANGLES,0,3)};
-  const loop=now=>{const dt=last?Math.min(.05,(now-last)/1000):0;last=now;T+=dt*(1+pulse*3);pulse*=.975;
-    if(!innerWidth||innerWidth>=1024){}else{tx=.7+.12*Math.sin(T*.25);ty=.55+.1*Math.cos(T*.2);}
-    draw();raf=vis&&!document.hidden?requestAnimationFrame(loop):0;if(!raf)last=0};
-  const start=()=>{if(!raf&&!reduceMotion())raf=requestAnimationFrame(loop)};
+  const draw=()=>{mx+=(tx-mx)*.07;my+=(ty-my)*.07;gl.uniform1f(uT,T);gl.uniform1f(uP,pulse);gl.uniform2f(uM,mx,my);gl.uniform3fv(uC,col);gl.drawArrays(gl.TRIANGLES,0,3)};
+  const loop=now=>{raf=0;if(!vis||document.hidden){last=0;return;}
+    if(now-lastDraw>=FRAME-1){const dt=last?Math.min(.05,(now-last)/1000):0;last=now;lastDraw=now;T+=dt*(1+pulse*3);pulse*=.88;draw();}
+    if(now<until||pulse>.02)raf=requestAnimationFrame(loop);else last=0};
+  const wake=ms=>{until=Math.max(until,performance.now()+ms);
+    if(!raf&&vis&&!document.hidden&&!reduceMotion())raf=requestAnimationFrame(loop)};
   size();draw();requestAnimationFrame(()=>cv.classList.add('on'));
   addEventListener('resize',()=>{size();draw()});
   if(typeof ResizeObserver==='function')new ResizeObserver(()=>{size();draw()}).observe(cv);
-  addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();if(!r.width)return;tx=(e.clientX-r.left)/r.width;ty=1-(e.clientY-r.top)/r.height},{passive:true});
-  if('IntersectionObserver' in window)new IntersectionObserver(([e])=>{vis=e.isIntersecting;if(vis)start()}).observe(cv);
-  document.addEventListener&&document.addEventListener('visibilitychange',()=>{if(!document.hidden)start()});
-  goldPulse=up=>{col=up?[.36,.86,.62]:[.98,.45,.38];pulse=1;start()};
-  start();
+  addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();if(!r.width||e.clientY<r.top||e.clientY>r.bottom)return;
+    tx=(e.clientX-r.left)/r.width;ty=1-(e.clientY-r.top)/r.height;wake(1200)},{passive:true});
+  if('IntersectionObserver' in window)new IntersectionObserver(([e])=>{vis=e.isIntersecting}).observe(cv);
+  /* قیمت طلا تقریباً هر چند ثانیه عوض می‌شود: درخشش حداکثر هر ۳۰ ثانیه یک بار و کمتر از یک ثانیه */
+  goldPulse=up=>{const now=performance.now();if(now-pulseT<30000)return;pulseT=now;col=up?[.36,.86,.62]:[.98,.45,.38];pulse=1;wake(900)};
+  wake(2500);
 }
 /* signature: rolling digits on the live price */
 let lastPrice=null;
@@ -1351,20 +1356,23 @@ function track(p){
     ${p.price!=null?`<div class="now" style="left:${x(p.price)}"></div>`:''}</div>`;
 }
 
+/* فقط بخشی که واقعاً عوض شده دوباره ساخته می‌شود */
+const _HC=new Map();
+function H(id){const el=$(id);return {set html(h){if(!el||_HC.get(el)===h)return;_HC.set(el,h);el.innerHTML=h;}};}
 let firstRender=true;
 function render(d){
   $('err').hidden=!d.error; if(d.error)$('err').textContent='خطا: '+d.error;
   const s=d.status||{}, a=d.account||{}, st=d.stats||{};
-  $('pills').innerHTML=[pill(s.alive,s.alive?'روشن':'بی‌پاسخ'),pill(s.mt5,s.mt5?'MT5 وصل':'MT5 قطع'),
+  H('pills').html=[pill(s.alive,s.alive?'روشن':'بی‌پاسخ'),pill(s.mt5,s.mt5?'MT5 وصل':'MT5 قطع'),
     pill(s.market?true:null,s.market?'بازار باز':'بازار بسته'),pill(s.paused?false:true,s.paused?'هشدارها متوقف':'هشدارها فعال'),
     `<span class="pill">حالت: <b>${esc(s.mode_fa||s.mode||'—')}</b></span>`,
     s.now_tehran?`<span class="pill">به‌روز <b class="num">${esc(s.now_tehran)}</b> تهران</span>`:''].join('');
   $('tickdot').className='dot '+(s.alive&&s.mt5?'ok':'bad');
   if(d.price){setPrice(d.price.bid);
-    $('hq').innerHTML=`<span>خرید <b class="num">${d.price.ask.toFixed(2)}</b></span><span>فروش <b class="num">${d.price.bid.toFixed(2)}</b></span><span>اسپرد <b class="num">${(d.price.ask-d.price.bid).toFixed(2)}</b></span>`;}
+    H('hq').html=`<span>خرید <b class="num">${d.price.ask.toFixed(2)}</b></span><span>فروش <b class="num">${d.price.bid.toFixed(2)}</b></span><span>اسپرد <b class="num">${(d.price.ask-d.price.bid).toFixed(2)}</b></span>`;}
   $('asof').textContent='';
   const t=st.today||{},w=st.week||{},al=st.all||{};
-  $('tiles').innerHTML=[
+  H('tiles').html=[
     ['موجودی',usd(a.balance),'حساب دمو',''],
     ['اکوییتی',usd(a.equity),a.profit!=null?('شناور '+money(a.profit)):'',''],
     ['امروز',money(t.pnl),`${fa(t.n)} معامله · ${fa(st.alerts_today)} هشدار`,cls(t.pnl)],
@@ -1373,7 +1381,7 @@ function render(d){
     ['پوزیشن باز',fa((d.open||[]).length),d.open_risk!=null?('ریسک $'+d.open_risk.toFixed(2)+' از $'+(d.rules?.max_risk??'—')):'',''],
   ].map(([k,v,sub,c])=>`<div class="tile"><div class="k">${k}</div><div class="v num ${c}">${v}</div><div class="s">${sub}</div></div>`).join('');
   const op=d.open||[];
-  $('open').innerHTML=op.length?op.map(p=>`<div class="card ${p.side==='BUY'?'buy':'sell'} ring ${p.profit>=0?'rp':'rn'}">
+  H('open').html=op.length?op.map(p=>`<div class="card ${p.side==='BUY'?'buy':'sell'} ring ${p.profit>=0?'rp':'rn'}">
      <div class="top"><span class="ttl">${sideTag(p.side)}<span class="mono">#${p.ticket}</span><span class="mono muted">${esc(setupFa(p.setup))}</span></span>
      <span class="pnl num ${cls(p.profit)}">${money(p.profit)}</span></div>
      ${track(p)}
@@ -1383,7 +1391,7 @@ function render(d){
      ${p.hold||p.warned?`<div>${p.hold?'<span class="tag">⏸ نگه داشته</span>':''} ${p.warned?'<span class="tag">⚠️ ساختار شکسته</span>':''}</div>`:''}</div>`).join('')
     :'<div class="empty">پوزیشن بازی نیست.</div>';
   const pe=d.pending||[];
-  $('pending').innerHTML=pe.length?pe.map(p=>`<div class="card ${p.side==='BUY'?'buy':'sell'}">
+  H('pending').html=pe.length?pe.map(p=>`<div class="card ${p.side==='BUY'?'buy':'sell'}">
      <div class="top"><span class="ttl">${sideTag(p.side)}<span class="mono muted">${esc(setupFa(p.setup))}</span></span><span class="tag">${p.left_min} دقیقه مانده</span></div>
      <div class="kv"><span>قیمت <b class="num">${p.price.toFixed(2)}</b></span><span>حد ضرر <b class="num">${p.sl.toFixed(2)}</b></span><span>ریسک <b class="num">$${p.risk.toFixed(2)}</b></span></div>
      ${p.analysis?`<div class="muted" style="font-size:13px">🤖 ${esc(p.analysis)}</div>`:''}</div>`).join('')
@@ -1392,21 +1400,21 @@ function render(d){
   const sum=days.reduce((a,x)=>a+x.pnl,0);
   $('sum14').textContent=money(sum); $('sum14').className='big num '+cls(sum);
   $('smax').textContent='±$'+mx.toFixed(0);
-  $('bars').innerHTML=days.map((x,i)=>{const h=(Math.abs(x.pnl)/mx*50).toFixed(1);
+  H('bars').html=days.map((x,i)=>{const h=(Math.abs(x.pnl)/mx*50).toFixed(1);
      return `<div class="b" style="--i:${i}"><i class="${!x.pnl?'z':x.pnl>0?'p':'n'}" style="height:${x.pnl?h:0}%"></i><span class="tip"><span class="num">${x.d.slice(5).replace('-','/')}</span> · <b class="num ${cls(x.pnl)}">${money(x.pnl)}</b> · ${x.n} معامله</span></div>`}).join('');
   if(firstRender)$('bars').classList.add('bars-in'); else $('bars').classList.remove('bars-in');
-  $('blab').innerHTML=days.map(x=>`<span>${x.d.slice(5).replace('-','/')}</span>`).join('');
+  H('blab').html=days.map(x=>`<span>${x.d.slice(5).replace('-','/')}</span>`).join('');
   $('vnote').textContent=st.has_virtual?'':'(نتیجهٔ فرضی هنوز حساب نشده)';
-  $('setups').innerHTML=(st.setups||[]).map(r=>`<tr><td class="mono">${esc(setupFa(r.setup))}</td><td class="n">${r.alerts}</td><td class="n">${r.taken}</td><td class="n">${r.trades}</td>
+  H('setups').html=(st.setups||[]).map(r=>`<tr><td class="mono">${esc(setupFa(r.setup))}</td><td class="n">${r.alerts}</td><td class="n">${r.taken}</td><td class="n">${r.trades}</td>
      <td class="n ${cls(r.pnl)}">${r.trades?money(r.pnl):'—'}</td><td class="n ${cls(r.avg_R)}">${r.avg_R!=null?(r.avg_R>0?'+':'')+r.avg_R.toFixed(2)+'R':'—'}</td>
      <td class="n">${r.win_R!=null?r.win_R+'٪':'—'}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">هنوز داده‌ای نیست</td></tr>';
   const sd=st.sides||{};
-  $('sides').innerHTML=['SELL','BUY'].map(k=>{const v=sd[k]||{};return `<div class="card ${k==='BUY'?'buy':'sell'}" style="margin:0"><div class="top"><span class="ttl">${sideTag(k)}<span class="muted" style="font-size:13px">همهٔ ستاپ‌ها، فرضی · ${fa(v.n)} نمونه</span></span>
+  H('sides').html=['SELL','BUY'].map(k=>{const v=sd[k]||{};return `<div class="card ${k==='BUY'?'buy':'sell'}" style="margin:0"><div class="top"><span class="ttl">${sideTag(k)}<span class="muted" style="font-size:13px">همهٔ ستاپ‌ها، فرضی · ${fa(v.n)} نمونه</span></span>
      <span class="pnl num ${cls(v.sum_R)}">${v.sum_R!=null?(v.sum_R>0?'+':'')+v.sum_R.toFixed(1)+'R':'—'}</span></div></div>`}).join('');
-  $('events').innerHTML=(st.recent||[]).map(e=>`<li><span class="t">${esc(e.t)}</span><span>${esc(e.text)}${e.price!=null?` <span class="muted num">@ ${e.price.toFixed(2)}</span>`:''}</span>
+  H('events').html=(st.recent||[]).slice(0,200).map(e=>`<li><span class="t">${esc(e.t)}</span><span>${esc(e.text)}${e.price!=null?` <span class="muted num">@ ${e.price.toFixed(2)}</span>`:''}</span>
      <span class="num ${cls(e.profit)}">${e.profit!=null?money(e.profit):''}</span></li>`).join('')||'<li><span></span><span class="muted">رویدادی نیست</span><span></span></li>';
   const r=d.rules||{};
-  $('rules').innerHTML=[['حجم',r.lot+' لات'],['حد ضرر سیگنال','حداکثر $'+r.sl_cap],['حد ضرر اضطراری','حداکثر $'+r.emerg_cap],
+  H('rules').html=[['حجم',r.lot+' لات'],['حد ضرر سیگنال','حداکثر $'+r.sl_cap],['حد ضرر اضطراری','حداکثر $'+r.emerg_cap],
     ['هشدار نزدیک حد ضرر',r.approach+'٪ ریسک'],['پوزیشن هم‌زمان','حداکثر '+r.max_open],['سقف ریسک کل','$'+r.max_risk],
     ['مهلت جواب',r.expiry_min+' دقیقه'],['گزارش زنده','هر '+r.status_min+' دقیقه']]
     .map(([k,v])=>`<div class="rule">${k}<b>${esc(v)}</b></div>`).join('');
@@ -1419,9 +1427,9 @@ function render(d){
 let LAST={};
 const rfmt=v=>v==null?'—':(v>0?'+':'')+v.toFixed(2)+'R';
 function renderPicks(p){
-  if(!p){$('picks').innerHTML='<div class="empty" style="grid-column:1/-1">نتیجهٔ فرضی هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';$('picksay').textContent='';return;}
+  if(!p){H('picks').html='<div class="empty" style="grid-column:1/-1">نتیجهٔ فرضی هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';$('picksay').textContent='';return;}
   const card=(k,t)=>{const v=p[k]||{};return `<div class="tile"><div class="k">${t}</div><div class="v num ${cls(v.avg_r)}">${rfmt(v.avg_r)}</div><div class="s">${fa(v.n)} نمونه · برد ${v.win!=null?v.win+'٪':'—'}</div><div class="meter"><i style="width:${v.win||0}%"></i></div></div>`};
-  $('picks').innerHTML=card('taken','تأییدشده‌های شما')+card('passed','ردشده یا منقضی')+card('silent','بی‌صدا (پوزیشن باز یا توقف)')+card('all','همهٔ سیگنال‌ها');
+  H('picks').html=card('taken','تأییدشده‌های شما')+card('passed','ردشده یا منقضی')+card('silent','بی‌صدا (پوزیشن باز یا توقف)')+card('all','همهٔ سیگنال‌ها');
   const a=p.taken||{}, b=p.all||{};
   $('picksay').textContent=(a.avg_r==null||b.avg_r==null||a.n<5)?'برای مقایسه هنوز تأییدهای کافی نیست.'
     :(a.avg_r>b.avg_r?`انتخاب‌های شما تا الان به‌طور میانگین ${(a.avg_r-b.avg_r).toFixed(2)}R در هر معامله بهتر از کل سیگنال‌ها بوده است.`
@@ -1448,11 +1456,11 @@ function renderPeople(list){
   let rank=0;
   const qual=peopleStats(list||[]).filter(q=>!q.few).sort((x,y)=>y.pnl-x.pnl).slice(0,3), ringSvg=q=>{const C=2*Math.PI*21;
     return `<svg class="wr" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="21" class="trk"/><circle cx="26" cy="26" r="21" class="arc" style="stroke-dasharray:${(C*q.win).toFixed(1)} ${C.toFixed(1)}"/><text x="26" y="30" text-anchor="middle">${Math.round(100*q.win)}٪</text></svg>`};
-  $('podium').innerHTML=qual.map((q,i)=>`<div class="pod r${i+1}" data-who="${esc(q.name)}" role="button" tabindex="0" title="فقط معاملات ${esc(q.name)} را نشان بده">
+  H('podium').html=qual.map((q,i)=>`<div class="pod r${i+1}" data-who="${esc(q.name)}" role="button" tabindex="0" title="فقط معاملات ${esc(q.name)} را نشان بده">
     ${ringSvg(q)}<div class="bd"><div class="rk">رتبهٔ ${['۱','۲','۳'][i]}</div><div class="nm">${esc(q.name)}</div>
     <div class="pv num ${cls(q.pnl)}">${money(q.pnl)}</div><div class="ms">${q.n} معامله · میانگین ${q.avgR!=null?(q.avgR>0?'+':'')+q.avgR.toFixed(2)+'R':'—'}</div></div></div>`).join('');
-  $('pphead').innerHTML='<tr>'+PPCOLS.map(([k,t,s])=>s?`<th class="srt${k===key?' on':''}" data-k="${k}">${t}${k===key?(dir>0?' ▼':' ▲'):''}</th>`:`<th>${t}</th>`).join('')+'</tr>';
-  $('ppbody').innerHTML=ps.map(p=>{if(!p.few)rank++;
+  H('pphead').html='<tr>'+PPCOLS.map(([k,t,s])=>s?`<th class="srt${k===key?' on':''}" data-k="${k}">${t}${k===key?(dir>0?' ▼':' ▲'):''}</th>`:`<th>${t}</th>`).join('')+'</tr>';
+  H('ppbody').html=ps.map(p=>{if(!p.few)rank++;
     const medal=p.few?'':(['🥇','🥈','🥉'][rank-1]||rank);
     return `<tr class="pick${p.few?' muted':''}" data-who="${esc(p.name)}"><td class="n rank">${medal}</td><td><b>${esc(p.name)}</b>${p.few?'<span class="sub">کم‌نمونه</span>':''}</td>
       <td class="n">${p.n}</td><td class="n">${Math.round(100*p.win)}٪</td><td class="n ${cls(p.pnl)}"><b>${money(p.pnl)}</b></td>
@@ -1473,7 +1481,7 @@ function eqSeries(list,days){
 function renderEquity(list){
   const plot=$('eqplot'), svg=$('eqsvg'); if(!plot||!svg)return;
   const pts=eqSeries(list,EQ.d);
-  if(pts.length<2){svg.innerHTML='';$('eqstats').innerHTML='';$('eqnote').textContent='';
+  if(pts.length<2){svg.innerHTML='';H('eqstats').html='';$('eqnote').textContent='';
     plot.querySelector&&0; $('eqtip').hidden=true;
     svg.setAttribute('viewBox','0 0 600 120');
     svg.innerHTML='<text x="300" y="60" text-anchor="middle" class="ax" style="font-size:13px;font-family:inherit">برای این بازه هنوز معامله‌ای بسته نشده</text>';
@@ -1519,7 +1527,7 @@ function renderEquity(list){
   let peak=0,dd=0,run=0,best=null; S.forEach(v=>{peak=Math.max(peak,v.c);dd=Math.max(dd,peak-v.c);if(v.x&&(best===null||v.p>best))best=v.p;});
   let streak=0,sg=0; for(let i=pts.length-1;i>=0;i--){const g=pts[i].p>0?1:pts[i].p<0?-1:0; if(!g)break; if(!sg)sg=g; if(g!==sg)break; streak++;}
   const tot=last.c, wins=pts.filter(v=>v.p>0).length;
-  $('eqstats').innerHTML=[
+  H('eqstats').html=[
     ['جمع این بازه',`<b class="num ${cls(tot)}">${money(tot)}</b>`],
     ['برد',`<b class="num">${Math.round(100*wins/pts.length)}٪</b>`],
     ['اوج',`<b class="num pos">${money(peak)}</b>`],
@@ -1569,7 +1577,7 @@ function renderTape(list){
   if(!rows.length){tape.hidden=true;return;} tape.hidden=false;
   const key=rows.length+'|'+rows[0].ticket+'|'+rows[0].profit; if(key===tapeKey)return; tapeKey=key;
   const one=rows.map(x=>`<span class="ti"><span class="dot ${x.profit>0?'ok':x.profit<0?'bad':''}"></span><b>${esc(x.opener||'')}</b>${x.side==='BUY'?'خرید':'فروش'}<b class="num ${cls(x.profit)}">${money(x.profit)}</b><span class="num">${esc(x.close_hm)}</span></span>`).join('');
-  $('tapein').innerHTML=one+one;
+  H('tapein').html=one+one;
 }
 /* کج‌شدن سه‌بعدی کارت‌ها با ماوس (فقط دستگاه‌های دارای ماوس) */
 let tiltEl=null;
@@ -1590,16 +1598,20 @@ $('podium').onclick=e=>{const c=e.target&&e.target.closest?e.target.closest('[da
   TR.who=c.dataset.who;TR.sort='';renderTrades(LAST.trades);$('trbody').scrollIntoView&&$('trbody').scrollIntoView({behavior:'smooth',block:'start'})};
 $('ppbody').onclick=e=>{const tr=e.target&&e.target.closest?e.target.closest('tr[data-who]'):null;if(!tr)return;
   TR.who=tr.dataset.who;TR.sort='';renderTrades(LAST.trades);$('trbody').scrollIntoView&&$('trbody').scrollIntoView({behavior:'smooth',block:'start'})};
+let TRK='';
+const TR_MAX=200;
 function renderTrades(list){
   list=list||[];
+  const k=JSON.stringify(TR)+'|'+list.length+(list.length?'|'+list[0].ticket+'|'+list[0].profit+'|'+list[list.length-1].ticket:'');
+  if(k===TRK)return; TRK=k;
   renderPeople(list);
   const days=[...new Set(list.map(x=>x.day))];
   if(TR.day&&!days.includes(TR.day))TR.day='';
   const names=[...new Set(list.map(x=>x.opener||'نام ثبت نشده'))];
   if(TR.who&&!names.includes(TR.who))TR.who='';
-  $('trday').innerHTML='<option value="">همهٔ روزها</option>'+days.map(d=>{const x=list.find(y=>y.day===d);
+  H('trday').html='<option value="">همهٔ روزها</option>'+days.map(d=>{const x=list.find(y=>y.day===d);
     return `<option value="${esc(d)}"${TR.day===d?' selected':''}>${esc(x.day_fa)} · ${esc(d)}</option>`}).join('');
-  $('trwho').innerHTML='<option value="">همهٔ نفرات</option>'+names.map(nm=>`<option value="${esc(nm)}"${TR.who===nm?' selected':''}>${esc(nm)} (${list.filter(y=>(y.opener||'نام ثبت نشده')===nm).length})</option>`).join('');
+  H('trwho').html='<option value="">همهٔ نفرات</option>'+names.map(nm=>`<option value="${esc(nm)}"${TR.who===nm?' selected':''}>${esc(nm)} (${list.filter(y=>(y.opener||'نام ثبت نشده')===nm).length})</option>`).join('');
   $('trres').value=TR.res; $('trside').value=TR.side; $('trdir').value=TR.dir; $('trsort').value=TR.sort;
   let rows=list.filter(x=>(!TR.day||x.day===TR.day)&&(!TR.side||x.side===TR.side)&&(!TR.dir||trDir(x)===TR.dir)&&(!TR.who||(x.opener||'نام ثبت نشده')===TR.who)
     &&(!TR.res||(TR.res==='win'?x.profit>0:x.profit<0)));
@@ -1610,15 +1622,16 @@ function renderTrades(list){
   else if(TR.sort==='person')rows=[...rows].sort((a,b)=>String(a.opener).localeCompare(String(b.opener),'fa')||(a.t_close<b.t_close?1:-1));
   const n=rows.length, pnl=rows.reduce((a,x)=>a+x.profit,0), wins=rows.filter(x=>x.profit>0).length;
   const rs=rows.filter(x=>x.r!=null), sr=rs.reduce((a,x)=>a+x.r,0);
-  $('trtiles').innerHTML=[['معاملات',fa(n),list.length!==n?('از '+list.length+' کل'):'همهٔ دفتر','' ],
+  H('trtiles').html=[['معاملات',fa(n),list.length!==n?('از '+list.length+' کل'):'همهٔ دفتر','' ],
     ['جمع سود و ضرر',money(pnl),'',cls(pnl)],['برد',n?Math.round(100*wins/n)+'٪':'—',`${wins} سودده · ${n-wins} غیر سودده`,''],
     ['جمع R',rs.length?(sr>0?'+':'')+sr.toFixed(1)+'R':'—','',cls(sr)]]
     .map(([k,v,sub,c])=>`<div class="tile"><div class="k">${k}</div><div class="v num ${c}">${v}</div><div class="s">${sub}</div></div>`).join('');
   $('trnote').textContent=list.length?`${list.length} معامله در دفتر`:'';
+  const DS={};for(const y of rows){const q=DS[y.day]||(DS[y.day]={n:0,p:0});q.n++;q.p+=y.profit;}
   let html='',cur=null;
-  for(const x of rows){
-    if(!flat&&x.day!==cur){cur=x.day;const dr=rows.filter(y=>y.day===cur);const dp=dr.reduce((a,y)=>a+y.profit,0);
-      html+=`<tr class="dayrow"><td colspan="10">${esc(x.day_fa)} · <span class="num">${esc(cur)}</span> · ${dr.length} معامله · <span class="num ${cls(dp)}">${money(dp)}</span></td></tr>`;}
+  for(const x of rows.slice(0,TR_MAX)){
+    if(!flat&&x.day!==cur){cur=x.day;const q=DS[cur],dp=q.p;
+      html+=`<tr class="dayrow"><td colspan="10">${esc(x.day_fa)} · <span class="num">${esc(cur)}</span> · ${q.n} معامله · <span class="num ${cls(dp)}">${money(dp)}</span></td></tr>`;}
     const od=flat?x.day.slice(5).replace('-','/')+' ':(x.open_day&&x.open_day!==x.day?x.open_day.slice(5).replace('-','/')+' ':'');
     const tags=[x.held?'<span class="tag">⏸ نگه داشته</span>':'',x.contra?'<span class="tag">↔️ خلاف سیگنال</span>':'',x.locked?'<span class="tag">🔒 بی‌ضرر شد</span>':''].join(' ');
     html+=`<tr><td class="mono nw muted">#${esc(x.ticket)}</td>
@@ -1629,7 +1642,8 @@ function renderTrades(list){
       <td class="n nw ${cls(x.profit)}"><b>${money(x.profit)}</b><span class="sub">${x.r!=null?(x.r>0?'+':'')+x.r.toFixed(2)+'R':''}</span></td>
       <td class="who"><b>${esc(x.opener||'')}</b><small>${esc(x.opened_by)}</small></td><td class="who">${esc(x.closed_by)}<small>${esc(x.closed_how)}</small></td><td>${tags}</td></tr>`;
   }
-  $('trbody').innerHTML=html||'<tr><td colspan="10" class="muted">'+(list.length?'با این فیلترها معامله‌ای نیست':'هنوز معامله بسته‌شده‌ای نیست')+'</td></tr>';
+  if(rows.length>TR_MAX)html+=`<tr><td colspan="10" class="muted">فقط ${TR_MAX} معاملهٔ اول از ${rows.length} نشان داده شد؛ برای بقیه روز یا نفر را از فیلترها انتخاب کنید.</td></tr>`;
+  H('trbody').html=html||'<tr><td colspan="10" class="muted">'+(list.length?'با این فیلترها معامله‌ای نیست':'هنوز معامله بسته‌شده‌ای نیست')+'</td></tr>';
 }
 let TR={day:'',res:'',side:'',who:'',sort:'',dir:''};
 $('trday').onchange=e=>{TR.day=e.target.value;renderTrades(LAST.trades)};
@@ -1650,12 +1664,12 @@ function auRow(x,label,inverse){
     <td class="n">${x.mfe!=null?x.mfe.toFixed(2)+' / '+x.mae.toFixed(2):'—'}</td></tr>`;
 }
 function renderAudit(a){
-  document.querySelectorAll('.auh').forEach(h=>h.innerHTML=AUH); $('auhead').innerHTML=AUH;
-  if(!a||!a.all){$('autiles').innerHTML='<div class="empty" style="grid-column:1/-1">کارنامه هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';
-    ['aulabel','ausetup','auhour','audec','auside','auweek','aucond'].forEach(id=>$(id).innerHTML='');$('aunote').textContent='';return;}
+  document.querySelectorAll('.auh').forEach(h=>{if(h.innerHTML!==AUH)h.innerHTML=AUH;}); H('auhead').html=AUH;
+  if(!a||!a.all){H('autiles').html='<div class="empty" style="grid-column:1/-1">کارنامه هنوز حساب نشده؛ چند دقیقه بعد از روشن شدن اسکات می‌آید.</div>';
+    ['aulabel','ausetup','auhour','audec','auside','auweek','aucond'].forEach(id=>{H(id).html='';});$('aunote').textContent='';return;}
   const x=a.all;
   $('aunote').textContent=`${a.days} روز اخیر · به‌روز ${a.updated||''}`;
-  $('autiles').innerHTML=[
+  H('autiles').html=[
     ['سیگنال‌ها',fa(x.n),`${fa(x.plus)} اول ‎+1R · ${fa(x.minus)} اول ‎-1R`,''],
     ['اول ‎+1R',pct(x.first),'از سیگنال‌هایی که به یکی رسیدند',x.first>=0.5?'pos':'neg'],
     ['۱۵ دقیقه بعد',pct(x.up15),'در جهت سیگنال',''],
@@ -1664,14 +1678,14 @@ function renderAudit(a){
     ['لغزش ورود',a.slip&&a.slip.avg!=null?(a.slip.avg>0?'+':'')+a.slip.avg.toFixed(1)+' پوینت':'—',
      a.slip&&a.slip.n?`میانگین ${a.slip.n} ورود · مثبت = بدتر از قیمت هشدار`:'هنوز داده‌ای نیست',''],
   ].map(([k,v,sub,c])=>`<div class="tile"><div class="k">${k}</div><div class="v num ${c}">${v}</div><div class="s">${sub}</div></div>`).join('');
-  $('aulabel').innerHTML=(a.label||[]).map(r=>auRow(r,r.fa)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
+  H('aulabel').html=(a.label||[]).map(r=>auRow(r,r.fa)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
   if(a.tight!=null)$('autight').textContent=String(a.tight);
-  $('ausetup').innerHTML=(a.setup||[]).map(r=>auRow(r,r.key)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
-  $('auhour').innerHTML=(a.hour||[]).map(r=>auRow(r,r.key.replace('-',' تا '))).join('');
-  $('audec').innerHTML=(a.decision||[]).map(r=>auRow(r,r.fa||r.key,r.key==='rejected')).join('');
-  $('auside').innerHTML=(a.side||[]).map(r=>auRow(r,r.key==='BUY'?'خرید':r.key==='SELL'?'فروش':r.key)).join('');
-  $('auweek').innerHTML=(a.weekday||[]).map(r=>auRow(r,r.fa||r.key)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
-  $('aucond').innerHTML=[...(a.late||[]),...(a.spread||[]),...(a.news||[])].map(r=>auRow(r,r.fa||r.key)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
+  H('ausetup').html=(a.setup||[]).map(r=>auRow(r,r.key)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
+  H('auhour').html=(a.hour||[]).map(r=>auRow(r,r.key.replace('-',' تا '))).join('');
+  H('audec').html=(a.decision||[]).map(r=>auRow(r,r.fa||r.key,r.key==='rejected')).join('');
+  H('auside').html=(a.side||[]).map(r=>auRow(r,r.key==='BUY'?'خرید':r.key==='SELL'?'فروش':r.key)).join('');
+  H('auweek').html=(a.weekday||[]).map(r=>auRow(r,r.fa||r.key)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
+  H('aucond').html=[...(a.late||[]),...(a.spread||[]),...(a.news||[])].map(r=>auRow(r,r.fa||r.key)).join('')||'<tr><td colspan="8" class="muted">داده‌ای نیست</td></tr>';
 }
 const PANES=['dash','trades','audit','guide'];
 function show(tab){
@@ -1696,12 +1710,22 @@ setTimeout(()=>document.querySelectorAll('.reveal').forEach(e=>e.classList.add('
 const topEl=$('top');addEventListener('scroll',()=>topEl.classList.toggle('scrolled',scrollY>8),{passive:true});
 
 show((location.hash||'#dash').slice(1));
+const POLL_MS=5000;
+let pollT=0,busy=false,lastBody='';
+const tabHidden=()=>typeof document.visibilityState==='string'?document.visibilityState==='hidden':!!document.hidden;
+function schedule(){clearTimeout(pollT);pollT=tabHidden()?0:setTimeout(tick,POLL_MS);}
 async function tick(){
+  if(busy)return; busy=true;
   try{const res=await fetch('/api/data'+location.search,{cache:'no-store'});
-      if(!res.ok)throw new Error('HTTP '+res.status);render(await res.json());}
-  catch(e){$('err').hidden=false;$('err').textContent='اتصال به اسکات برقرار نشد: '+e.message;}
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      const txt=await res.text();
+      if(txt!==lastBody){lastBody=txt;render(JSON.parse(txt));}}
+  catch(e){lastBody='';$('err').hidden=false;$('err').textContent='اتصال به اسکات برقرار نشد: '+e.message;}
+  finally{busy=false;schedule();}
 }
-tick();setInterval(tick,10000);
+/* تب مخفی = هیچ درخواست و هیچ رندری؛ برگشت به تب = فوراً یک بار به‌روز */
+document.addEventListener&&document.addEventListener('visibilitychange',()=>{if(tabHidden()){clearTimeout(pollT);pollT=0;}else if(!busy)tick();});
+tick();
 </script>
 </body>
 </html>
