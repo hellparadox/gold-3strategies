@@ -327,6 +327,7 @@ HELP_CMDS = """🤖 <b>دستورهای متنی اسکات</b> (برای ربا
 <code>/settings</code> مقدارها · <code>/set lot 0.02</code> · کلیدها: lot, sl_cap, emerg_cap, max_open, max_risk, expiry_min
 لات و تغییر بیش از دو برابر اول می‌پرسد: <code>/setok</code> تأیید · <code>/set reset</code> برگشت به پیش‌فرض (آن هم با /setok)
 <code>/mode close</code> · <code>/mode hold</code> · <code>/mode ai</code> — در حد ضرر چه شود
+<code>/botlot</code> لات ربات‌ها · <code>/botlot Groktraid 0.02</code> لات جدا برای یک ربات (فقط آدم‌ها؛ حد ضرر همان فاصلهٔ قیمت) · <code>/botlot Groktraid 0</code> برگشت
 
 <b>بقیه</b>
 <code>/status</code> <code>/positions</code> <code>/price</code> <code>/pause</code> <code>/resume</code> <code>/score</code>

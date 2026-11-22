@@ -191,5 +191,47 @@ class Guard(unittest.TestCase):
         self.assertIn("بین", self.sc.tg.sent[-1][0])
 
 
+    # ── لات جدا برای هر ربات (/botlot) ──
+    def test_botlot_bigger_lot_same_price_stop(self):
+        self.sc.bot_lots_path = Path(self._d.name) / "bot_lots.json"
+        self.human("/botlot Alpha 0.02")
+        self.assertIn("0.02", self.sc.tg.sent[-1][0])
+        self.bot("/buy")
+        kw = self.sc.client.send_market_order.call_args
+        self.assertAlmostEqual(kw.args[1], 0.02)
+        info = self.sc.open[77]
+        self.assertAlmostEqual(info["sl"], 4100.1 - 10.0, places=2)         # همان ۱۰ دلار فاصلهٔ قیمت
+        self.assertAlmostEqual(kw.kwargs["sl"], info["sl"], places=2)
+        opened = [e for e in self.events() if e["event"] == "opened"][-1]
+        self.assertIn("lot=0.02", opened["note"])
+        self.assertIn("bot_lot", [e["event"] for e in self.events()])
+
+    def test_botlot_only_that_bot_and_humans_unchanged(self):
+        self.sc.bot_lots_path = Path(self._d.name) / "bot_lots.json"
+        self.human("/botlot Groktraid 0.02")
+        self.bot("/buy")                                                   # Alpha: لات معمولی
+        self.assertAlmostEqual(self.sc.client.send_market_order.call_args.args[1], 0.01)
+
+    def test_botlot_reset_range_and_bots_cannot_set(self):
+        self.sc.bot_lots_path = Path(self._d.name) / "bot_lots.json"
+        self.human("/botlot Alpha 0.5")
+        self.assertIn("بین", self.sc.tg.sent[-1][0])
+        self.bot("/botlot Alpha 0.03")
+        self.assertIn("فقط آدم‌ها", self.sc.tg.sent[-1][0])
+        self.assertIsNone(self.sc.bot_lot("Alpha"))
+        self.human("/botlot alpha 0.03")
+        self.assertEqual(self.sc.bot_lot("Alpha"), 0.03)                  # بزرگی/کوچکی حروف مهم نیست
+        self.human("/botlot Alpha 0")
+        self.assertIsNone(self.sc.bot_lot("Alpha"))
+        self.human("/botlot")
+        self.assertIn("لات ربات‌ها", self.sc.tg.sent[-1][0])
+
+    def test_botlot_corrupt_file_means_normal_lot(self):
+        self.sc.bot_lots_path = Path(self._d.name) / "bot_lots.json"
+        self.sc.bot_lots_path.write_text("{oops", encoding="utf-8")
+        self.bot("/buy")
+        self.assertAlmostEqual(self.sc.client.send_market_order.call_args.args[1], 0.01)
+
+
 if __name__ == "__main__":
     unittest.main()

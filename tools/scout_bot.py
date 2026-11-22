@@ -314,6 +314,8 @@ class Scout:
         self.bot_daily_loss = float(s.get("scout.bot_daily_loss_usd", 15.0) or 0.0)
         # حد ضرر معاملهٔ ربات هیچ‌وقت دورتر از این نیست (مستقل از سقف تنظیمات آدم‌ها)
         self.bot_sl_usd = float(s.get("scout.bot_sl_usd", 10.0) or 0.0)
+        # لات جدا برای هر ربات ادمین (/botlot)؛ نبودِ فایل = همه با لات معمولی
+        self.bot_lots_path = Path(str(s.get("scout.bot_lots_file", "data/scout_bot_lots.json")))
         # پیامی که وقتی اسکات خاموش بود فرستاده شده، بعد از روشن شدن اجرا نشود (ثانیه؛ 0 = خاموش)
         self.max_cmd_age = float(s.get("scout.max_command_age_s", 120) or 0.0)
         self.mode_path = Path(str(s.get("scout.mode_file", "data/scout_mode.json")))
@@ -461,6 +463,108 @@ class Scout:
                     f"(${limit:.0f}) رسیده است؛ تا فردا (به وقت تهران) معاملهٔ تازه باز نمی‌کند. "
                     "آدم‌ها همچنان می‌توانند هشدار را تأیید کنند.")
         return None
+
+    # ------------------------------------------------------- per-bot lot (/botlot)
+    BOT_LOT_MAX = 0.05
+
+    @staticmethod
+    def _bot_key(name: str) -> str:
+        return " ".join(str(name or "").split()).casefold()
+
+    def _bot_lots_file(self) -> Path:
+        return Path(getattr(self, "bot_lots_path", None) or (self.journal.parent / "scout_bot_lots.json"))
+
+    def bot_lots(self) -> Dict[str, Dict[str, Any]]:
+        """{کلید نام: {"name", "lot"}}؛ فایل خراب/نبود = خالی (همه با لات معمولی)."""
+        try:
+            raw = json.loads(self._bot_lots_file().read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+        out: Dict[str, Dict[str, Any]] = {}
+        for v in (raw.values() if isinstance(raw, dict) else []):
+            try:
+                name, lot = str(v["name"]), round(float(v["lot"]), 2)
+            except Exception:
+                continue
+            if name and 0.01 <= lot <= self.BOT_LOT_MAX:
+                out[self._bot_key(name)] = {"name": name, "lot": lot}
+        return out
+
+    def bot_lot(self, name: str) -> Optional[float]:
+        e = self.bot_lots().get(self._bot_key(name)) if name else None
+        return float(e["lot"]) if e else None
+
+    def _save_bot_lots(self, d: Dict[str, Dict[str, Any]]) -> None:
+        path = self._bot_lots_file()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+        os.replace(tmp, path)
+
+    def _bots_seen(self) -> list:
+        """نام ربات‌هایی که تا حالا از اسکات معامله باز کرده‌اند (از دفتر)."""
+        names: Dict[str, str] = {}
+        for e in dash.read_journal(self.journal):
+            if e.get("event") == "opened":
+                kv = dash._kv(e.get("note"))
+                if kv.get("bot") == "1" and kv.get("by", "").strip():
+                    names[self._bot_key(kv["by"])] = kv["by"].strip()
+        return list(names.values())
+
+    def botlot_cmd(self, args: list) -> None:
+        """/botlot — فهرست · /botlot Groktraid 0.02 — لات جدا · /botlot Groktraid 0 — برگشت به لات معمولی.
+        فقط آدم‌ها. حد ضرر ربات همان فاصلهٔ قیمت می‌ماند؛ دلارِ هر معامله به نسبت لات بزرگ‌تر می‌شود."""
+        if getattr(self, "_bot_sender", False):
+            self.tg.send("⛔ لات ربات‌ها را فقط آدم‌ها عوض می‌کنند.")
+            return
+        lots = self.bot_lots()
+        base = float(self.lot)
+        if not args:
+            names = {self._bot_key(n): n for n in self._bots_seen()}
+            names.update({k: v["name"] for k, v in lots.items()})
+            rows = [f"• {html.escape(n)}: لات <b>{lots[k]['lot'] if k in lots else base}</b>"
+                    + ("" if k in lots else " (معمولی)") for k, n in sorted(names.items())]
+            self.tg.send("🤖 <b>لات ربات‌ها</b> (لات معمولی اسکات: " + f"{base})\n"
+                         + ("\n".join(rows) if rows else "هنوز رباتی معامله باز نکرده است.")
+                         + f"\n\nتغییر: <code>/botlot Groktraid 0.02</code> (۰٫۰۱ تا {self.BOT_LOT_MAX})"
+                         + "\nبرگشت: <code>/botlot Groktraid 0</code>")
+            return
+        if len(args) < 2:
+            self.tg.send("⚠️ شکل درست: <code>/botlot Groktraid 0.02</code> · برگشت: <code>/botlot Groktraid 0</code>")
+            return
+        name = " ".join(str(a) for a in args[:-1]).strip()
+        for ch in (";", "=", ",", "<", ">"):
+            name = name.replace(ch, " ")
+        name = " ".join(name.split())[:40]
+        try:
+            new = round(float(str(args[-1]).replace("٫", ".").replace(",", ".")), 2)
+        except ValueError:
+            new = -1.0
+        if not name or not (new == 0 or 0.01 <= new <= self.BOT_LOT_MAX):
+            self.tg.send(f"⚠️ لات باید بین 0.01 و {self.BOT_LOT_MAX} باشد (یا 0 برای برگشت به معمولی).")
+            return
+        k = self._bot_key(name)
+        known = {self._bot_key(n): n for n in self._bots_seen()}
+        shown = lots.get(k, {}).get("name") or known.get(k) or name
+        old = lots[k]["lot"] if k in lots else base
+        if new == 0 or abs(new - base) < 1e-9:
+            lots.pop(k, None)
+            new = base
+        else:
+            lots[k] = {"name": shown, "lot": new}
+        try:
+            self._save_bot_lots(lots)
+        except Exception as exc:
+            self.tg.send(f"⚠️ ذخیره نشد: {html.escape(str(exc))[:120]}")
+            return
+        self.log(event="bot_lot", note=f"name={shown};old={old};new={new}" + self._by_note())
+        dist = float(getattr(self, "bot_sl_usd", 10.0) or 10.0)
+        warn = "" if k in known else ("\n⚠️ این نام هنوز در دفتر نیست؛ باید دقیقاً همان نام ربات در تلگرام باشد "
+                                       "(فهرست: <code>/botlot</code>).")
+        self.tg.send(f"✅ لات {html.escape(shown)}: {old} ← <b>{new}</b> (از معاملهٔ بعدی؛ پوزیشن‌های باز همان لات خودشان)."
+                     f"\nحد ضرر همان فاصلهٔ قیمت است؛ ضرر هر معامله تا حدود <b>${dist * new / base:.0f}</b>."
+                     f" سقف ضرر روزانهٔ ربات همان ${float(getattr(self, 'bot_daily_loss', 15.0) or 0):.0f} است."
+                     f"\nبرگشت: <code>/botlot {html.escape(shown)} 0</code>" + warn)
 
     # ----------------------------------------------------------------- alerts
     @staticmethod
@@ -1340,13 +1444,17 @@ class Scout:
             self.log(event="rejected", alert=aid, setup=r.setup, side=r.side, note=self.latency_note(p) or None)
             self.track_whatif(aid, p, "rejected")
             return
+        base_lot = float(p.get("lot") or self.lot)       # همان لاتی که هشدار با آن نشان داده شد
+        lot = base_lot
+        if getattr(self, "_bot_sender", False):           # لات جدای این ربات (/botlot)، اگر تعیین شده
+            lot = self.bot_lot(self._who_plain()) or base_lot
         if self.open and not self.dry:
             if hedge == "reverse" and self.opposite_of(r.side):
                 if not override and self._reverse_cap_ask(aid, p, r, cb):
                     return                                # اول سقف را بپرس، بعد چیزی ببند
                 if not self._reverse(aid, p, r, cb):
                     return
-            new_risk = self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"]), p.get("lot"))
+            new_risk = self.new_risk_usd(r.side, float(r.ref_close), float(p["sl"]), lot)
             block = self.entry_block(r.side, new_risk, allow_hedge=(hedge == "both"))
             is_hedge = bool(block) and block.startswith("پوزیشن خلاف")
             if is_hedge:
@@ -1386,19 +1494,20 @@ class Scout:
             return
         sl_now = px - dist if r.side == "BUY" else px + dist
         if self._bot_open():                              # ربات: ریسک هر معامله حداکثر bot_sl_usd
-            bcap = self._cap_dist(getattr(self, "bot_sl_usd", 10.0), p.get("lot") or self.lot)
+            bcap = self._cap_dist(getattr(self, "bot_sl_usd", 10.0), base_lot)   # فاصلهٔ قیمت؛ با لات بزرگ‌تر هم همان
             if bcap and dist > bcap:
                 dist = bcap
                 sl_now = px - dist if r.side == "BUY" else px + dist
         moved = (px - ref) if r.side == "BUY" else (ref - px)
         info_line = f"ورود {px:.2f} (نسبت به هشدار {moved:+.2f}) · حد ضرر {sl_now:.2f}"
+        if abs(lot - base_lot) > 1e-9:
+            info_line += f" · لات ربات {lot}"
         self.tg.ack(cb, "در حال ثبت سفارش...")
         if self.dry:
             self.tg.edit(p["mid"], p["txt"] + f"\n\n🧪 <b>حالت آزمایشی — سفارشی ثبت نشد</b>\n{info_line}")
             self.log(event="approved_dry", alert=aid, setup=r.setup, side=r.side,
                      price=px, sl=round(sl_now, 2))
             return
-        lot = float(p.get("lot") or self.lot)             # همان لاتی که هشدار با آن نشان داده شد
         emerg = trk.emergency_sl(r.side, px, sl_now, self.emerg_mult, self._emerg_dist(lot))
         bot = self._bot_open()
         draft = {"sl": round(sl_now, 2), "emerg": emerg, "hold": False, "bot": bot}
@@ -2662,6 +2771,8 @@ class Scout:
             self.tg.send(ctl.HELP_CMDS)
         elif cmd == "/export":
             self.export_journal()
+        elif cmd == "/botlot":
+            self.botlot_cmd(list(args))
         else:
             return False
         return True

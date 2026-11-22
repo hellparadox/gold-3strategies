@@ -21,6 +21,8 @@ data/scout.lock
 data/scout_startup_fail.json
 data/scout_overrides.json
 data/scout_overrides.json.tmp
+data/scout_bot_lots.json
+data/scout_bot_lots.tmp
 snapshots/
 exports/
 
